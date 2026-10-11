@@ -25,8 +25,8 @@
   }
 
   /* Most flight APIs send no CORS headers, so browsers block direct calls.
-     Each request goes through the own proxy (?proxy=…) if configured, otherwise
-     through public CORS proxies, then direct. The first route that works is remembered per host. */
+     Each request goes through the own proxy (proxy/worker.js) if configured, then
+     public CORS proxies, then direct. The first route that works is remembered per host. */
   var PUBLIC_PROXIES = [
     function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
     function (u) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); }
@@ -35,9 +35,11 @@
 
   function proxyRoutes(post) {
     var own = MA.config.proxy;
-    if (own) return [function (u) { return own.replace(/\/$/, '') + '/?url=' + encodeURIComponent(u); }];
     var direct = function (u) { return u; };    // last: in case an API adds CORS later
-    return post ? [direct] : PUBLIC_PROXIES.concat([direct]); // public proxies only relay GET
+    if (post) return [direct];                  // no proxy relays POST
+    var list = PUBLIC_PROXIES.concat([direct]);
+    if (own) list.unshift(function (u) { return own.replace(/\/$/, '') + '/?url=' + encodeURIComponent(u); });
+    return list;
   }
 
   // `valid` rejects error bodies that arrive as HTTP 200 (e.g. a rate-limited

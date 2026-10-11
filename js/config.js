@@ -28,6 +28,13 @@ window.MA = MA;
     return m ? { from: +m[1], to: +m[2] } : null;
   }
 
+  // Own Cloudflare Worker (proxy/worker.js); ?proxy=<url> overrides, ?proxy=off uses public proxies only.
+  var DEFAULT_PROXY = '';
+  function proxy() {
+    var v = str('proxy', DEFAULT_PROXY);
+    return /^https:\/\//.test(v) ? v : '';
+  }
+
   MA.config = {
     lat: num('lat', 53.5511, -90, 90),          // default: Hamburg city centre
     lon: num('lon', 9.9937, -180, 180),
@@ -36,7 +43,7 @@ window.MA = MA;
     label: str('label', 'Hamburg').toUpperCase(),
     units: str('units', 'ft') === 'm' ? 'm' : 'ft',
     provider: str('provider', 'auto'),          // auto | adsblol | airplaneslive | opensky
-    proxy: /^https:\/\//.test(str('proxy', '')) ? str('proxy', '') : '', // own CORS proxy, see proxy/worker.js
+    proxy: proxy(),                             // own CORS proxy, see proxy/worker.js
     demo: bool('demo', false),
     rotateSec: num('rotate', 9, 3, 120),        // LED board rotation
     trailMin: num('trail', 4, 0, 30),           // trail length in minutes
