@@ -2,7 +2,7 @@
    Only relays the flight-data APIs below, only for the app's own origin
    (requests without an Origin header, e.g. a test link typed into the
    browser, are allowed too). */
-const ALLOWED_HOSTS = ['api.adsb.lol', 'api.airplanes.live', 'opensky-network.org'];
+const ALLOWED_HOSTS = ['api.adsb.lol', 'api.airplanes.live', 'opensky-network.org', 'opendata.adsb.fi', 'api.adsb.one'];
 const ALLOWED_ORIGINS = [/^https:\/\/kdniem\.github\.io$/, /^http:\/\/localhost(:\d+)?$/];
 
 function cors(origin) {
@@ -36,7 +36,7 @@ export default {
     // a short edge cache keeps several screens from multiplying upstream requests
     const upstream = await fetch(url.toString(), {
       headers: { 'User-Agent': 'MyAirspace (+https://github.com/kdniem/MyAirspace)' },
-      cf: { cacheTtl: 3, cacheEverything: true }
+      cf: { cacheTtlByStatus: { '200-299': 3, '300-599': 0 }, cacheEverything: true }
     });
     const res = new Response(upstream.body, upstream);
     for (const k in headers) res.headers.set(k, headers[k]);

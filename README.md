@@ -47,9 +47,9 @@ Fällt eine Quelle aus, nimmt die App automatisch die nächste und versucht es n
 
 Keine der drei Quellen erlaubt Abfragen direkt aus dem Browser (CORS). Die App leitet die Abfragen deshalb um:
 
-- **Standard: eigener Cloudflare Worker** `https://myairspace.kdniem.workers.dev` (Code in [`proxy/worker.js`](proxy/worker.js), in `js/config.js` als `DEFAULT_PROXY` eingetragen). Er reicht nur die drei Flugdaten-APIs weiter und beantwortet nur Anfragen von `kdniem.github.io` (und `localhost`). Ein kurzer Edge-Cache von 3 s hält die Last bei mehreren Bildschirmen klein.
-- **Rückfall:** Antwortet der Worker nicht, nimmt die App die öffentlichen CORS-Proxies `allorigins.win` und `codetabs.com`. Mit `?proxy=off` nutzt sie nur diese, mit `?proxy=https://…` einen anderen Worker. Den Standort schickt die App nur auf etwa 1 km gerundet ab.
-- **Worker aktualisieren:** Im Cloudflare-Dashboard unter **Workers & Pages → myairspace → Edit code** den Inhalt von `proxy/worker.js` einfügen und **Deploy** klicken.
+- **Standard:** die öffentlichen CORS-Proxies `allorigins.win` und `codetabs.com`. Den Standort schickt die App nur auf etwa 1 km gerundet ab.
+- **Routen** (`MUC → HAM`) kommen direkt von adsb.lol, dieser Endpunkt erlaubt Browser-Abfragen.
+- **Eigener Proxy:** `?proxy=https://…` setzt einen eigenen Proxy vor die öffentlichen (Format `<proxy>/?url=<ziel>`), `DEFAULT_PROXY` in `js/config.js` macht ihn zum Standard. Ein Cloudflare Worker ([`proxy/worker.js`](proxy/worker.js)) eignet sich dafür **nicht**: adsb.lol drosselt Anfragen aus Cloudflare Workers (429), airplanes.live verlangt eine Registrierung (403), adsb.fi und adsb.one sperren sie (403), OpenSky ist nicht erreichbar (522). Stand Oktober 2026.
 
 Farben: **Cyan** heißt sinkend (Anflug), **Bernstein** steigend (Abflug), **Weiß** Reiseflug. Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der LED-Tafel ein eigenes Abzeichen.
 

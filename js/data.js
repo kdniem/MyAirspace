@@ -33,21 +33,23 @@
   ];
   var preferred = {}; // host -> route index
 
-  function proxyRoutes(post) {
+  function proxyRoutes(post, directFirst) {
     var own = MA.config.proxy;
-    var direct = function (u) { return u; };    // last: in case an API adds CORS later
+    var direct = function (u) { return u; };    // last unless the endpoint is known to send CORS
     if (post) return [direct];                  // no proxy relays POST
-    var list = PUBLIC_PROXIES.concat([direct]);
+    var list = PUBLIC_PROXIES.slice();
     if (own) list.unshift(function (u) { return own.replace(/\/$/, '') + '/?url=' + encodeURIComponent(u); });
-    return list;
+    return directFirst ? [direct].concat(list) : list.concat([direct]);
   }
 
   // `valid` rejects error bodies that arrive as HTTP 200 (e.g. a rate-limited
   // proxy), so the next route is tried instead of showing an empty sky.
-  function getJson(url, opts, timeoutMs, valid) {
+  function getJson(url, opts, timeoutMs, valid, directFirst) {
     var post = !!(opts && opts.method === 'POST');
-    var host = url.split('/')[2] + (post ? ' post' : '');
-    var list = proxyRoutes(post);
+    // remember the working route per endpoint (host + first path segments), not per host:
+    // adsb.lol's route API sends CORS headers, its aircraft API does not
+    var host = url.split('/').slice(2, 5).join('/') + (post ? ' post' : '');
+    var list = proxyRoutes(post, directFirst);
     var start = Math.min(preferred[host] || 0, list.length - 1);
     var n = 0;
     function attempt() {
@@ -241,7 +243,7 @@
     Promise.all(batch.map(function (w) {
       var url = 'https://api.adsb.lol/api/0/route/' + encodeURIComponent(w.callsign) + '/' +
         w.lat.toFixed(3) + '/' + w.lng.toFixed(3);
-      return getJson(url, undefined, 10000, function (r) { return r && (r.airport_codes || r.callsign); }).then(function (r) {
+      return getJson(url, undefined, 10000, function (r) { return r && (r.airport_codes || r.callsign); }, true).then(function (r) {
         routes[w.callsign] = { route: parseRoute(r), at: Date.now() };
       }, function () {
         // route lookup is optional; retry this callsign in two minutes

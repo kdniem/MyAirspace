@@ -29,7 +29,8 @@ window.MA = MA;
   }
 
   // Own Cloudflare Worker (proxy/worker.js); ?proxy=<url> overrides, ?proxy=off uses public proxies only.
-  var DEFAULT_PROXY = 'https://myairspace.kdniem.workers.dev';
+  // Empty: the flight APIs rate-limit or block Cloudflare Workers egress (tested 2026-10-11).
+  var DEFAULT_PROXY = '';
   function proxy() {
     var v = str('proxy', DEFAULT_PROXY);
     return /^https:\/\//.test(v) ? v : '';
