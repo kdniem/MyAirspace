@@ -214,7 +214,7 @@
   };
 
   /* Origin/destination lookup by callsign (adsb.lol route database), cached. */
-  var routes = {};      // callsign -> { route: [IATA...] | null, at: ms }
+  var routes = {};      // callsign -> { route: [{code, lat, lon}] | null, at: ms }
   var inflight = false;
   var ROUTE_TTL = 30 * 60 * 1000;
 
@@ -232,7 +232,8 @@
 
     if (demo) {
       for (var d = 0; d < want.length; d++) {
-        routes[want[d].callsign] = { route: MA.demo.route(want[d].callsign), at: now };
+        var dr = MA.demo.route(want[d].callsign);
+        routes[want[d].callsign] = { route: dr && dr.map(function (c) { return { code: c }; }), at: now };
       }
       return;
     }
@@ -252,15 +253,56 @@
     })).then(function () { inflight = false; });
   }
 
+  // Route as a list of airports [{code, lat, lon}] (coordinates when the API has them).
+  // `plausible: false` is kept: it is often right (e.g. charter flights), and leg() checks geometry.
   function parseRoute(r) {
-    if (!r || r.plausible === false || r.plausible === 0) return null;
-    var codes = r._airport_codes_iata;
-    if (!codes && r._airports && r._airports.length > 1) {
-      codes = r._airports.map(function (a) { return a.iata || a.icao; }).join('-');
+    if (!r) return null;
+    if (r._airports && r._airports.length > 1) {
+      return r._airports.map(function (a) {
+        return { code: a.iata || a.icao, lat: a.lat, lon: a.lon };
+      });
     }
-    if (!codes) codes = r.airport_codes;
+    var codes = r._airport_codes_iata;
+    if (!codes || codes === 'unknown') codes = r.airport_codes;
     if (!codes || codes === 'unknown') return null;
-    return codes.split('-');
+    return codes.split('-').map(function (c) { return { code: c }; });
+  }
+
+  /* The leg the aircraft is flying now, e.g. NCE -> HAM for a HAM-NCE-HAM rotation:
+     legs with the smallest detour via the aircraft position are candidates, and the
+     one whose destination lies ahead (closest to the current track) wins. */
+  function leg(ac) {
+    var r = routes[ac.callsign] && routes[ac.callsign].route;
+    if (!r || r.length < 2) return null;
+    if (r.length === 2) return r;
+    var g = MA.geo, i, legs = [];
+    for (i = 0; i < r.length - 1; i++) {
+      var a = r[i], b = r[i + 1];
+      if (typeof a.lat !== 'number' || typeof b.lat !== 'number') {
+        // no coordinates: descending means the last leg, otherwise the first
+        return ac.vrate < -300 ? [r[r.length - 2], r[r.length - 1]] : [r[0], r[1]];
+      }
+      legs.push({
+        from: a, to: b,
+        detour: g.distKm(a.lat, a.lon, ac.lat, ac.lon) + g.distKm(ac.lat, ac.lon, b.lat, b.lon) - g.distKm(a.lat, a.lon, b.lat, b.lon)
+      });
+    }
+    var min = Math.min.apply(null, legs.map(function (l) { return l.detour; }));
+    var best = null, bestScore = -Infinity;
+    legs.forEach(function (l) {
+      if (l.detour > min + 50) return;
+      var score = 0;
+      if (ac.track !== null && ac.track !== undefined) {
+        score = Math.cos((g.bearing(ac.lat, ac.lon, l.to.lat, l.to.lon) - ac.track) * Math.PI / 180);
+      }
+      // near an airport both directions of a rotation point the same way:
+      // descending means arriving there, climbing means departing from there
+      var dTo = g.distKm(ac.lat, ac.lon, l.to.lat, l.to.lon), dFrom = g.distKm(ac.lat, ac.lon, l.from.lat, l.from.lon);
+      if (dTo < 60 && ac.vrate < -300) score += 1;
+      if (dFrom < 60 && ac.vrate > 300) score += 1;
+      if (score > bestScore) { bestScore = score; best = l; }
+    });
+    return best ? [best.from, best.to] : null;
   }
 
   MA.data = {
@@ -270,6 +312,7 @@
     route: function (callsign) {
       var c = routes[callsign];
       return c ? c.route : null;
-    }
+    },
+    leg: leg
   };
 })(window.MA);

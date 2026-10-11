@@ -57,7 +57,19 @@ Keine der drei Quellen erlaubt Abfragen direkt aus dem Browser (CORS). Die App l
 
 Farben: **Cyan** heißt sinkend (Anflug), **Bernstein** steigend (Abflug), **Weiß** Reiseflug. Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der LED-Tafel ein eigenes Abzeichen.
 
-Die Karte ist absichtlich vereinfacht. Elbe, Orte und Pistenlage sind nur ungefähr eingezeichnet und taugen nicht zur Navigation.
+### Karten
+
+Fertige Karten gibt es für Hamburg (HAM, XFW), Frankfurt (FRA), Münster/Osnabrück (FMO) und Kopenhagen (CPH):
+
+- Frankfurt: `https://kdniem.github.io/MyAirspace/?lat=50.0333&lon=8.5706&r=25&label=Frankfurt`
+- Münster/Osnabrück: `https://kdniem.github.io/MyAirspace/?lat=52.1346&lon=7.6848&r=25&label=FMO`
+- Kopenhagen: `https://kdniem.github.io/MyAirspace/?lat=55.6181&lon=12.6561&r=25&label=Kopenhagen`
+
+Die Pisten stammen aus [OurAirports](https://ourairports.com), Flüsse und Küsten außerhalb Hamburgs aus [Natural Earth](https://www.naturalearthdata.com) (beide gemeinfrei). Elbe, Alster und die Orte sind von Hand eingetragen. `data/geo-features.js` wird mit `python3 tools/build-geo.py` erzeugt; weitere Flughäfen ergänzt man dort in `AIRPORTS`, `AREAS` und `AREA_PLACES`. Die Karte ist absichtlich vereinfacht und taugt nicht zur Navigation.
+
+### Routen
+
+Die Route (z. B. `NCE → HAM`) kommt aus der Routendatenbank von adsb.lol. Bei Umläufen wie `HAM-NCE-HAM` zeigt die App nur den Abschnitt, den das Flugzeug gerade fliegt: Ausschlaggebend sind Position, Kurs und Steig- oder Sinkflug. „Anflug“ bzw. „Abflug“ erscheint bei Flughäfen bis 60 km vom Standort. Für Privatflieger, Hubschrauber und manche Charterflüge kennt die Datenbank keine Route.
 
 ## Veröffentlichen (GitHub Pages)
 
@@ -76,7 +88,9 @@ python3 -m http.server 8000
 ```
 index.html             Layout (Karte, Kopfzeile, LED-Tafel)
 css/style.css          Dark Theme, Dot-Matrix-Optik, TV-Sicherheitsrand
-data/geo-features.js   Pisten HAM/XFW, Elbe, Alster, Orte
+data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
+tools/build-geo.py     Generator für die Kartendaten
+api/proxy.js           CORS-Proxy als Vercel Function
 js/config.js           URL-Parameter
 js/data.js             Datenquellen, Fallback, Routen-Cache
 js/demo.js             Simulierter Verkehr für ?demo=1

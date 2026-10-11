@@ -55,7 +55,7 @@
       if (window.console) console.warn('[MyAirspace] no data:', err && err.message);
     }).then(function () {
       var p = feed.provider();
-      document.getElementById('attrib').textContent = p.attrib;
+      document.getElementById('attrib').textContent = p.attrib + ' · Karte: Natural Earth, OurAirports';
       var interval = Math.max(cfg.pollSec, p.minPollSec) * 1000;
       if (!cfg.demo && !cfg.proxy) interval = Math.max(interval, 8000); // be gentle with shared public proxies
       if (!status.ok) interval = Math.min(60000, interval * Math.pow(1.6, status.failures)); // back off
