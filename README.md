@@ -47,7 +47,7 @@ Fällt eine Quelle aus, nimmt die App automatisch die nächste und versucht es n
 
 Keine der drei Quellen erlaubt Abfragen direkt aus dem Browser (CORS). Die App leitet die Abfragen deshalb um:
 
-- **Eigener Proxy auf Vercel** ([`api/proxy.js`](api/proxy.js)): reicht nur die drei Flugdaten-APIs weiter, nur für `kdniem.github.io`, `*.vercel.app` und `localhost`, mit 3 s CDN-Cache. Einrichtung:
+- **Standard: eigener Proxy auf Vercel** unter `https://myairspace-nu.vercel.app/api/proxy` ([`api/proxy.js`](api/proxy.js), in `js/config.js` als `DEFAULT_PROXY`). Er reicht nur die drei Flugdaten-APIs weiter, nur für `kdniem.github.io`, `*.vercel.app` und `localhost`, mit 3 s CDN-Cache. adsb.lol funktioniert darüber; airplanes.live (403) und OpenSky (Timeout) nicht, für sie greift der Rückfall. Vercel deployt jeden Push auf `main` automatisch. Einrichtung bei einem neuen Konto:
   1. Auf [vercel.com](https://vercel.com) mit **Continue with GitHub** anmelden.
   2. **Add New → Project**, das Repo `kdniem/MyAirspace` importieren, Framework **Other**, nichts weiter einstellen, **Deploy**.
   3. Die Adresse `https://<projekt>.vercel.app/api/proxy` in `js/config.js` als `DEFAULT_PROXY` eintragen (oder per `?proxy=…` in der URL).

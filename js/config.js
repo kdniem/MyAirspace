@@ -30,7 +30,7 @@ window.MA = MA;
 
   // Own proxy (api/proxy.js on Vercel), e.g. 'https://<project>.vercel.app/api/proxy';
   // ?proxy=<url> overrides, ?proxy=off uses public proxies only.
-  var DEFAULT_PROXY = '';
+  var DEFAULT_PROXY = 'https://myairspace-nu.vercel.app/api/proxy';
   function proxy() {
     var v = str('proxy', DEFAULT_PROXY);
     return /^https:\/\//.test(v) ? v : '';
