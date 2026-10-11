@@ -41,6 +41,20 @@
     });
   }
 
+  // Airports on the map within 60 km of home, by IATA and ICAO code (for the Anflug/Abflug badge).
+  var localCache = null;
+  function localAirports(cfg) {
+    if (localCache) return localCache;
+    localCache = {};
+    MA.features.airports.forEach(function (ap) {
+      if (MA.geo.distKm(cfg.lat, cfg.lon, ap.lat, ap.lon) <= 60) {
+        localCache[ap.code] = true;
+        if (ap.icao) localCache[ap.icao] = true;
+      }
+    });
+    return localCache;
+  }
+
   function Board(cfg) {
     this.cfg = cfg;
     this.el = {
@@ -81,15 +95,14 @@
     flap(e.flight, (ac.callsign || ac.reg || ac.hex).toUpperCase());
     setSub(e.airline, esc(f.airline(ac.callsign) || ac.reg || ''));
 
-    var route = MA.data.route(ac.callsign);
-    flap(e.route, route && route.length > 1 ? route.join(' → ') : '--- → ---');
-    var badge = '';
+    var leg = MA.data.leg(ac);  // current leg only, e.g. NCE → HAM of HAM-NCE-HAM
+    flap(e.route, leg ? leg[0].code + ' → ' + leg[1].code : '--- → ---');
+    var badge = '', local = localAirports(cfg);
     if (f.isAirbusSpecial(ac)) badge = '<span class="badge">AIRBUS</span>';
-    else if (route && route.length > 1) {
-      var home = route.indexOf('HAM') >= 0 || route.indexOf('XFW') >= 0;
-      if (route[route.length - 1] === 'HAM' || route[route.length - 1] === 'XFW') badge = 'Anflug ' + route[route.length - 1];
-      else if (route[0] === 'HAM' || route[0] === 'XFW') badge = 'Abflug ' + route[0];
-      else if (!home) badge = 'Überflug';
+    else if (leg) {
+      if (local[leg[1].code]) badge = 'Anflug ' + esc(leg[1].code);
+      else if (local[leg[0].code]) badge = 'Abflug ' + esc(leg[0].code);
+      else badge = 'Überflug';
     }
     setSub(e.badge, badge);
 

@@ -155,10 +155,10 @@
     // airports: extended centrelines (the approach paths), runways, code
     MA.features.airports.forEach(function (ap) {
       ap.runways.forEach(function (rw) {
-        var half = rw.len / 2000;
-        var e1 = MA.geo.dest(rw.lat, rw.lon, rw.hdg, half), e2 = MA.geo.dest(rw.lat, rw.lon, rw.hdg + 180, half);
-        var c1 = MA.geo.dest(rw.lat, rw.lon, rw.hdg, half + 18), c2 = MA.geo.dest(rw.lat, rw.lon, rw.hdg + 180, half + 18);
-        var p1 = self.project(e1[0], e1[1]), p2 = self.project(e2[0], e2[1]);
+        // runway ends a/b; centrelines extend 18 km beyond each end
+        var hdg = MA.geo.bearing(rw.a[0], rw.a[1], rw.b[0], rw.b[1]);
+        var c1 = MA.geo.dest(rw.b[0], rw.b[1], hdg, 18), c2 = MA.geo.dest(rw.a[0], rw.a[1], hdg + 180, 18);
+        var p1 = self.project(rw.b[0], rw.b[1]), p2 = self.project(rw.a[0], rw.a[1]);
         var q1 = self.project(c1[0], c1[1]), q2 = self.project(c2[0], c2[1]);
         ctx.strokeStyle = C.centerline;
         ctx.lineWidth = 1;
