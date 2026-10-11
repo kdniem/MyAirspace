@@ -47,13 +47,13 @@ Fällt eine Quelle aus, nimmt die App automatisch die nächste und versucht es n
 
 Keine der drei Quellen erlaubt Abfragen direkt aus dem Browser (CORS). Die App leitet die Abfragen deshalb um:
 
-- **Ohne Einrichtung:** über die öffentlichen CORS-Proxies `allorigins.win` und `codetabs.com`. Das funktioniert sofort, ist aber nicht immer zuverlässig. Die Routen (`MUC → HAM`) fehlen dann, weil diese Proxies nur GET weiterreichen. Den Standort schickt die App nur auf etwa 1 km gerundet ab.
+- **Ohne Einrichtung:** über die öffentlichen CORS-Proxies `allorigins.win` und `codetabs.com`. Das funktioniert sofort, ist aber nicht immer zuverlässig. Den Standort schickt die App nur auf etwa 1 km gerundet ab.
 - **Empfohlen: eigener Proxy** als kostenloser Cloudflare Worker:
   1. Auf [dash.cloudflare.com](https://dash.cloudflare.com) anmelden, **Workers & Pages → Create → Worker** wählen und einen Namen vergeben, z. B. `myairspace`. Dann **Deploy**.
   2. **Edit code**, den Inhalt durch [`proxy/worker.js`](proxy/worker.js) ersetzen und erneut **Deploy**.
   3. Die App mit `&proxy=https://myairspace.<dein-konto>.workers.dev` aufrufen.
 
-  Der Worker reicht nur die drei Flugdaten-APIs weiter. Damit gibt es auch die Routen, und keine fremden Dienste sind beteiligt.
+  Der Worker reicht nur die drei Flugdaten-APIs weiter, und keine fremden Dienste sind beteiligt.
 
 Farben: **Cyan** heißt sinkend (Anflug), **Bernstein** steigend (Abflug), **Weiß** Reiseflug. Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der LED-Tafel ein eigenes Abzeichen.
 

@@ -4,6 +4,7 @@
   var STALE_MS = 60 * 1000;      // drop aircraft not updated for a minute
   var MAX_EXTRAP_MS = 20 * 1000; // stop dead-reckoning after 20 s without data
   var TRAIL_JUMP_KM = 5;         // break trails on implausible jumps
+  var TRAIL_STEP_MS = 2000;      // trail sampling interval (keeps segment count low on TV browsers)
 
   var radar = new MA.Radar(document.getElementById('radar'), cfg);
   var board = new MA.Board(cfg);
@@ -20,7 +21,6 @@
 
   function ingest(list) {
     var now = Date.now();
-    var trailMs = cfg.trailMin * 60 * 1000;
     list.forEach(function (n) {
       if (n.onGround) return;
       var ac = aircraft[n.hex];
@@ -28,14 +28,11 @@
         ac = aircraft[n.hex] = { hex: n.hex, trail: [], dlat: n.lat, dlon: n.lon,
           dist: MA.geo.distKm(cfg.lat, cfg.lon, n.lat, n.lon) };
       }
-      var prev = ac.trail[ac.trail.length - 1];
-      if (prev && MA.geo.distKm(prev[0], prev[1], n.lat, n.lon) > TRAIL_JUMP_KM) {
+      if (MA.geo.distKm(ac.dlat, ac.dlon, n.lat, n.lon) > TRAIL_JUMP_KM) {
         ac.trail = [];
         ac.dlat = n.lat;
         ac.dlon = n.lon;
       }
-      if (!prev || prev[0] !== n.lat || prev[1] !== n.lon) ac.trail.push([n.lat, n.lon, n.ts]);
-      while (ac.trail.length && ac.trail[0][2] < now - trailMs) ac.trail.shift();
       for (var k in n) if (k !== 'trail') ac[k] = n[k];
       ac.seen = now;
     });
@@ -76,6 +73,7 @@
 
   function advance(now, dt) {
     var k = Math.min(1, dt / 600); // ease displayed position towards the prediction
+    var trailMs = cfg.trailMin * 60 * 1000;
     visible = [];
     for (var hex in aircraft) {
       var ac = aircraft[hex];
@@ -87,7 +85,11 @@
       }
       ac.dlat += (plat - ac.dlat) * k;
       ac.dlon += (plon - ac.dlon) * k;
-      ac.dist = MA.geo.distKm(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
+      // the trail is drawn from the smoothed on-screen position, independent of poll timing
+      var last = ac.trail[ac.trail.length - 1];
+      if (!last || now - last[2] >= TRAIL_STEP_MS) ac.trail.push([ac.dlat, ac.dlon, now]);
+      while (ac.trail.length && ac.trail[0][2] < now - trailMs) ac.trail.shift();
+      ac.dist =MA.geo.distKm(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
       ac.brg = MA.geo.bearing(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
       visible.push(ac);
     }

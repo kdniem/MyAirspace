@@ -273,29 +273,24 @@
       var featured = ac.hex === featuredHex;
       if (featured) baseA = 1;
 
-      // trail
+      // trail: fades out with age, tapers towards the tail, ends at the glyph
       var tr = ac.trail;
-      if (tr.length > 1) {
-        ctx.lineWidth = (featured ? 2.2 : 1.6) * u;
+      if (tr.length) {
+        var maxAge = self.cfg.trailMin * 60000 || 1;
+        var head = (featured ? 3 : 2.2) * u;
+        var cur = self.project(ac.dlat, ac.dlon);
         ctx.lineCap = 'round';
-        for (var i = 1; i < tr.length; i++) {
-          var a = self.project(tr[i - 1][0], tr[i - 1][1]);
-          var b = self.project(tr[i][0], tr[i][1]);
-          var k = i / tr.length;
-          ctx.strokeStyle = rgba(col, 0.42 * k * baseA);
+        for (var i = 0; i < tr.length; i++) {
+          var a = self.project(tr[i][0], tr[i][1]);
+          var b = i + 1 < tr.length ? self.project(tr[i + 1][0], tr[i + 1][1]) : cur;
+          var fresh = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
+          ctx.lineWidth = Math.max(0.6 * u, head * (0.35 + 0.65 * fresh));
+          ctx.strokeStyle = rgba(col, 0.7 * fresh * fresh * baseA);
           ctx.beginPath();
           ctx.moveTo(a[0], a[1]);
           ctx.lineTo(b[0], b[1]);
           ctx.stroke();
         }
-        // connect last fix to the moving glyph
-        var last = self.project(tr[tr.length - 1][0], tr[tr.length - 1][1]);
-        var cur = self.project(ac.dlat, ac.dlon);
-        ctx.strokeStyle = rgba(col, 0.42 * baseA);
-        ctx.beginPath();
-        ctx.moveTo(last[0], last[1]);
-        ctx.lineTo(cur[0], cur[1]);
-        ctx.stroke();
       }
 
       var p = self.project(ac.dlat, ac.dlon);
