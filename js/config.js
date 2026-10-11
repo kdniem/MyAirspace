@@ -29,7 +29,7 @@ window.MA = MA;
   }
 
   // Own Cloudflare Worker (proxy/worker.js); ?proxy=<url> overrides, ?proxy=off uses public proxies only.
-  var DEFAULT_PROXY = '';
+  var DEFAULT_PROXY = 'https://myairspace.kdniem.workers.dev';
   function proxy() {
     var v = str('proxy', DEFAULT_PROXY);
     return /^https:\/\//.test(v) ? v : '';
