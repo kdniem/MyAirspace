@@ -221,27 +221,30 @@
       return;
     }
 
+    // One GET per callsign (public CORS proxies only relay GET), nearest first.
     inflight = true;
-    getJson('https://api.adsb.lol/api/0/routeset', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ planes: want })
-    }, 10000).then(function (res) {
-      var got = {};
-      for (var j = 0; j < (res || []).length; j++) {
-        var r = res[j];
-        var codes = r && r._airport_codes_iata;
-        var ok = codes && codes !== 'unknown' && r.plausible !== false && r.plausible !== 0;
-        got[r.callsign] = true;
-        routes[r.callsign] = { route: ok ? codes.split('-') : null, at: Date.now() };
-      }
-      for (var k = 0; k < want.length; k++) {
-        if (!got[want[k].callsign]) routes[want[k].callsign] = { route: null, at: Date.now() };
-      }
-    }, function () {
-      // route lookup is optional; back off for all requested callsigns
-      for (var k = 0; k < want.length; k++) routes[want[k].callsign] = { route: null, at: Date.now() - ROUTE_TTL + 120000 };
-    }).then(function () { inflight = false; });
+    var batch = want.slice(0, 4);
+    Promise.all(batch.map(function (w) {
+      var url = 'https://api.adsb.lol/api/0/route/' + encodeURIComponent(w.callsign) + '/' +
+        w.lat.toFixed(3) + '/' + w.lng.toFixed(3);
+      return getJson(url, undefined, 10000).then(function (r) {
+        routes[w.callsign] = { route: parseRoute(r), at: Date.now() };
+      }, function () {
+        // route lookup is optional; retry this callsign in two minutes
+        routes[w.callsign] = { route: null, at: Date.now() - ROUTE_TTL + 120000 };
+      });
+    })).then(function () { inflight = false; });
+  }
+
+  function parseRoute(r) {
+    if (!r || r.plausible === false || r.plausible === 0) return null;
+    var codes = r._airport_codes_iata;
+    if (!codes && r._airports && r._airports.length > 1) {
+      codes = r._airports.map(function (a) { return a.iata || a.icao; }).join('-');
+    }
+    if (!codes) codes = r.airport_codes;
+    if (!codes || codes === 'unknown') return null;
+    return codes.split('-');
   }
 
   MA.data = {
