@@ -1,0 +1,6 @@
+{
+  "name": "myairspace",
+  "private": true,
+  "type": "module",
+  "description": "Ambient flight radar for the TV; static app plus the /api/proxy Vercel Function"
+}

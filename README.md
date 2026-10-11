@@ -47,9 +47,13 @@ Fällt eine Quelle aus, nimmt die App automatisch die nächste und versucht es n
 
 Keine der drei Quellen erlaubt Abfragen direkt aus dem Browser (CORS). Die App leitet die Abfragen deshalb um:
 
-- **Standard:** die öffentlichen CORS-Proxies `allorigins.win` und `codetabs.com`. Den Standort schickt die App nur auf etwa 1 km gerundet ab.
+- **Eigener Proxy auf Vercel** ([`api/proxy.js`](api/proxy.js)): reicht nur die drei Flugdaten-APIs weiter, nur für `kdniem.github.io`, `*.vercel.app` und `localhost`, mit 3 s CDN-Cache. Einrichtung:
+  1. Auf [vercel.com](https://vercel.com) mit **Continue with GitHub** anmelden.
+  2. **Add New → Project**, das Repo `kdniem/MyAirspace` importieren, Framework **Other**, nichts weiter einstellen, **Deploy**.
+  3. Die Adresse `https://<projekt>.vercel.app/api/proxy` in `js/config.js` als `DEFAULT_PROXY` eintragen (oder per `?proxy=…` in der URL).
+- **Rückfall:** die öffentlichen CORS-Proxies `allorigins.win` und `codetabs.com`. Mit `?proxy=off` nutzt die App nur diese. Den Standort schickt die App nur auf etwa 1 km gerundet ab.
 - **Routen** (`MUC → HAM`) kommen direkt von adsb.lol, dieser Endpunkt erlaubt Browser-Abfragen.
-- **Eigener Proxy:** `?proxy=https://…` setzt einen eigenen Proxy vor die öffentlichen (Format `<proxy>/?url=<ziel>`), `DEFAULT_PROXY` in `js/config.js` macht ihn zum Standard. Ein Cloudflare Worker ([`proxy/worker.js`](proxy/worker.js)) eignet sich dafür **nicht**: adsb.lol drosselt Anfragen aus Cloudflare Workers (429), airplanes.live verlangt eine Registrierung (403), adsb.fi und adsb.one sperren sie (403), OpenSky ist nicht erreichbar (522). Stand Oktober 2026.
+- Ein Cloudflare Worker eignet sich **nicht** als Proxy: adsb.lol drosselt Anfragen aus Cloudflare Workers (429), airplanes.live verlangt eine Registrierung (403), OpenSky ist nicht erreichbar (522). Stand Oktober 2026.
 
 Farben: **Cyan** heißt sinkend (Anflug), **Bernstein** steigend (Abflug), **Weiß** Reiseflug. Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der LED-Tafel ein eigenes Abzeichen.
 

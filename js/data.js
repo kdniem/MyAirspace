@@ -25,7 +25,7 @@
   }
 
   /* Most flight APIs send no CORS headers, so browsers block direct calls.
-     Each request goes through the own proxy (proxy/worker.js) if configured, then
+     Each request goes through the own proxy (api/proxy.js on Vercel) if configured, then
      public CORS proxies, then direct. The first route that works is remembered per host. */
   var PUBLIC_PROXIES = [
     function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
@@ -38,7 +38,7 @@
     var direct = function (u) { return u; };    // last unless the endpoint is known to send CORS
     if (post) return [direct];                  // no proxy relays POST
     var list = PUBLIC_PROXIES.slice();
-    if (own) list.unshift(function (u) { return own.replace(/\/$/, '') + '/?url=' + encodeURIComponent(u); });
+    if (own) list.unshift(function (u) { return own + (own.indexOf('?') >= 0 ? '&' : '?') + 'url=' + encodeURIComponent(u); });
     return directFirst ? [direct].concat(list) : list.concat([direct]);
   }
 
