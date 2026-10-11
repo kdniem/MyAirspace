@@ -24,6 +24,42 @@
     });
   }
 
+  /* Most flight APIs send no CORS headers, so browsers block direct calls.
+     Each request goes through the own proxy (?proxy=…) if configured, otherwise
+     through public CORS proxies, then direct. The first route that works is remembered per host. */
+  var PUBLIC_PROXIES = [
+    function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+    function (u) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); }
+  ];
+  var preferred = {}; // host -> route index
+
+  function proxyRoutes(post) {
+    var own = MA.config.proxy;
+    if (own) return [function (u) { return own.replace(/\/$/, '') + '/?url=' + encodeURIComponent(u); }];
+    var direct = function (u) { return u; };    // last: in case an API adds CORS later
+    return post ? [direct] : PUBLIC_PROXIES.concat([direct]); // public proxies only relay GET
+  }
+
+  function getJson(url, opts, timeoutMs) {
+    var post = !!(opts && opts.method === 'POST');
+    var host = url.split('/')[2] + (post ? ' post' : '');
+    var list = proxyRoutes(post);
+    var start = Math.min(preferred[host] || 0, list.length - 1);
+    var n = 0;
+    function attempt() {
+      var i = (start + n) % list.length;
+      return fetchJson(list[i](url), opts, timeoutMs).then(function (json) {
+        preferred[host] = i;
+        return json;
+      }, function (err) {
+        n++;
+        if (n >= list.length) throw err;
+        return attempt();
+      });
+    }
+    return attempt();
+  }
+
   // readsb "v2" format used by adsb.lol and airplanes.live
   function parseReadsb(json) {
     var now = Date.now();
@@ -90,7 +126,7 @@
       name: 'adsb.lol', attrib: 'Daten: adsb.lol · ODbL', minPollSec: 2,
       fetch: function (lat, lon, km) {
         var nm = Math.min(250, Math.ceil(km / KM_PER_NM));
-        return fetchJson('https://api.adsb.lol/v2/point/' + lat.toFixed(4) + '/' + lon.toFixed(4) + '/' + nm)
+        return getJson('https://api.adsb.lol/v2/point/' + lat.toFixed(4) + '/' + lon.toFixed(4) + '/' + nm)
           .then(parseReadsb);
       }
     },
@@ -98,7 +134,7 @@
       name: 'airplanes.live', attrib: 'Daten: airplanes.live', minPollSec: 2,
       fetch: function (lat, lon, km) {
         var nm = Math.min(250, Math.ceil(km / KM_PER_NM));
-        return fetchJson('https://api.airplanes.live/v2/point/' + lat.toFixed(4) + '/' + lon.toFixed(4) + '/' + nm)
+        return getJson('https://api.airplanes.live/v2/point/' + lat.toFixed(4) + '/' + lon.toFixed(4) + '/' + nm)
           .then(parseReadsb);
       }
     },
@@ -110,7 +146,7 @@
         var url = 'https://opensky-network.org/api/states/all?lamin=' + (lat - dLat).toFixed(3) +
           '&lomin=' + (lon - dLon).toFixed(3) + '&lamax=' + (lat + dLat).toFixed(3) +
           '&lomax=' + (lon + dLon).toFixed(3);
-        return fetchJson(url, undefined, 12000).then(parseOpenSky);
+        return getJson(url, undefined, 12000).then(parseOpenSky);
       }
     },
     demo: {
@@ -137,6 +173,11 @@
 
   Feed.prototype.fetch = function (lat, lon, km) {
     var self = this;
+    // Requests may pass through third-party proxies: only send the home
+    // position rounded to ~1 km and widen the radius to compensate.
+    lat = Math.round(lat * 100) / 100;
+    lon = Math.round(lon * 100) / 100;
+    km += 1.5;
     if (self.idx > 0 && Date.now() - self.lastSwitch > PRIMARY_RETRY_MS) {
       self.idx = 0;
       self.lastSwitch = Date.now();
@@ -181,7 +222,7 @@
     }
 
     inflight = true;
-    fetchJson('https://api.adsb.lol/api/0/routeset', {
+    getJson('https://api.adsb.lol/api/0/routeset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ planes: want })
