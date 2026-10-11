@@ -36,6 +36,7 @@ window.MA = MA;
     label: str('label', 'Hamburg').toUpperCase(),
     units: str('units', 'ft') === 'm' ? 'm' : 'ft',
     provider: str('provider', 'auto'),          // auto | adsblol | airplaneslive | opensky
+    proxy: /^https:\/\//.test(str('proxy', '')) ? str('proxy', '') : '', // own CORS proxy, see proxy/worker.js
     demo: bool('demo', false),
     rotateSec: num('rotate', 9, 3, 120),        // LED board rotation
     trailMin: num('trail', 4, 0, 30),           // trail length in minutes

@@ -25,6 +25,7 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `dim`      | `0.45`          | Helligkeit während der Nachtzeit |
 | `labels`   | `1`             | Beschriftungen an den Flugzeugen (`0` = aus) |
 | `places`   | `1`             | Ortsnamen auf der Karte (`0` = aus) |
+| `proxy`    | –               | Eigener CORS-Proxy, siehe [Proxy](#proxy-cors) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`, `airplaneslive`, `opensky` |
 | `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
 
@@ -41,6 +42,18 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 - **OpenSky Network**: letzte Rückfallebene. Anonym gibt es nur wenige Abfragen pro Tag, deshalb wird hier höchstens alle 30 s abgefragt.
 
 Fällt eine Quelle aus, nimmt die App automatisch die nächste und versucht es nach fünf Minuten wieder mit der ersten. Zwischen zwei Abfragen werden die Positionen anhand von Kurs und Geschwindigkeit weitergerechnet, deshalb bewegen sich die Flugzeuge flüssig.
+
+### Proxy (CORS)
+
+Keine der drei Quellen erlaubt Abfragen direkt aus dem Browser (CORS). Die App leitet die Abfragen deshalb um:
+
+- **Ohne Einrichtung:** über die öffentlichen CORS-Proxies `allorigins.win` und `codetabs.com`. Das funktioniert sofort, ist aber nicht immer zuverlässig. Die Routen (`MUC → HAM`) fehlen dann, weil diese Proxies nur GET weiterreichen. Den Standort schickt die App nur auf etwa 1 km gerundet ab.
+- **Empfohlen: eigener Proxy** als kostenloser Cloudflare Worker:
+  1. Auf [dash.cloudflare.com](https://dash.cloudflare.com) anmelden, **Workers & Pages → Create → Worker** wählen und einen Namen vergeben, z. B. `myairspace`. Dann **Deploy**.
+  2. **Edit code**, den Inhalt durch [`proxy/worker.js`](proxy/worker.js) ersetzen und erneut **Deploy**.
+  3. Die App mit `&proxy=https://myairspace.<dein-konto>.workers.dev` aufrufen.
+
+  Der Worker reicht nur die drei Flugdaten-APIs weiter. Damit gibt es auch die Routen, und keine fremden Dienste sind beteiligt.
 
 Farben: **Cyan** heißt sinkend (Anflug), **Bernstein** steigend (Abflug), **Weiß** Reiseflug. Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der LED-Tafel ein eigenes Abzeichen.
 
