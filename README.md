@@ -49,7 +49,7 @@ Die Karte ist absichtlich vereinfacht. Elbe, Orte und Pistenlage sind nur ungef�
 ## Veröffentlichen (GitHub Pages)
 
 1. Im Repository unter **Settings → Pages → Build and deployment → Source** die Option **GitHub Actions** wählen.
-2. Jeder Push auf den Standard-Branch veröffentlicht die Seite über `.github/workflows/pages.yml`.
+2. Jeder Push auf `main` veröffentlicht die Seite über `.github/workflows/pages.yml`.
 
 ## Lokal ausprobieren
 
