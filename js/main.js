@@ -57,6 +57,7 @@
       var p = feed.provider();
       document.getElementById('attrib').textContent = p.attrib;
       var interval = Math.max(cfg.pollSec, p.minPollSec) * 1000;
+      if (!cfg.demo && !cfg.proxy) interval = Math.max(interval, 8000); // be gentle with shared public proxies
       if (!status.ok) interval = Math.min(60000, interval * Math.pow(1.6, status.failures)); // back off
       setTimeout(poll, Math.max(500, interval - (Date.now() - started)));
     });
