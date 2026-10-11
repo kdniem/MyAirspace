@@ -1,0 +1,224 @@
+/* MyAirspace – ambient flight radar for the living-room TV.
+   Flexbox only (no grid), vh/vw sizing: works on older Tizen/webOS browsers. */
+
+:root {
+  --bg: #050607;
+  --panel: #0a0b0d;
+  --ink: #e9e4d8;
+  --dim: #6d7176;
+  --faint: #2a2e33;
+  --amber: #ffb547;
+  --cyan: #63d3e8;
+  --safe-x: 3.6vw;   /* overscan safe area */
+  --safe-y: 3.6vh;
+  --led: "Doto", "DotGothic16", "IBM Plex Mono", ui-monospace, monospace;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--mono);
+  cursor: none;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#stage {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  transition: transform 6s ease-in-out, opacity 4s ease;
+}
+
+#radar {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---------- top bar ---------- */
+
+#top {
+  position: absolute;
+  top: var(--safe-y);
+  left: var(--safe-x);
+  right: var(--safe-x);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.brand {
+  font-size: 1.55vh;
+  letter-spacing: 0.42em;
+  color: var(--dim);
+}
+.brand-name { color: var(--ink); opacity: 0.85; }
+.brand-sep { margin: 0 0.6em; }
+
+.meta { text-align: right; }
+
+.clock {
+  font-family: var(--led);
+  font-weight: 700;
+  font-size: 6.2vh;
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: 0.06em;
+  opacity: 0.9;
+}
+
+.summary {
+  margin-top: 1.1vh;
+  font-size: 1.45vh;
+  letter-spacing: 0.22em;
+  color: var(--dim);
+  text-transform: uppercase;
+}
+
+.dot {
+  display: inline-block;
+  width: 0.8vh;
+  height: 0.8vh;
+  border-radius: 50%;
+  margin-right: 0.7em;
+  vertical-align: middle;
+  background: var(--dim);
+}
+.dot.ok { background: #6fdc8c; box-shadow: 0 0 0.8vh rgba(111, 220, 140, 0.6); }
+.dot.warn { background: var(--amber); box-shadow: 0 0 0.8vh rgba(255, 181, 71, 0.6); }
+.dot.err { background: #ff5d5d; box-shadow: 0 0 0.8vh rgba(255, 93, 93, 0.6); }
+
+/* ---------- LED board ---------- */
+
+#board {
+  position: absolute;
+  left: var(--safe-x);
+  right: var(--safe-x);
+  bottom: calc(var(--safe-y) + 1.6vh);
+  height: 17vh;
+  background: var(--panel);
+  border: 1px solid #16191c;
+  border-radius: 1.2vh;
+  overflow: hidden;
+}
+
+/* dot-matrix screen texture */
+#board:after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  background-image: radial-gradient(rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 56%);
+  background-size: 0.42vh 0.42vh;
+  opacity: 0.55;
+}
+
+.board-inner {
+  position: relative;
+  display: flex;
+  height: 100%;
+  padding: 2.2vh 2.4vw;
+  align-items: stretch;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 1.4vw;
+  border-left: 1px solid #16191c;
+  min-width: 0;
+}
+.cell:first-child { border-left: 0; padding-left: 0; }
+
+.cell-flight { flex: 1.45 1 0; }
+.cell-route  { flex: 1.75 1 0; }
+.cell-type   { flex: 1.15 1 0; }
+.cell-alt    { flex: 1.2 1 0; }
+.cell-spd    { flex: 0.85 1 0; }
+.cell-dist   { flex: 1.0 1 0; }
+
+.lbl {
+  font-size: 1.25vh;
+  letter-spacing: 0.32em;
+  color: var(--dim);
+  margin-bottom: 0.9vh;
+}
+
+.val {
+  font-size: 5.4vh;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.led {
+  font-family: var(--led);
+  font-weight: 900;
+  color: var(--amber);
+  text-shadow: 0 0 1.2vh rgba(255, 181, 71, 0.45), 0 0 0.2vh rgba(255, 181, 71, 0.8);
+  letter-spacing: 0.04em;
+}
+.led.down { color: var(--cyan); text-shadow: 0 0 1.2vh rgba(99, 211, 232, 0.45), 0 0 0.2vh rgba(99, 211, 232, 0.8); }
+.led.idle { color: #3a3e43; text-shadow: none; }
+
+.sub {
+  margin-top: 1vh;
+  font-size: 1.55vh;
+  letter-spacing: 0.14em;
+  color: #9a9ea3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  min-height: 1.2em;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.15em 0.6em;
+  border: 1px solid var(--amber);
+  border-radius: 0.3em;
+  color: var(--amber);
+  letter-spacing: 0.3em;
+}
+
+.pager {
+  position: absolute;
+  top: 1.2vh;
+  right: 1.4vw;
+  font-size: 0;
+}
+.pager span {
+  display: inline-block;
+  width: 0.6vh;
+  height: 0.6vh;
+  margin-left: 0.6vh;
+  border-radius: 50%;
+  background: #2b2f34;
+}
+.pager span.on { background: var(--amber); }
+
+#attrib {
+  position: absolute;
+  right: var(--safe-x);
+  bottom: calc(var(--safe-y) - 1.4vh);
+  font-size: 1.05vh;
+  letter-spacing: 0.18em;
+  color: #3d4146;
+  text-transform: uppercase;
+}
+
+/* message overlay on the board (no data / error) */
+.board-msg .cell { opacity: 0.35; }

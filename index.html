@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050607">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>MyAirspace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="stage">
+    <canvas id="radar"></canvas>
+
+    <header id="top">
+      <div class="brand">
+        <span class="brand-name">MYAIRSPACE</span>
+        <span class="brand-sep">·</span>
+        <span id="place" class="brand-place"></span>
+      </div>
+      <div class="meta">
+        <div id="clock" class="clock">--:--</div>
+        <div id="summary" class="summary">
+          <span id="status-dot" class="dot"></span>
+          <span id="summary-text">Verbinde…</span>
+        </div>
+      </div>
+    </header>
+
+    <section id="board" aria-live="polite">
+      <div class="board-inner">
+        <div class="cell cell-flight">
+          <div class="lbl">FLUG</div>
+          <div id="b-flight" class="val led">------</div>
+          <div id="b-airline" class="sub"></div>
+        </div>
+        <div class="cell cell-route">
+          <div class="lbl">ROUTE</div>
+          <div id="b-route" class="val led">--- &#8594; ---</div>
+          <div id="b-badge" class="sub"></div>
+        </div>
+        <div class="cell cell-type">
+          <div class="lbl">MUSTER</div>
+          <div id="b-type" class="val led">----</div>
+          <div id="b-reg" class="sub"></div>
+        </div>
+        <div class="cell cell-alt">
+          <div class="lbl">HÖHE</div>
+          <div id="b-alt" class="val led">-----</div>
+          <div id="b-vs" class="sub"></div>
+        </div>
+        <div class="cell cell-spd">
+          <div class="lbl">SPEED</div>
+          <div id="b-spd" class="val led">---</div>
+          <div id="b-spd-sub" class="sub"></div>
+        </div>
+        <div class="cell cell-dist">
+          <div class="lbl">ENTFERNUNG</div>
+          <div id="b-dist" class="val led">--.-</div>
+          <div id="b-dir" class="sub"></div>
+        </div>
+      </div>
+      <div id="pager" class="pager"></div>
+    </section>
+
+    <footer id="attrib"></footer>
+  </div>
+
+  <script src="data/geo-features.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/geo.js"></script>
+  <script src="js/format.js"></script>
+  <script src="js/demo.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/radar.js"></script>
+  <script src="js/board.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
