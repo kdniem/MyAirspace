@@ -125,6 +125,11 @@
       ['rings', 'Entfernungsringe', 'Ringe mit km-Beschriftung', false],
       ['places', 'Ortsnamen', 'Städte und Orte auf der Karte', false]
     ],
+    // the aeronautical-chart background (chartbg=1): one switch in the settings, off by default
+    chartbg: {
+      label: 'Luftfahrtkarte als Hintergrund',
+      hint: 'Lufträume, Funkfeuer und Hindernisse, dazu ein Gradnetz wie auf einer Papierkarte. Aus lassen, wenn es zu voll wirkt.'
+    },
     fields: [['callsign', 'Rufzeichen'], ['fl', 'Höhe'], ['gs', 'Tempo'], ['type', 'Muster'], ['route', 'Route'], ['reg', 'Kennz.']],
     unitsHint: 'Piloten rechnen in Fuß und Knoten. 1 Knoten sind etwa 1,85 km/h.',
     radiusHint: (km) => 'So weit schaut der Radar. ' + (km <= 15 ? 'Nah dran: vor allem Flugzeuge direkt über dir.' : (km <= 40 ? 'Gut für Stadt und Flughafen.' : 'Weiter Blick: viele Flugzeuge, dafür kleiner.')),

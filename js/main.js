@@ -103,7 +103,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       if (window.console) console.warn('[MyAirspace] no data:', err && err.message);
     }).then(function () {
       var p = feed.provider();
-      document.getElementById('attrib').textContent = p.attrib + ' · Karte: Natural Earth, OurAirports' + (cfg.public ? ' · öffentliche Proxys (public=1)' : '');
+      document.getElementById('attrib').textContent = p.attrib + ' · Karte: Natural Earth, OurAirports' + (cfg.chartbg ? ' · Lufträume: OpenAIP (CC BY-NC 4.0)' : '') + (cfg.public ? ' · öffentliche Proxys (public=1)' : '');
       var interval = Math.max(cfg.pollSec, p.minPollSec) * 1000;
       if (!cfg.demo && !cfg.proxy) interval = Math.max(interval, 8000); // be gentle with shared public proxies
       // back off on failures (respecting Retry-After), come back to the normal rate gradually
