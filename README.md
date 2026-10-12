@@ -57,6 +57,10 @@ Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil ei
 - **Apple TV:** tvOS hat keinen Webbrowser. Öffne die URL in Safari auf dem Mac, iPad oder iPhone, schalte Safari auf Vollbild und spiegle den Bildschirm per AirPlay auf den Apple TV. Auf dem iPhone/iPad kannst du die Seite auch über *Teilen → Zum Home-Bildschirm* als Vollbild-App speichern.
 - Wo der Browser es kann (Wake Lock API), verhindert die Seite, dass der Bildschirm ausgeht. Gegen Einbrennen auf OLED-Fernsehern verschiebt sich das ganze Bild alle zwei Minuten um ein paar Pixel.
 
+## Vollbild am Computer
+
+Wenn du das Dashboard am Computer im Browser offen hast: Maus bewegen, dann erscheint links der Knopf „Vollbild“. Alternativ schaltet die Taste **F** oder ein Doppelklick um, **Esc** beendet das Vollbild. Auf dem Fernseher und in installierten Apps gibt es den Knopf nicht.
+
 ## Daten
 
 - **adsb.lol** (Standard): offene ADS-B-Daten unter ODbL, ohne Key. Von hier kommen auch die Routen (z. B. `MUC → HAM`).

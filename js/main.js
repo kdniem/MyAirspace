@@ -37,6 +37,8 @@
         ac.dlat = n.lat;
         ac.dlon = n.lon;
       }
+      // a response from a cache can carry older positions than we already have: keep the newer fix
+      if (ac.ts !== undefined && n.ts < ac.ts) { ac.seen = now; return; }
       for (var k in n) if (k !== 'trail') ac[k] = n[k];
       ac.special = MA.special.classify(ac); // once per poll, not per frame
       ac.seen = now;
@@ -81,19 +83,11 @@
   }
 
   function advance(now, dt) {
-    var k = Math.min(1, dt / 600); // ease displayed position towards the prediction
     var trailMs = cfg.trailMin * 60 * 1000;
     visible = [];
     for (var hex in aircraft) {
       var ac = aircraft[hex];
-      var age = Math.min(MAX_EXTRAP_MS, Math.max(0, now - ac.ts));
-      var plat = ac.lat, plon = ac.lon;
-      if (ac.track !== null && ac.gs > 30) {
-        var p = MA.geo.dest(ac.lat, ac.lon, ac.track, ac.gs * 1.852 * age / 3600000);
-        plat = p[0]; plon = p[1];
-      }
-      ac.dlat += (plat - ac.dlat) * k;
-      ac.dlon += (plon - ac.dlon) * k;
+      MA.geo.glide(ac, now, dt, MAX_EXTRAP_MS);
       // the trail is drawn from the smoothed on-screen position, independent of poll timing
       var last = ac.trail[ac.trail.length - 1];
       if (!last || now - last[2] >= TRAIL_STEP_MS) ac.trail.push([ac.dlat, ac.dlon, now]);
