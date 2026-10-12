@@ -108,6 +108,11 @@ window.MA = MA;
     if (f.length) fields = f.slice(0, 5);
   }
 
+  // motion=off|calm|full (js/motion.js): calm by default, off when the system asks for reduced motion
+  var reducedMotion = false;
+  try { reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { reducedMotion = false; }
+  var motionArg = (q.get('motion') || '').toLowerCase();
+  var motion = /^(off|calm|full)$/.test(motionArg) ? motionArg : (reducedMotion ? 'off' : 'calm');
   var view = /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : (S.view || 'auto');
   var THEME = /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (S.theme || (STY[style].theme || 'dark'));
 
@@ -140,6 +145,7 @@ window.MA = MA;
     pressure: pick('pressure', /^(hpa|inhg)$/, 'hpa'),
     timeMode: pick('time', /^(utc|local|both)$/, 'both'),
     brightness: num('brightness', typeof S.brightness === 'number' ? S.brightness : 1, 0.5, 1.2),
+    motion: motion,                             // off | calm | full (js/motion.js)
     orient: 'north',                            // track-up is not built: north-up only
     view: view,                                 // radar | board | airport: one fixed view; auto: the rotation below
     // the rotation, in order: views=radar,board,airport (view=auto). A fixed view is a one-entry list. An empty or

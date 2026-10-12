@@ -84,9 +84,16 @@
         COLS.forEach(function (c) { MA.flap(r.cells[c], texts ? texts[c] : '', anim); });
         var lg = texts ? texts.logo : '';
         if (r.cells.logo._html !== lg) { r.cells.logo._html = lg; r.cells.logo.innerHTML = lg; }
+        // a new passing at the top while the table is up: one light sweep across that row (css/motion.css)
+        if (!animate && i === 0 && e && anim && MA.motion.enabled()) sweepRow(r.el);
       };
       if (animate) later(apply, 350 + i * 110); else apply();
     });
+  }
+
+  function sweepRow(el) {
+    el.className += ' hl';
+    later(function () { el.className = el.className.replace(' hl', ''); }, MA.motion.rowHighlightMs());
   }
 
   function stat(label, value, extra) {

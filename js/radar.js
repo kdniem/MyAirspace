@@ -403,7 +403,7 @@
      than the base one and fading out from the threshold, in the accent colour ("active").
      Drawn per frame over the cached base; `rev` follows the base's drawing direction so the
      dashes line up. Wind-only estimates are dimmer. The designator is redrawn in the accent. */
-  Radar.prototype.drawActive = function (list) {
+  Radar.prototype.drawActive = function (list, now) {
     var ctx = this.ctx, u = this.unit;
     for (var i = 0; i < list.length; i++) {
       var r = list[i];
@@ -417,7 +417,9 @@
       if (ctx.setLineDash) ctx.setLineDash([6 * u, 6 * u]);
       ctx.beginPath();
       if (r.rev) { ctx.moveTo(q[0], q[1]); ctx.lineTo(p[0], p[1]); } else { ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+      ctx.globalAlpha = MA.motion.runwayAlpha(now);   // breathing corridor (js/motion.js)
       ctx.stroke();
+      ctx.globalAlpha = 1;
       if (ctx.setLineDash) ctx.setLineDash([]);
       if (r.end && this.show.rings !== false) {
         var d = this.desig(p, q);
@@ -442,6 +444,7 @@
       var pp = [];
       for (i = 0; i < tr.length; i++) pp.push(self.project(tr[i][0], tr[i][1]));
       pp.push(cur);
+      MA.motion.growTrail(pp, cur, now, ac.trailT0);   // a new trail draws on (js/motion.js)
       var last = pp.length - 1;
       for (i = 0; i < last; i++) {
         var fr = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
@@ -690,8 +693,9 @@
       var wxl = MA.wxradar.layer(this);
       if (wxl) { ctx.globalAlpha = C.wxAlpha; ctx.drawImage(wxl, 0, 0, this.w, this.h); ctx.globalAlpha = 1; }
     }
-    if (active && active.length) this.drawActive(active);
+    if (active && active.length) this.drawActive(active, now);
     if (show.ground !== false && ground && ground.length) this.drawGround(ground);
+    MA.motion.sweep(ctx, this.cx, this.cy, this.ringPx, now, C.level, u);   // radar sweep (js/motion.js), off = no call work
 
     // home: static reference symbol (circle, cross hairs, centre dot)
     ctx.strokeStyle = C.home;
@@ -708,7 +712,7 @@
     ctx.arc(this.cx, this.cy, 2 * u, 0, PI * 2);
     ctx.fill();
 
-    var blink = 0.6 + 0.4 * Math.sin(now * PI / 500);      // emergency squawk: slow blink
+    var blink = MA.motion.alertAlpha(now);                 // emergency squawk: slow frame pulse (js/motion.js), 1 while off
     var items = [], pts = [], badges = [];
 
     // high traffic first so low (interesting) traffic draws on top
@@ -720,6 +724,7 @@
       var featured = ac.hex === featuredHex;
       var sp = ac.special, spCol = sp ? (sp.alert ? C.alert : C.special) : null;
       var baseA = ((featured || sp) ? 1 : (high ? C.high : 1)) * (typeof ac.fade === 'number' ? ac.fade : 1);   // fade: stale data, see main.js
+      baseA *= MA.motion.arrivalFade(now, ac.blipAt);                                                          // new arrival fades in
       var col = featured ? C.target : C.level;
 
       self.drawTrail(ac, col, baseA, now);
@@ -755,6 +760,7 @@
       if (sp) self.drawBrackets(p[0], p[1], reach * 1.45, rgba(spCol, sp.alert ? blink : 1), 1.6 * u * lw);
 
       self.drawPlane(gk, p[0], p[1], ac.track, size, rgba(sp ? spCol : col, 1), baseA);
+      MA.motion.drawArrival(ctx, p[0], p[1], u, now, ac.blipAt, C.level);   // ring of a new arrival, once
 
       var onScreen = p[0] > 0 && p[0] < self.w && p[1] > 0 && p[1] < self.areaBottom + self.h * 0.02;
       if ((self.cfg.labels || featured) && onScreen) {
