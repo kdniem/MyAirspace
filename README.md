@@ -12,6 +12,11 @@ Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace
 
 **Als App:** Die Seite hat ein Web-App-Manifest. Auf iPad/iPhone in Safari *Teilen → Zum Home-Bildschirm*, auf Android *Zum Startbildschirm hinzufügen*. Die App startet im Vollbild mit deinen zuletzt geöffneten Einstellungen. Ein kleiner Service Worker (`sw.js`) hält nur die App-Dateien offline vor, nie Flugdaten.
 
+## Hinweise
+
+- **Keine Navigation:** MyAirspace ist eine Anzeige für Neugier und Ambiente. Es ist kein Navigations‑, Flugsicherungs‑ oder Sicherheitsinstrument und darf dafür nicht verwendet werden.
+- **Stilnamen:** Die Stile `airbus` und `boeing` sind nur optische Vorbilder. Sie stehen in keiner Verbindung zu Airbus oder Boeing, deren Namen und Marken gehören den jeweiligen Firmen.
+
 ## Aufrufen
 
 ```
