@@ -521,13 +521,14 @@ async function diagPanelCase(browser) {
       if (!p) return null;
       const box = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
       return { panel: box(p), brand: box(document.querySelector('.brand')), meta: box(document.querySelector('#top .meta')),
-        board: box(document.getElementById('board')), text: p.textContent, display: getComputedStyle(p).display };
+        board: box(document.getElementById('board')), text: p.textContent, display: getComputedStyle(p).display, fonts: document.fonts.status };
     });
     if (!info) problems.push('?diag=1 shows no diagnostics panel');
     else {
       if (!/\bboot\b/.test(info.text)) problems.push('diagnostics panel has no boot event');
       const hit = (a, b) => a && b && Math.min(a.r, b.r) - Math.max(a.l, b.l) > 1 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 1;
-      if (hit(info.panel, info.brand) || hit(info.panel, info.meta)) problems.push('diagnostics panel overlaps the header');
+      const fmt = (b) => b ? [b.l, b.t, b.r, b.b].map((v) => Math.round(v)).join(',') : 'none';
+      if (hit(info.panel, info.brand) || hit(info.panel, info.meta)) problems.push('diagnostics panel overlaps the header (panel l,t,r,b ' + fmt(info.panel) + '; brand ' + fmt(info.brand) + '; meta ' + fmt(info.meta) + '; fonts ' + info.fonts + ')');
       if (hit(info.panel, info.board)) problems.push('diagnostics panel overlaps the board');
       if (info.panel.r > 1280 || info.panel.b > 720 || info.panel.l < 0 || info.panel.t < 0) problems.push('diagnostics panel leaves the 1280x720 screen');
     }
