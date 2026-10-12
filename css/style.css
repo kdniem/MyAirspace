@@ -660,6 +660,7 @@ html, body {
 [data-style="nvg-night"] #board { border: 0; border-top: 1px solid var(--line); }
 [data-style="nvg-night"] .wx, [data-style="nvg-night"] .clock, [data-style="nvg-night"] .brand-place { text-shadow: none; }
 [data-style="nvg-night"] .lv-table { border: 0; border-top: 1px solid var(--line); }
+[data-style="nvg-night"] .utc { margin-top: 1.5vh; }
 
 /* tactical-olive: a grid under the board and table, boxed stencil labels, accent frame */
 [data-style="tactical-olive"] #board {
