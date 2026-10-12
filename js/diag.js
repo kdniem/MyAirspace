@@ -15,7 +15,7 @@
    (section Erweitert) the log can be downloaded as .txt (user click only) or cleared; ?diag=export opens that section. */
 (function () {
   var MA = window.MA = window.MA || {};
-  var VERSION = 'v16';          // must match VERSION in sw.js (tools/tests/diag-test.cjs checks it)
+  var VERSION = 'v17';          // must match VERSION in sw.js (tools/tests/diag-test.cjs checks it)
   var KEY = 'ma.diag';
   var MAX_EVENTS = 500;
   var KEEP_MS = 72 * 3600 * 1000;

@@ -50,7 +50,7 @@
   var REGIONAL = /^(E1\d\d|E2\d\d|E7\d\d|E75[LS]|E29\d|CRJ[1-9X]|CRJX|BCS[13]|SU95|AR\d\d|RJ\d\d|F100|F70|DH8[A-D]x|MD8\d|MD9\d|B717|BAE\d|B461|B462|B463)$/;
   var PROP = /^(AT[4-7]\d|AT7[2-6]|DH8[A-D]|DHC[5-8]|SB20|SF34|F50|F27|JS\d\d|B190|E120|D328|C130|C30J|A400|PC12|C208|TBM\d|P180|BE20|BE9\w|SW\d|AN2\d|L410|DO28|C295|C212|CN35)$/;
   var SMALL = /^(C1\d\d|C2[0-4]\d|P28\w|PA\d\d|DA\d\d|SR2\d|M20\w|BE3\d|BE5\d|BE6\d|RV\d|AA5|AC\d\d|G115|TB\d\d|S22T|SIRA|PC6|PC7|JAB\d|FK\d\d|DR40|C77R|PA46|AT3\d|COL\d|CH\d\d|DV20|ULAC|GLID|H47|TRIN|CRUZ|SLG\w|ASK\d|DISC|LS\d|DG\d\d|ASG\w|ARCE)$/;
-  var FIGHTER = /^(EUFI|F16|F35|F18|F15|TOR|F14|M346|HAWK|T38|J\d\d|MIG\w|SU\d\d|RFAL|GR4|F22|A10)$/;
+  var FIGHTER = /^(EUFI|F16|F35|F18|F15|TOR|F14|M346|HAWK|T38|J\d\d|MIG\w|SU(?!95)\d\d|RFAL|GR4|F22|A10)$/;   // SU95 is the Superjet (regional)
 
   // glyph kind from the ICAO type designator; the ADS-B emitter category helps when the type is unknown
   function kind(ac) {
