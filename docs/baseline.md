@@ -40,7 +40,15 @@ Gesamt: 12 Schritte, 0 Fehlschläge. Hinweis: Der Proxy-Test läuft in `run-all.
 
 Keine. Im Baseline-Stand gibt es weder Fehlschläge noch bekannte Ausnahmen.
 
-## Phase-2-Status
+## Phase-2-Status (nach Abschluss von P0 bis P4)
 
-- P2.1 (Korrekturen aus P1 umsetzen): siehe Abschnitt unten, Stand nach Abschluss der P1-Arbeit.
-- P2.2 (Kontrast nach jeder Frontend-Änderung): Kontrasttest nach jeder Frontend-Änderung ausgeführt, siehe Commits.
+- **P2.1 (Korrekturen aus P1 umsetzen):** eine Korrektur. P1.2 fand SU95 als Kampfflugzeug gezeichnet; behoben mit Test `tools/tests/glyph-test.cjs`. Die übrigen Befunde aus `docs/glyph-check.md` (B350, GL5T, F18S) sind dokumentiert, aber nicht geändert: Sie sind Typ-Erweiterungen bzw. unverifizierte Designatoren, keine offensichtlichen Regex-Fehler.
+- **P2.2 (Kontrast nach jeder Frontend-Änderung):** nach jeder Frontend-Änderung ausgeführt, zuletzt mit der neuen Zeile "Degraded-data notice" (`--dim` auf `--bg`): alle Kombinationen über dem Ziel, 140 Kombinationen, 7153 Prüfungen.
+- **P2.3 (Hinweis bei Datenausfall):** umgesetzt, siehe `js/nodata.js`. Die Browser-Suite prüft Erscheinen und Verschwinden bei geblockter Quelle (`nodata_notice`).
+- **P1.3 (Uptime-Log):** kein neuer Logger. `js/diag.js` um Wechsel auf Ausweichquellen (`fb`/`pri`) ergänzt, weil dieser Teil fehlte.
+
+## Schlusslauf am Branch-Ende
+
+- `run-all.mjs --no-browser`: 14 Schritte, alle bestanden (inkl. neuer Schritte glyph-test und nodata-test).
+- `browser.mjs` (vollständig): `browser: 128 page loads in 138.1 s (concurrency 4), 0 failing check(s), 0 known issue(s)`, Exit 0. Das sind 127 Seitenläufe aus dem Baseline-Lauf plus der neue Fall `nodata_notice`.
+- Kontrast: 140 Kombinationen, 7153 Prüfungen, alle über dem Ziel.
