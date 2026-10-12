@@ -176,6 +176,26 @@ window.MA = MA;
     };
     for (var k in st.css) css[k] = st.css[k];
 
+    // chart background (chartbg=1, js/chart.js): paper tone, airspace classes, navaids, obstacles.
+    // Lines are checked against the paper at 3:1, labels at 4.5:1 (ensure moves them towards black or white).
+    // The 'chart' style is already a paper look; the other styles get a muted, slightly darker tone.
+    // On dark palettes the class colours are pulled towards the paper so the chart stays under the traffic.
+    var paper = light ? P.bg : mix(P.bg, P.ink, 0.06), mute = light ? 0 : 0.45;
+    function cls(col) { return ensure(mute ? mix(col, paper, mute) : col, [paper], 3); }
+    var chart = {
+      paper: paper,
+      grid: ensure(mix(paper, P.ink, 0.4), [paper], 3),
+      ctl: cls(P.target),                                      // controlled airspace: CTR, TMA, CTA, ATZ …
+      res: cls(P.warning),                                     // restricted, TRA, TSA, MTA, alert, warning areas
+      dng: cls(P.special),                                     // danger areas
+      pro: cls(P.warning),                                     // prohibited areas
+      oth: cls(P.quiet),                                       // other: parachute zones, protected areas …
+      nav: ensure(mix(P.ink, P.target, 0.35), [paper], 4.5),   // VOR, NDB, DME symbols and labels
+      obs: ensure(P.ink, [paper], 3),                          // obstacles
+      label: ensure(P.ink, [paper], 4.5),
+      labelDim: ensure(mix(paper, P.ink, 0.72), [paper], 4.5)
+    };
+
     var wcol = mix(P.bg, P.water, br > 1 ? 1 : Math.max(0.35, br));
     var c = {
       bg: P.bg,
@@ -199,7 +219,8 @@ window.MA = MA;
       high: light ? 0.6 : 0.55,
       plane: st.plane || 1, trail: 'line', trailW: st.trailW || 1, lw: st.lw || 1, badgeR: st.br || 0, badgeMono: st.badge === 'mono',
       badgeBg: badgeBg, badgeFg: badgeFg, badgeEdge: badgeEdge, weight: st.weight || 500, font: fam,
-      bgHex: P.bg, panelHex: P.panel, accentHex: acc, targetHex: P.target, specialHex: P.special, warningHex: P.warning
+      bgHex: P.bg, panelHex: P.panel, accentHex: acc, targetHex: P.target, specialHex: P.special, warningHex: P.warning,
+      chart: chart
     };
     return { css: css, c: c, style: style, theme: light ? 'light' : 'dark', font: font, fam: fam };
   }

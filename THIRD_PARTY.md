@@ -2,6 +2,8 @@
 
 MyAirspace selbst steht unter der MIT-Lizenz (siehe [LICENSE](LICENSE)). Die folgenden Daten, Dienste und Bestandteile stammen von Dritten.
 
+**Ausnahme:** `data/chart-features.js` (Lufträume von OpenAIP) steht unter CC BY-NC 4.0, nicht unter MIT. Kommerzielle Nutzung oder Weiterverbreitung mit dieser Datei ist nicht erlaubt. Für eine kommerzielle Fassung die Datei und die Option `chartbg` entfernen.
+
 ## Datenquellen (zur Laufzeit abgefragt)
 
 | Quelle | Verwendung | Lizenz / Bedingungen |
@@ -16,7 +18,8 @@ MyAirspace selbst steht unter der MIT-Lizenz (siehe [LICENSE](LICENSE)). Die fol
 
 | Daten | Verwendung | Lizenz |
 |-------|------------|--------|
-| [OurAirports](https://ourairports.com) | Pisten und Flughäfen (`data/geo-features.js`) | Gemeinfrei (Public Domain) |
+| [OurAirports](https://ourairports.com) | Pisten und Flughäfen (`data/geo-features.js`), Funkfeuer (VOR, NDB, DME) und Missweisung der Flughäfen (`data/chart-features.js`) | Gemeinfrei (Public Domain) |
+| [OpenAIP](https://www.openaip.net) | Lufträume (Kontrollzonen, Sperr- und Gefahrengebiete u. a.) und Hindernisse ab 150 m (Koordinaten auf vier Nachkommastellen gerundet, Namen auf 28 Zeichen gekürzt) (`data/chart-features.js`, nur mit `chartbg=1`) | **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**, <https://creativecommons.org/licenses/by-nc/4.0/>. Namensnennung in der App (Fußzeile): „Lufträume: OpenAIP (CC BY-NC 4.0)“. Die App wird kostenlos verbreitet und die Daten werden nicht verkauft. Quelle: <https://www.openaip.net/data/exports> (Länder DE, DK, NL, SE; Umkreis 75 km um HAM, FRA, FMO, CPH). Die Daten wurden nicht verändert, nur ausgewählt, vereinfacht (Douglas-Peucker, 0,2 km) und auf zwei Nachkommastellen gerundet. |
 | [Natural Earth](https://www.naturalearthdata.com) | Flüsse und Küsten (`data/geo-features.js`) | Gemeinfrei (Public Domain) |
 | [OpenStreetMap](https://www.openstreetmap.org/copyright) | Vorfelder, Rollwege, Terminals, Gates u. a. der Flughäfen (`data/airport-detail.js`) | Daten © OpenStreetMap-Mitwirkende, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) |
 
@@ -54,3 +57,7 @@ Es sind **keine** Logos oder Markenzeichen von Fluggesellschaften enthalten und 
 ## Schriften
 
 - **IBM Plex Mono** (© IBM Corp.) steht unter der SIL Open Font License 1.1 (<https://openfontlicense.org>). Die Schriften werden vom eigenen Server ausgeliefert; die jeweiligen Copyright-Hinweise und die OFL-Lizenztexte gehören zu den Schriftdateien und müssen bei der Weitergabe mitgeliefert werden.
+
+## Luftfahrtkarte im Hintergrund
+
+Die Option `chartbg=1` ist eine eigene Zeichnung auf Basis der oben genannten offenen Daten (OpenAIP, OurAirports). Es werden **keine** amtlichen oder kommerziellen Luftfahrtkarten (DFS, ICAO, Jeppesen, NACO, Navigraph u. a.) kopiert, nachgezeichnet oder als Vorlage benutzt. Gradnetz, Symbole und Farben sind selbst gestaltet (`js/chart.js`, Farbrollen in `js/styles.js`). Die Karte ist nicht zur Navigation geeignet.
