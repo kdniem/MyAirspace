@@ -1,0 +1,4 @@
+[
+  { "match": "clipped: #b-(spd-sub|dir|reg|airline|vs|badge) ", "note": "board sub-lines (.sub: type+registration, kt+km/h, unit+bearing, ...) can be a few px wider than their cell and end in an ellipsis; css/style.css .sub and the .cell-* flex basis" },
+  { "match": "clipped: \\.c\\.c-airline", "note": "Anzeigetafel airline column is ellipsized for long names; css/style.css .c-airline (flex 12)" }
+]
