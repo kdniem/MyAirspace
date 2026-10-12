@@ -140,4 +140,5 @@
   };
 
   MA.Board = Board;
+  MA.flap = flap;
 })(window.MA);

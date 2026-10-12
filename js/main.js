@@ -133,6 +133,8 @@
       else if (status.lastOk) board.empty('RUHE', 'Kein Flugverkehr im Umkreis');
       else board.empty('------', 'Verbinde…');
       updateSummary(now);
+      MA.log.observe(visible, now);
+      MA.views.tick(now);
     }
     requestAnimationFrame(frame);
   }
