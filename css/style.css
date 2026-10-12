@@ -9,6 +9,8 @@
   --faint: #2a2e33;
   --amber: #ffb547;
   --cyan: #63d3e8;
+  --violet: #c78bff; /* special aircraft */
+  --red: #ff5d5d;    /* emergency squawks */
   --safe-x: 3.6vw;   /* overscan safe area */
   --safe-y: 3.6vh;
   --led: "Doto", "DotGothic16", "IBM Plex Mono", ui-monospace, monospace;
@@ -194,6 +196,10 @@ html, body {
   letter-spacing: 0.3em;
 }
 
+/* special aircraft (js/special.js) */
+.badge.special { border-color: var(--violet); color: var(--violet); }
+.badge.alert { border-color: var(--red); color: var(--red); }
+
 .pager {
   position: absolute;
   top: 1.2vh;
@@ -219,6 +225,45 @@ html, body {
   color: #3d4146;
   text-transform: uppercase;
 }
+
+/* ---------- special aircraft toast ----------
+   left-aligned below the top bar: clear of the radar's N label and of the
+   traffic around the centre / north of the main ring */
+
+.toast {
+  position: absolute;
+  top: calc(var(--safe-y) + 11vh);
+  left: var(--safe-x);
+  transform: translateY(-1vh);
+  padding: 1.1vh 1.6vw;
+  background: rgba(10, 11, 13, 0.92);
+  border: 1px solid rgba(199, 139, 255, 0.45);
+  border-radius: 1vh;
+  box-shadow: 0 0 3vh rgba(199, 139, 255, 0.16);
+  font-size: 1.75vh;
+  letter-spacing: 0.16em;
+  color: var(--ink);
+  white-space: nowrap;
+  text-transform: uppercase;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1.2s ease, transform 1.2s ease;
+}
+.toast.on { opacity: 1; transform: translateY(0); }
+.toast-mark { color: var(--violet); margin-right: 0.8em; }
+.toast-label {
+  font-family: var(--led);
+  font-weight: 900;
+  font-size: 2.6vh;
+  color: var(--violet);
+  text-shadow: 0 0 1.2vh rgba(199, 139, 255, 0.45);
+  letter-spacing: 0.06em;
+  margin-right: 0.7em;
+  vertical-align: -0.12em;
+}
+.toast.alert { border-color: rgba(255, 93, 93, 0.6); box-shadow: 0 0 3vh rgba(255, 93, 93, 0.2); }
+.toast.alert .toast-mark, .toast.alert .toast-label { color: var(--red); }
+.toast.alert .toast-label { text-shadow: 0 0 1.2vh rgba(255, 93, 93, 0.5); }
 
 /* message overlay on the board (no data / error) */
 .board-msg .cell { opacity: 0.35; }

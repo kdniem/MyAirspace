@@ -98,11 +98,16 @@
     var leg = MA.data.leg(ac);  // current leg only, e.g. NCE → HAM of HAM-NCE-HAM
     flap(e.route, leg ? leg[0].code + ' → ' + leg[1].code : '--- → ---');
     var badge = '', local = localAirports(cfg);
-    if (f.isAirbusSpecial(ac)) badge = '<span class="badge">AIRBUS</span>';
-    else if (leg) {
+    if (leg) {
       if (local[leg[1].code]) badge = 'Anflug ' + esc(leg[1].code);
       else if (local[leg[0].code]) badge = 'Abflug ' + esc(leg[0].code);
       else badge = 'Überflug';
+    }
+    // special aircraft (js/special.js, incl. AIRBUS): label badge in front of the leg text
+    var sp = ac.special;
+    if (sp) {
+      var cls = sp.alert ? ' alert' : (sp.key === 'airbus' ? '' : ' special');
+      badge = '<span class="badge' + cls + '">' + esc(sp.label) + '</span>' + (badge ? ' ' + badge : '');
     }
     setSub(e.badge, badge);
 
