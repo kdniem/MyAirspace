@@ -15,7 +15,7 @@ Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace
 ## Aufrufen
 
 ```
-https://<dein-github-name>.github.io/MyAirspace/?lat=53.66&lon=10.05&r=20&label=Langenhorn
+https://<dein-github-name>.github.io/MyAirspace/?lat=53.5511&lon=9.9937&label=Hamburg
 ```
 
 Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lesezeichen bzw. Startseite im TV-Browser.
@@ -34,8 +34,9 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `labels`   | `1`             | Beschriftungen an den Flugzeugen (`0` = aus) |
 | `places`   | `1`             | Ortsnamen auf der Karte (`0` = aus) |
 | `theme`    | `dark`          | Darstellung: `dark` (dunkel), `light` (hell, Papier-Optik) oder `auto` (hell von Sonnenauf- bis -untergang am Standort, sonst dunkel) |
-| `proxy`    | –               | Eigener CORS-Proxy, siehe [Proxy](#proxy-cors) |
-| `provider` | `auto`          | Datenquelle festlegen: `adsblol`, `airplaneslive`, `opensky` |
+| `proxy`    | –               | Nur `off` oder der eigene Proxy erlaubt, siehe [Proxy](#proxy-cors) |
+| `public`   | `0`             | `1` erlaubt öffentliche CORS-Proxys und die Quellen airplanes.live/OpenSky (Datenschutz beachten) |
+| `provider` | `auto`          | Datenquelle festlegen: `adsblol`; `airplaneslive`, `opensky` nur mit `public=1` |
 | `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
 | `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht |
 | `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
@@ -67,23 +68,34 @@ Wenn du das Dashboard am Computer im Browser offen hast: Maus bewegen, dann ersc
 
 ## Daten
 
-- **adsb.lol** (Standard): offene ADS-B-Daten unter ODbL, ohne Key. Von hier kommen auch die Routen (z. B. `MUC → HAM`).
-- **airplanes.live**: Ersatz, wenn adsb.lol nicht antwortet.
-- **OpenSky Network**: letzte Rückfallebene. Anonym gibt es nur wenige Abfragen pro Tag, deshalb wird hier höchstens alle 30 s abgefragt.
+- **adsb.lol** (Standard, einzige Quelle ohne `public=1`): offene ADS-B-Daten unter ODbL, ohne Key. Von hier kommen auch die Routen (z. B. `MUC → HAM`).
+- **airplanes.live** und **OpenSky Network**: nur mit `?public=1` (Ersatz, wenn adsb.lol nicht antwortet; OpenSky anonym höchstens alle 30 s). Über den eigenen Proxy funktionieren sie nicht.
 
-Fällt eine Quelle aus, nimmt die App automatisch die nächste und versucht es nach fünf Minuten wieder mit der ersten. Zwischen zwei Abfragen werden die Positionen anhand von Kurs und Geschwindigkeit weitergerechnet, deshalb bewegen sich die Flugzeuge flüssig.
+Mit `public=1` nimmt die App bei einem Ausfall automatisch die nächste Quelle und versucht es nach fünf Minuten wieder mit der ersten. Zwischen zwei Abfragen werden die Positionen anhand von Kurs und Geschwindigkeit weitergerechnet, deshalb bewegen sich die Flugzeuge flüssig. Bei kurzen Ausfällen bleiben die zuletzt bekannten Flugzeuge sichtbar (bis zu 20 s weitergerechnet, nach 60 s ausgeblendet).
 
 ### Proxy (CORS)
 
-Keine der drei Quellen erlaubt Abfragen direkt aus dem Browser (CORS). Die App leitet die Abfragen deshalb um:
+adsb.lol und die METAR-Quelle erlauben keine Abfragen direkt aus dem Browser (CORS). Die App leitet die Abfragen deshalb über einen eigenen Proxy:
 
-- **Standard: eigener Proxy auf Vercel** unter `https://myairspace-nu.vercel.app/api/proxy` ([`api/proxy.js`](api/proxy.js), in `js/config.js` als `DEFAULT_PROXY`). Er reicht nur die drei Flugdaten-APIs weiter, nur für `kdniem.github.io`, `*.vercel.app` und `localhost`, mit 3 s CDN-Cache. adsb.lol funktioniert darüber; airplanes.live (403) und OpenSky (Timeout) nicht, für sie greift der Rückfall. Vercel deployt jeden Push auf `main` automatisch. Einrichtung bei einem neuen Konto:
+- **Eigener Proxy auf Vercel** unter `https://myairspace-nu.vercel.app/api/proxy` ([`api/proxy.js`](api/proxy.js), `DEFAULT_PROXY` in `js/pwa.js`). Vercel deployt jeden Push auf `main` automatisch. Fällt der Proxy aus (429, 5xx, Netzwerk), versucht die App es nach 1,5 s einmal erneut. Einrichtung bei einem neuen Konto:
   1. Auf [vercel.com](https://vercel.com) mit **Continue with GitHub** anmelden.
   2. **Add New → Project**, das Repo `kdniem/MyAirspace` importieren, Framework **Other**, nichts weiter einstellen, **Deploy**.
-  3. Die Adresse `https://<projekt>.vercel.app/api/proxy` in `js/config.js` als `DEFAULT_PROXY` eintragen (oder per `?proxy=…` in der URL).
-- **Rückfall:** die öffentlichen CORS-Proxies `allorigins.win` und `codetabs.com`. Mit `?proxy=off` nutzt die App nur diese. Den Standort schickt die App nur auf etwa 1 km gerundet ab.
-- **Routen** (`MUC → HAM`) kommen direkt von adsb.lol, dieser Endpunkt erlaubt Browser-Abfragen.
+  3. Die Adresse `https://<projekt>.vercel.app/api/proxy` in `js/pwa.js` als `DEFAULT_PROXY` eintragen.
+- `?proxy=` wird nur akzeptiert, wenn der Wert `DEFAULT_PROXY` ist, `off` (kein Proxy, nur direkte Abfragen; die schlagen meist an CORS fehl) oder eine `https://…vercel.app/api/proxy`-Adresse auf dem Host des eigenen Projekts. Alles andere wird ignoriert.
+- **Routen** (`MUC → HAM`) fragt die App direkt bei adsb.lol ab, dieser Endpunkt erlaubt Browser-Abfragen; der eigene Proxy ist der Rückfall.
+- **Opt-in `?public=1`:** zusätzlich werden die öffentlichen CORS-Proxys `allorigins.win` und `codetabs.com` sowie die Quellen airplanes.live und OpenSky benutzt. Datenschutzhinweis: Diese Dritten sehen dann jede Abfrage samt (auf etwa 1 km gerundetem) Standort und deiner IP-Adresse. Die App zeigt es in der Fußzeile an („öffentliche Proxys“) und merkt sich die gewählte Route nicht dauerhaft.
 - Ein Cloudflare Worker eignet sich **nicht** als Proxy: adsb.lol drosselt Anfragen aus Cloudflare Workers (429), airplanes.live verlangt eine Registrierung (403), OpenSky ist nicht erreichbar (522). Stand Oktober 2026.
+
+**Sicherheit des Proxys:** Er erlaubt nur `https` ohne Port und ohne Zugangsdaten in der Adresse, nur diese Host-/Pfad-Paare, alles andere ergibt 403:
+
+| Host | Pfad |
+|------|------|
+| `api.adsb.lol` | `/v2/point/…`, `/api/0/route/…` |
+| `api.airplanes.live` | `/v2/point/…` |
+| `opensky-network.org` | `/api/states/all` |
+| `aviationweather.gov` | `/api/data/metar` |
+
+Weitere Schutzmaßnahmen: nur die Herkunft `kdniem.github.io`, `myairspace-nu.vercel.app` und `localhost`/`127.0.0.1` (Entwicklung); Weiterleitungen des Ziels werden nicht verfolgt; Antworten müssen gültiges JSON sein und werden immer als `application/json` mit `nosniff` und strenger CSP ausgeliefert (Fehler nie als HTML); Fehlerantworten enthalten keinen Inhalt des Ziels; Koordinaten in `/v2/point/` werden serverseitig auf 2 Nachkommastellen gerundet und der Radius auf 250 nm begrenzt. Die App schickt den Standort ohnehin nur auf etwa 1 km gerundet ab. Rechtliches: [LICENSE](LICENSE), [THIRD_PARTY.md](THIRD_PARTY.md), [datenschutz.html](datenschutz.html).
 
 Farben: **Cyan** heißt sinkend (Anflug), **Bernstein** steigend (Abflug), **Weiß** Reiseflug. Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der LED-Tafel ein eigenes Abzeichen.
 
@@ -124,8 +136,8 @@ css/style.css          Farben als CSS-Variablen (dunkel und hell), Dot-Matrix-Op
 tools/contrast.mjs     Kontrastprüfung (WCAG) für beide Themes
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 tools/build-geo.py     Generator für die Kartendaten
-api/proxy.js           CORS-Proxy als Vercel Function
-js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen
+api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)
+js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen; DEFAULT_PROXY
 js/config.js           URL-Parameter
 js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme vor dem ersten Bild
 js/hint.js             Hinweis auf setup.html, wenn kein Standort in der URL steht

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="dark">
+<title>Datenschutz · MyAirspace</title>
+<style>
+  :root { --bg: #050607; --panel: #0a0b0d; --ink: #e9e4d8; --dim: #979ba0; --line: #22262b; --amber: #ffb547; --cyan: #63d3e8; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; -webkit-text-size-adjust: 100%; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { margin: 8px 0 4px; font-size: clamp(26px, 7vw, 38px); letter-spacing: 0.04em; text-transform: uppercase; color: var(--amber); }
+  h2 { margin: 12px 0 8px; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cyan); }
+  p, li { margin: 8px 0; }
+  ul { padding-left: 1.2em; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 4px 16px 12px; margin-top: 16px; }
+  a { color: var(--cyan); }
+  a:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+  .dim { color: var(--dim); font-size: 13px; }
+  code { color: var(--amber); }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">&larr; Zur App</a></p>
+  <h1>Datenschutz</h1>
+  <p class="dim">MyAirspace ist ein privates, nicht kommerzielles Hobbyprojekt: ein ruhiges Flugradar für den Fernseher.</p>
+
+  <section>
+    <h2>Verantwortlich</h2>
+    <!-- TODO owner: add contact -->
+    <p>Verantwortlich: siehe GitHub-Profil des Repository-Inhabers (<a href="https://github.com/kdniem" rel="noopener noreferrer">github.com/kdniem</a>)</p>
+  </section>
+
+  <section>
+    <h2>Kurzfassung</h2>
+    <ul>
+      <li>Keine Cookies, kein Tracking, keine Werbung, keine Analyse-Dienste.</li>
+      <li>Keine Konten und keine Anmeldung.</li>
+      <li>Einstellungen und das Überflug-Protokoll bleiben im Browser auf deinem Gerät.</li>
+      <li>Dein Standort steht nur in der Adresse (URL), die du selbst aufrufst, und wird für Abfragen auf etwa 1 km gerundet.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Hosting der Seiten (GitHub Pages)</h2>
+    <p>Die App wird über GitHub Pages ausgeliefert (GitHub Inc., eine Tochter der Microsoft Corporation, USA). Beim Aufruf verarbeitet der Hoster technisch notwendige Verbindungsdaten wie IP-Adresse, Datum und Uhrzeit, angefragte Datei und Browserkennung in Server-Logs. Auf diese Logs habe ich keinen Zugriff. Die Parameter in der Adresse (z. B. <code>?lat=…&amp;lon=…</code>) werden von der Seite im Browser gelesen; ob sie in Server-Logs des Hosters auftauchen, bestimmt der Hoster.</p>
+  </section>
+
+  <section>
+    <h2>Proxy (Vercel)</h2>
+    <p>Flugdaten- und Wetter-Abfragen laufen über einen eigenen Proxy auf Vercel (Vercel Inc., USA; Funktion in der Region Frankfurt). Dabei werden verarbeitet: die angefragte Adresse mit der auf etwa 1 km gerundeten Position und dem Radius, deine IP-Adresse und technische Verbindungsdaten. Der Proxy leitet die Abfrage an die Datenquellen weiter und speichert selbst keine Daten; Vercel kann Anfragen kurzzeitig protokollieren. Antworten werden für wenige Sekunden zwischengespeichert, damit nicht jede Abfrage die Quelle belastet.</p>
+  </section>
+
+  <section>
+    <h2>Datenquellen</h2>
+    <p>Die Datenquelle sieht je nach Weg die Abfrage mit der gerundeten Position:</p>
+    <ul>
+      <li><strong>adsb.lol</strong> (Flugzeugpositionen und Routen). Routen-Abfragen schickt dein Browser direkt an adsb.lol, dabei sieht adsb.lol deine IP-Adresse sowie Rufzeichen und Position des Flugzeugs.</li>
+      <li><strong>aviationweather.gov</strong> (NOAA, METAR-Wetterberichte), über den Proxy.</li>
+      <li>Nur wenn du ausdrücklich <code>?public=1</code> in der Adresse verwendest: <strong>airplanes.live</strong>, <strong>OpenSky Network</strong> sowie die öffentlichen Proxy-Dienste <strong>allorigins.win</strong> und <strong>codetabs.com</strong>. Diese Dritten sehen dann deine Abfragen und IP-Adresse. Ohne <code>public=1</code> werden sie nicht kontaktiert.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Einrichtungsseite und Nominatim</h2>
+    <p>Nur auf der Einrichtungsseite (<a href="setup.html">setup.html</a>) werden Suchtexte und, wenn du den Ort aus dem Standort bestimmen lässt, die auf etwa 1 km gerundete Position an Nominatim (OpenStreetMap Foundation, Großbritannien) gesendet, um Orte zu finden und einen Ortsnamen zu ermitteln. Dabei sieht Nominatim deine IP-Adresse. Auf der Radar-Seite (<a href="./">Startseite</a>) findet das nicht statt. Die Standortfreigabe deines Browsers wird nur auf der Einrichtungsseite auf deinen Klick hin abgefragt; das Ergebnis wird nicht gespeichert.</p>
+    <p>Schaltest du die Rundung aus, steht dein genauer Standort in der Adresse und damit auch in Lesezeichen, QR-Codes und gegebenenfalls Logs.</p>
+  </section>
+
+  <section>
+    <h2>Schriften</h2>
+    <p>Schriften werden vom eigenen Server geladen. Es werden keine Schriften von Google oder anderen Anbietern nachgeladen.</p>
+  </section>
+
+  <section>
+    <h2>Speicher im Browser</h2>
+    <p>Die App nutzt den lokalen Speicher deines Browsers (<code>localStorage</code>) für deine Einstellungen (zuletzt geöffnete Adresse für die Home-Bildschirm-App) und für ein Überflug-Protokoll der letzten zwei Tage für die Anzeigetafel. Diese Daten verlassen dein Gerät nicht. Ein Service Worker legt die App-Dateien (nie Flugdaten) für den Offline-Start ab. Du kannst alles in den Browser-Einstellungen unter „Websitedaten“ löschen. Es werden keine Cookies gesetzt.</p>
+  </section>
+
+  <section>
+    <h2>Rechtsgrundlagen</h2>
+    <p>Die Verarbeitung technischer Verbindungsdaten beim Hosting, im Proxy und bei den Datenquellen erfolgt auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am sicheren und funktionsfähigen Betrieb der App). Der Zugriff auf den Gerätespeicher ist für den vom Nutzer gewünschten Dienst unbedingt erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG).</p>
+  </section>
+
+  <section>
+    <h2>Deine Rechte</h2>
+    <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch (Art. 15 bis 21 DSGVO) sowie das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren. Da ich selbst keine personenbezogenen Daten speichere, richten sich Auskunfts- und Löschwünsche zu Server-Logs in der Regel an die genannten Hoster und Datenquellen.</p>
+  </section>
+
+  <section>
+    <h2>Lizenzen</h2>
+    <p>Der Quelltext steht unter der MIT-Lizenz. Daten und Bestandteile Dritter: <a href="https://github.com/kdniem/MyAirspace/blob/main/THIRD_PARTY.md" rel="noopener noreferrer">THIRD_PARTY.md</a>.</p>
+  </section>
+</main>
+</body>
+</html>

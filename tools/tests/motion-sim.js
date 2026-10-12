@@ -12,6 +12,8 @@ async function run(mode, opt) {
   let payload = null;
   ctx.fetch = async () => ({ ok: true, status: 200, json: async () => payload });
   vm.createContext(ctx);
+  // js/pwa.js (not loaded here) provides the proxy helper that config.js uses
+  vm.runInContext("window.MA={DEFAULT_PROXY:'https://example.vercel.app/api/proxy',proxyOk:function(){return true;}}", ctx);
   ['js/config.js', 'js/geo.js', 'js/format.js', 'js/data.js'].forEach(f => vm.runInContext(fs.readFileSync(ROOT + '/' + f, 'utf8'), ctx, { filename: f }));
   const MA = ctx.MA, R = rng(opt.seed);
   const lat0 = 53.70, lon0 = 9.90, track = 150, gs = 160, vkm = gs * 1.852 / 3600000;
