@@ -47,7 +47,8 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `proxy`    | –               | Nur `off` oder der eigene Proxy erlaubt, siehe [Proxy](#proxy-cors) |
 | `public`   | `0`             | `1` erlaubt öffentliche CORS-Proxys und die Quellen airplanes.live/OpenSky (Datenschutz beachten) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`; `airplaneslive`, `opensky` nur mit `public=1` |
-| `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
+| `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz); mit `wx=radar` auch simulierten Regen, gekennzeichnet als DEMO |
+| `wx`       | aus             | `radar` blendet das Wetterradar über der Karte ein (Niederschlag in Cockpit-Farben, nur Deutschland), siehe [Wetterradar](#wetterradar) |
 | `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht |
 | `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
 | `boardsec` | `40`            | Sekunden Anzeigetafel, danach wieder Radar (bei `view=auto`) |
@@ -75,6 +76,18 @@ Alle Looks sind Daten: die Tabelle `STYLES` in `js/styles.js` hält je Stil Roll
 Die Einrichtungsseite hat dafür die Abschnitte Theme, Anzeige, Einheiten und Elemente mit Live-Vorschau (`setup.html?demo=1` zeigt in der Vorschau den Demo-Verkehr). Die Einstellungen stehen in der Adresse und werden von `js/pwa.js` wie alle Parameter für die Home-Bildschirm-App gemerkt.
 
 Für die Lesbarkeit aus drei Metern Abstand sind Schriften größer (nichts Wichtiges unter etwa 1,6 vh) und alle Texte haben mindestens 4,5:1 Kontrast.
+
+## Wetterradar
+
+Mit `wx=radar` zeichnet die App den Niederschlag über die Karte, in den Farben eines Cockpit-Wetterradars: **grün** leicht, **gelb** mäßig, **orange** stark, **rot** sehr stark. Die Flugzeuge, Datenblöcke und Anflugachsen liegen darüber, der Regen ist durchscheinend gezeichnet. Standard ist aus; im Einrichtungs-Assistenten gibt es den Schalter unter **Elemente** („Wetterradar“). Die Legende unten links nennt die Stufen, die Quelle und das Alter der Daten, dazu Reichweite und Sektor (`RNG 25 km · 360°`).
+
+- **Stufen** (dBZ, Radarreflektivität): leicht 20 bis 34, mäßig 35 bis 44, stark 45 bis 54, sehr stark ab 55. Darunter wird nichts gezeichnet. Die Farben kommen aus den Stil-Rollen in `js/styles.js` (`ok`, `moderate`, `caution`, `warning`), in Hell und Dunkel passend.
+- **Daten:** Deutscher Wetterdienst (DWD), Radarkomposit WN, beobachteter Niederschlag im 5-Minuten-Takt, Raster etwa 2 km, nur Deutschland und das Radar-Umfeld. Lizenz: Datenlizenz Deutschland – Namensnennung – Version 2.0 (siehe [THIRD_PARTY.md](THIRD_PARTY.md)). Der Hinweis „Daten: DWD“ steht in der Legende.
+- **Wer sieht was:** Die App fragt `/api/radar` am eigenen Proxy ab (`api/radar.js`). Dieser holt die feste Datei von opendata.dwd.de, rechnet sie in ein Raster um und gibt es für alle gleich aus (Cache 2 Minuten, bei Fehlern bis 15 Minuten). Die Anfrage enthält **keine Position**, dein Standort verlässt den Browser nicht. Der DWD sieht nur den Server, nicht dich.
+- **Frische:** Die Legende zeigt die Beobachtungszeit in UTC und das Alter („vor 4 min“). Ist die Beobachtung älter als 15 Minuten, verschwindet der Regen und die Legende sagt „Radar veraltet“.
+- **Keine Vorhersage und keine Warnung:** Gezeigt wird nur, was der Radar gerade misst. Das ist kein Ersatz für Wetterwarnungen oder den Flugwetterbericht.
+- **Demo:** `?demo=1&wx=radar` zeigt drei synthetische Regenzellen mit der Kennzeichnung „DEMO“ in der Legende. Im Live-Betrieb gibt es keine simulierten Daten.
+- **Speicher:** Die Radardaten werden nicht im Browser gespeichert.
 
 ## Anzeigetafel
 
@@ -135,7 +148,7 @@ adsb.lol und die METAR-Quelle erlauben keine Abfragen direkt aus dem Browser (CO
 | `opensky-network.org` | `/api/states/all` |
 | `aviationweather.gov` | `/api/data/metar` |
 
-Weitere Schutzmaßnahmen: nur die Herkunft `kdniem.github.io`, `myairspace-nu.vercel.app` und `localhost`/`127.0.0.1` (Entwicklung); Weiterleitungen des Ziels werden nicht verfolgt; Antworten müssen gültiges JSON sein und werden immer als `application/json` mit `nosniff` und strenger CSP ausgeliefert (Fehler nie als HTML); Fehlerantworten enthalten keinen Inhalt des Ziels; Koordinaten in `/v2/point/` werden serverseitig auf 2 Nachkommastellen gerundet und der Radius auf 250 nm begrenzt. Die App schickt den Standort ohnehin nur auf etwa 1 km gerundet ab. Rechtliches: [LICENSE](LICENSE), [THIRD_PARTY.md](THIRD_PARTY.md), [datenschutz.html](datenschutz.html).
+Das Wetterradar (`wx=radar`) hat eine eigene Funktion, [`api/radar.js`](api/radar.js): sie nimmt **keine** Adresse aus der Anfrage entgegen, holt nur die feste DWD-Datei und gibt ein Raster aus. Sie ist deshalb keine Weiterleitung und steht nicht in der Tabelle oben. Weitere Schutzmaßnahmen: nur die Herkunft `kdniem.github.io`, `myairspace-nu.vercel.app` und `localhost`/`127.0.0.1` (Entwicklung); Weiterleitungen des Ziels werden nicht verfolgt; Antworten müssen gültiges JSON sein und werden immer als `application/json` mit `nosniff` und strenger CSP ausgeliefert (Fehler nie als HTML); Fehlerantworten enthalten keinen Inhalt des Ziels; Koordinaten in `/v2/point/` werden serverseitig auf 2 Nachkommastellen gerundet und der Radius auf 250 nm begrenzt. Die App schickt den Standort ohnehin nur auf etwa 1 km gerundet ab. Rechtliches: [LICENSE](LICENSE), [THIRD_PARTY.md](THIRD_PARTY.md), [datenschutz.html](datenschutz.html).
 
 ### Verbindung & Ausfälle
 

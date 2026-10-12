@@ -11,6 +11,8 @@
   var TOAST_MS = 8000;
 
   var radar = new MA.Radar(document.getElementById('radar'), cfg);
+  radar.wxOn = !!cfg.wxRadar;    // weather radar overlay, opt-in with wx=radar (js/wxradar.js)
+  if (MA.wxradar) MA.wxradar.start(cfg);
   var board = new MA.Board(cfg);
   var feed = new MA.data.Feed(cfg);
 

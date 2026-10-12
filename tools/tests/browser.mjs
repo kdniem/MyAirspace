@@ -433,6 +433,30 @@ async function liveCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- weather radar overlay (wx=radar) with the synthetic demo cells ----------
+async function wxRadarCase(browser, vp) {
+  const id = 'wxradar_' + vp.width;
+  const { ctx, page, st } = await newPage(browser, vp, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&wx=radar&style=atc&lat=53.55&lon=9.99&label=Test', { waitUntil: 'load' });
+    await page.waitForTimeout(2500);
+    collect(st, problems);
+    const info = await page.evaluate(() => (window.MA && MA.wxradar && MA.wxradar._info) ? MA.wxradar._info() : null);
+    const legend = await page.evaluate(() => {
+      const el = document.getElementById('wx-legend');
+      return el ? { shown: getComputedStyle(el).display !== 'none', text: el.innerText } : null;
+    });
+    if (!info || !info.demo) problems.push('demo radar not active: ' + JSON.stringify(info));
+    else if (!(info.rects > 0)) problems.push('overlay is blank (no rectangles drawn)');
+    if (!legend || !legend.shown) problems.push('legend not shown');
+    // innerText follows the CSS text-transform (uppercase), so the match ignores case
+    else if (!/DEMO/i.test(legend.text) || !/leicht/i.test(legend.text) || !/sehr stark/i.test(legend.text)) problems.push('legend text: ' + legend.text);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -440,7 +464,7 @@ const jobs = [];
 const VPS = QUICK ? [{ w: 1920, h: 1080 }] : [{ w: 1920, h: 1080 }, { w: 1280, h: 720 }, { w: 3840, h: 2160 }];
 for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 'light'] : ['dark'])
   for (const vp of VPS) for (const view of ['radar', 'board']) jobs.push({ n: [style, theme, vp.w, view].join('_'), run: () => matrixCase(browser, { style, theme, vp, view }) });
-jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
+jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) }, { n: 'wxradar_1920', run: () => wxRadarCase(browser, { width: 1920, height: 1080 }) }, { n: 'wxradar_1280', run: () => wxRadarCase(browser, { width: 1280, height: 720 }) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;
