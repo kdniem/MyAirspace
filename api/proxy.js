@@ -1,7 +1,7 @@
 /* CORS proxy for MyAirspace as a Vercel Function: /api/proxy?url=<target>.
-   Only relays the flight-data APIs below, only for the app's own origins
+   Only relays the flight-data and METAR APIs below, only for the app's own origins
    (requests without an Origin header, e.g. a test link in the browser, are allowed). */
-const ALLOWED_HOSTS = ['api.adsb.lol', 'api.airplanes.live', 'opensky-network.org'];
+const ALLOWED_HOSTS = ['api.adsb.lol', 'api.airplanes.live', 'opensky-network.org', 'aviationweather.gov'];
 const ALLOWED_ORIGINS = [
   /^https:\/\/kdniem\.github\.io$/,
   /^https:\/\/[a-z0-9-]+\.vercel\.app$/,
@@ -35,7 +35,9 @@ export default async function handler(req, res) {
     const body = Buffer.from(await upstream.arrayBuffer());
     res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/json');
     // a short CDN cache keeps several screens from multiplying upstream requests
-    res.setHeader('Cache-Control', upstream.ok ? 'public, s-maxage=3' : 'no-store');
+    // (METAR changes at most every 30 min: cache it for 5 min)
+    const maxAge = url.hostname === 'aviationweather.gov' ? 300 : 3;
+    res.setHeader('Cache-Control', upstream.ok ? 'public, s-maxage=' + maxAge : 'no-store');
     return res.status(upstream.status).send(body);
   } catch (e) {
     res.setHeader('Cache-Control', 'no-store');

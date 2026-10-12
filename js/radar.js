@@ -245,10 +245,35 @@
     ctx.restore();
   };
 
-  /* list: aircraft with display position (dlat/dlon), trail, dist; featured: hex */
-  Radar.prototype.render = function (list, featuredHex, now) {
+  /* Runways in use (js/weather.js): the approach centreline on the arrival side, brighter
+     than the base one and fading out from the threshold. Drawn per frame over the cached
+     base (two dashed lines are cheap); `rev` follows the base's drawing direction so the
+     dashes line up. Wind-only estimates are dimmer. */
+  Radar.prototype.drawActive = function (list) {
+    var ctx = this.ctx, u = this.unit;
+    for (var i = 0; i < list.length; i++) {
+      var r = list[i];
+      var p = this.project(r.thr[0], r.thr[1]), q = this.project(r.far[0], r.far[1]);
+      var grd = ctx.createLinearGradient(p[0], p[1], q[0], q[1]);
+      grd.addColorStop(0, 'rgba(233, 228, 216,' + (r.est ? 0.22 : 0.4) + ')');
+      grd.addColorStop(1, 'rgba(233, 228, 216, 0.03)');
+      ctx.strokeStyle = grd;
+      ctx.lineWidth = 1.5 * u;
+      ctx.lineCap = 'butt';
+      if (ctx.setLineDash) ctx.setLineDash([6 * u, 6 * u]);
+      ctx.beginPath();
+      if (r.rev) { ctx.moveTo(q[0], q[1]); ctx.lineTo(p[0], p[1]); } else { ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); }
+      ctx.stroke();
+    }
+    if (ctx.setLineDash) ctx.setLineDash([]);
+  };
+
+  /* list: aircraft with display position (dlat/dlon), trail, dist; featured: hex;
+     active: runways in use from MA.weather.active() (optional) */
+  Radar.prototype.render = function (list, featuredHex, now, active) {
     var ctx = this.ctx, u = this.unit, self = this;
     ctx.drawImage(this.base(), 0, 0, this.w, this.h);
+    if (active && active.length) this.drawActive(active);
 
     // home marker with slow pulse
     var pulse = (now % 4000) / 4000;

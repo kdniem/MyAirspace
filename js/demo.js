@@ -79,6 +79,18 @@
     route: function (callsign) {
       for (var i = 0; i < FLIGHTS.length; i++) if (FLIGHTS[i].cs === callsign) return FLIGHTS[i].route;
       return null;
+    },
+    // static weather in the aviationweather.gov shape (south-west wind, matching the 23 arrivals)
+    metar: function () {
+      var t = Math.floor(Date.now() / 1000) - 12 * 60;
+      return [
+        { icaoId: 'EDDH', obsTime: t, wdir: 230, wspd: 12, wgst: 22, visib: '6+', temp: 14, dewp: 8, altim: 1013,
+          clouds: [{ cover: 'FEW', base: 2500 }, { cover: 'BKN', base: 4200 }], fltCat: 'VFR',
+          rawOb: 'METAR EDDH 120820Z 23012G22KT 9999 FEW025 BKN042 14/08 Q1013 NOSIG' },
+        { icaoId: 'EDHI', obsTime: t, wdir: 230, wspd: 11, visib: '6+', temp: 14, dewp: 8, altim: 1013,
+          clouds: [{ cover: 'FEW', base: 2500 }], fltCat: 'VFR',
+          rawOb: 'METAR EDHI 120820Z 23011KT 9999 FEW025 14/08 Q1013' }
+      ];
     }
   };
 })(window.MA);
