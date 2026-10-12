@@ -194,6 +194,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
   var lastFrame = Date.now(), lastBoard = 0;
   function frame() {
     var now = Date.now();
+    if (MA.diag) MA.diag.frame(now);
     advance(now, now - lastFrame);
     lastFrame = now;
     var feat, air = null;
@@ -229,6 +230,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
   function updateSummary(now) {
+    if (MA.diag) MA.diag.status(status, now);
     var d = new Date(now);
     var local = pad(d.getHours()) + ':' + pad(d.getMinutes());
     var utc = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
@@ -288,8 +290,9 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     if (!navigator.wakeLock || document.visibilityState !== 'visible' || lock) return;
     navigator.wakeLock.request('screen').then(function (l) {
       lock = l;
-      l.addEventListener('release', function () { lock = null; });
-    }, function () {});
+      if (MA.diag) MA.diag.log('wake', 'an', 'Wake Lock aktiv');
+      l.addEventListener('release', function () { lock = null; if (MA.diag) MA.diag.log('wake', 'aus', 'Wake Lock freigegeben'); });
+    }, function () { if (MA.diag) MA.diag.log('wake', 'fehler', 'Wake Lock abgelehnt'); });
   }
   document.addEventListener('visibilitychange', wake);
 

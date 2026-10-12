@@ -43,7 +43,11 @@
   var local = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || local) && !embedded) {
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('sw.js').catch(function () {});
+      navigator.serviceWorker.register('sw.js').then(function () {
+        if (MA.diag) MA.diag.log('sw', 'ok', 'Service Worker registriert');
+      }, function (e) {
+        if (MA.diag) MA.diag.log('sw', 'fehler', 'Registrierung fehlgeschlagen: ' + (e && e.name ? e.name : 'Fehler'));
+      });
     });
   }
 })();

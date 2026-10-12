@@ -188,6 +188,17 @@ XYZ: ['XY', 'Beispiel Air', '#1d3c78'],   // ICAO: [IATA oder '', Anzeigename, L
 
 Welches Flugzeug unten auf der Tafel steht, entscheidet `js/pick.js` ruhig und nachvollziehbar: mindestens 12 s Anzeigedauer vor jedem Wechsel (Ausnahme: ein neuer Notfall-Squawk 7700/7600/7500 springt sofort), danach Wechsel nach `rotate` Sekunden zum am längsten nicht gezeigten der vier nächsten Flugzeuge (stabile Reihenfolge nach Hex-Code, kein Hin und Her A-B-A innerhalb von 30 s). Das angezeigte Flugzeug bleibt, solange es im Radius und unter den sechs nächsten ist; ein sehr naher Neuankömmling (unter 2 km) löst es nur ab, wenn es weiter als 6 km entfernt ist oder sich entfernt. Besondere Flugzeuge springen höchstens einmal je zwei Rotationsschritte vor. Getestet mit `tools/tests/pick-test.cjs`.
 
+## Diagnoseprotokoll
+
+Für Verbindungsabbrüche gibt es ein Protokoll, das nur im Browser des Geräts liegt (`js/diag.js`, Schlüssel `ma.diag` im `localStorage`):
+
+- **Was drinsteht:** fehlgeschlagene Abfragen je Quelle mit HTTP-Code und Dauer (`data`), Wechsel zwischen frisch, veraltet und offline mit dem Alter der Daten (`status`), Netz- und Tab-Wechsel (`net`), Bildhänger über 2 s (`stall`), Skriptfehler mit Datei und Zeile, ohne Stack (`error`), Service-Worker-Registrierung (`sw`), Start mit Version und Stil (`boot`) und Wake Lock (`wake`). Erfolgreiche Abfragen stehen nur am Ende einer Störung (mit der Lücke) und beim ersten Start, sonst wären die 500 Einträge nach gut einer halben Stunde voll.
+- **Begrenzt:** höchstens 500 Einträge, Einträge älter als 72 Stunden werden entfernt, Schreibzugriffe höchstens einmal pro Sekunde.
+- **Ausgeschlossen:** Standort, Koordinaten, Rufzeichen, IP-Adresse und Flugdaten. Texte werden vor dem Speichern bereinigt (URLs, Koordinaten, Rufzeichen-ähnliche Codes und Werte wie `lat=`, `lon=`, `label=`, `title=` entfallen). `tools/tests/diag-test.cjs` prüft das.
+- **Ansehen:** `?diag=1` an die Radar-Adresse hängen zeigt ein kleines Feld mit der Zusammenfassung der letzten 24 Stunden und den letzten 30 Einträgen (nur auf dem Bildschirm, nichts wird geschickt).
+- **Herunterladen oder leeren:** auf der Einrichtungsseite unter „Erweitert: Diagnoseprotokoll“ (`setup.html?diag=export` öffnet den Abschnitt). Der Download ist eine Textdatei, die der Browser nur auf Klick erzeugt; „Protokoll leeren“ löscht den Inhalt.
+- **Nichts wird übertragen:** das Protokoll verlässt das Gerät nicht, es gibt keinen Server dafür und keine zusätzlichen Drittanbieter-Anfragen.
+
 ## Veröffentlichen (GitHub Pages)
 
 1. Im Repository unter **Settings → Pages → Build and deployment → Source** die Option **GitHub Actions** wählen.
@@ -218,12 +229,13 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), proxy-test.mjs, motion-sim.js
+tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), diag-test.cjs (Diagnoseprotokoll), proxy-test.mjs, motion-sim.js
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 data/airport-detail.js Vorfeld, Rollwege, Terminals, Gates der fünf Flughäfen (erzeugt von tools/build-airport-detail.py, OpenStreetMap)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)
 js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen; DEFAULT_PROXY
+js/diag.js             Diagnoseprotokoll (lokal im Browser, siehe oben): Ringpuffer, Zusammenfassung, Panel ?diag=1, Download auf der Einrichtungsseite
 js/styles.js           STYLES-Tabelle: Rollenfarben je Stil und Theme, Symbole, Schrift (Daten, keine Logik pro Stil)
 js/config.js           URL-Parameter
 js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme und die Stil-Variablen vor dem ersten Bild

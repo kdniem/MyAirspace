@@ -37,6 +37,7 @@ const cmd = (name, args, extra) => steps.push(Object.assign({
 
 cmd('URL options + ES2017 scan (options.cjs)', ['tools/tests/options.cjs', '.']);
 cmd('board selection (pick-test.cjs)', ['tools/tests/pick-test.cjs', '.']);
+cmd('diagnostics log (diag-test.cjs)', ['tools/tests/diag-test.cjs', '.']);
 cmd('old-browser guard (compat.mjs)', ['tools/tests/compat.mjs']);
 cmd('contrast', ['tools/contrast.mjs']);
 cmd('proxy', ['tools/tests/proxy-test.mjs']);
