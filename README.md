@@ -36,6 +36,13 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `proxy`    | –               | Eigener CORS-Proxy, siehe [Proxy](#proxy-cors) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`, `airplaneslive`, `opensky` |
 | `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
+| `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht |
+| `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
+| `boardsec` | `40`            | Sekunden Anzeigetafel, danach wieder Radar (bei `view=auto`) |
+
+## Anzeigetafel
+
+Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil einer Abflugtafel ein: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
 
 ## Auf dem Fernseher
 

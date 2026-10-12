@@ -79,6 +79,27 @@
       <div id="pager" class="pager"></div>
     </section>
 
+    <section id="logview" aria-live="polite">
+      <div class="lv-title">
+        <div id="lv-heading" class="lv-heading led"></div>
+        <div id="lv-date" class="lv-date"></div>
+      </div>
+      <div class="lv-table">
+        <div class="lv-row lv-head">
+          <div class="c c-time">ZEIT</div>
+          <div class="c c-flight">FLUG</div>
+          <div class="c c-airline">AIRLINE</div>
+          <div class="c c-type">MUSTER</div>
+          <div class="c c-route">ROUTE</div>
+          <div id="lv-h-alt" class="c c-alt">HÖHE FT</div>
+          <div class="c c-dist">ENTF. KM</div>
+          <div class="c c-status">STATUS</div>
+        </div>
+        <div id="lv-rows" class="lv-rows"></div>
+      </div>
+      <div id="lv-stats" class="lv-stats"></div>
+    </section>
+
     <footer id="attrib"></footer>
 
     <!-- special aircraft announcement (js/main.js announce) -->
@@ -96,6 +117,8 @@
   <script src="js/weather.js"></script>
   <script src="js/radar.js"></script>
   <script src="js/board.js"></script>
+  <script src="js/log.js"></script>
+  <script src="js/views.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

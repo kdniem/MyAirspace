@@ -200,6 +200,8 @@
       else board.empty('------', 'Verbinde…');
       updateSummary(now);
       announce(now);
+      MA.log.observe(visible, now);
+      MA.views.tick(now);
     }
     requestAnimationFrame(frame);
   }

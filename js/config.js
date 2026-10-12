@@ -51,6 +51,9 @@ window.MA = MA;
     night: hours('night', '23-6'),              // dim the screen at night
     nightLevel: num('dim', 0.45, 0.1, 1),
     labels: bool('labels', true),               // aircraft labels on the map
-    places: bool('places', true)                // town names on the map
+    places: bool('places', true),               // town names on the map
+    view: /^(radar|board|auto)$/.test(str('view', '')) ? str('view', '') : 'auto', // radar | board | auto
+    boardSec: num('boardsec', 40, 5, 600),      // auto: seconds on the Anzeigetafel
+    radarSec: num('radarsec', 240, 10, 3600)    // auto: seconds on the radar
   };
 })();
