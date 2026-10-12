@@ -22,6 +22,7 @@ function fresh(opts) {
     data
   };
   const dcl = [];
+  const listeners = {};
   const ctx = {
     console, Math, JSON, Date, Array, Object, String, Number, Error, RegExp, isNaN, isFinite, parseInt, parseFloat,
     URLSearchParams,
@@ -33,8 +34,9 @@ function fresh(opts) {
       getElementById() { return null; }
     },
     innerWidth: 1280, innerHeight: 720,
-    addEventListener() {}
+    addEventListener(type, fn) { (listeners[type] = listeners[type] || []).push(fn); }
   };
+  ctx.__listeners = listeners;
   ctx.window = ctx; ctx.self = ctx; ctx.top = opts.embedded ? {} : ctx;
   if (opts.noStorage) Object.defineProperty(ctx, 'localStorage', { get() { throw new Error('SecurityError'); } });
   else ctx.localStorage = store;
@@ -103,6 +105,40 @@ t('no lat/lon/label/title/callsign reaches the stored log, the export or the pan
   assert.strictEqual(D.events()[0].k, 'boot');
   assert.strictEqual(D.events()[0].c, 'v-test');
   assert.strictEqual(D.events()[0].d, 5);
+});
+
+t('thrown error or rejection carrying a flight JSON snippet: only file, line and error name are stored', () => {
+  const ctx = fresh(); const { D } = started(ctx, T);
+  D.clear();
+  const flight = '{"hex":"3c6444","callsign":"DLH123","lat":53.5511,"lon":9.9937,"alt_baro":38000,"r":"D-AIBB"}';
+  const err = new TypeError('no route for ' + flight);
+  ctx.__listeners.error.forEach((fn) => fn({ message: 'Uncaught ' + err.message, filename: 'https://x.example/js/main.js?lat=53.5511', lineno: 42, error: err }));
+  const rej = { name: 'Error', message: flight };
+  ctx.__listeners.unhandledrejection.forEach((fn) => fn({ reason: rej }));
+  const anon = { message: flight };                     // no usable name: a fixed category
+  ctx.__listeners.unhandledrejection.forEach((fn) => fn({ reason: anon }));
+  const bad = { name: 'Bad Name ' + flight };           // a name that is not an identifier is not stored
+  ctx.__listeners.unhandledrejection.forEach((fn) => fn({ reason: bad }));
+  D._flush();
+  const raw = ctx.__store.data['ma.diag'];
+  for (const bad2 of ['DLH123', '3c6444', '53.5511', '9.9937', 'D-AIBB', 'alt_baro', 'no route', 'flight', 'x.example', '38000']) {
+    assert.ok(raw.indexOf(bad2) < 0, 'storage contains ' + bad2 + ': ' + raw);
+  }
+  const errs = D.events().filter((e) => e.k === 'error');
+  assert.ok(errs.some((e) => e.m === 'main.js:42 TypeError'), JSON.stringify(errs));
+  assert.ok(errs.some((e) => e.m === 'Error' && e.c === 'promise'));
+  assert.ok(errs.some((e) => e.m === 'Promise' && e.c === 'promise'));
+  assert.ok(errs.every((e) => e.m.length <= 120));
+});
+
+t('the same error in a row is counted in d, not stored again', () => {
+  const ctx = fresh(); const { D } = started(ctx, T);
+  D.clear();
+  for (let i = 0; i < 50; i++) ctx.__listeners.error.forEach((fn) => fn({ filename: '/js/radar.js', lineno: 7, error: new RangeError('x') }));
+  const errs = D.events().filter((e) => e.k === 'error');
+  assert.strictEqual(errs.length, 1);
+  assert.strictEqual(errs[0].d, 50);
+  assert.strictEqual(D.summary(T).errors, 50);
 });
 
 t('unknown kinds are dropped; a message is at most 120 characters', () => {

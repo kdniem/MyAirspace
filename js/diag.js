@@ -4,12 +4,13 @@
    Event: { t: ISO time UTC, k: kind, c: code, m: text (<= 120 chars), d: number or null }
    Kinds: data (failed poll, or the success that ends an outage), status (online/stale/offline),
    net (browser online/offline, tab visible/hidden), stall (frame gap > 2 s), error (script/promise
-   error: file, line, message), sw (service worker registration), boot (version, style, theme, size),
-   wake (wake lock on/off).
-   d is in milliseconds where it means a time (request duration, data gap, data age, frame gap), else null.
+   error: file, line and error NAME only, never the message), sw (service worker registration),
+   boot (version, style, theme, window size, page kind), wake (wake lock on/off/refused).
+   d is in milliseconds where it means a time (request duration, data gap, data age, frame gap); for
+   error it counts identical errors in a row; otherwise null.
    Privacy: only the four fields above are ever stored. Text is scrubbed (URLs, coordinates, callsign-like
-   codes, and lat/lon/label/title/callsign/hex values removed). No location, IP address, callsign or flight
-   data is logged. Nothing is sent anywhere.
+   codes, and lat/lon/label/title/callsign/hex values removed). No position, callsign or address is logged.
+   Nothing is sent anywhere.
    Viewing: ?diag=1 on the TV page shows a panel (summary of 24 h, last 30 events). On the setup page
    (section Erweitert) the log can be downloaded as .txt (user click only) or cleared; ?diag=export opens that section. */
 (function () {
@@ -77,16 +78,26 @@
 
   function record(t, k, c, m, d) {
     if (embedded || !Object.prototype.hasOwnProperty.call(KINDS, k)) return;
-    mem.push({
+    var ev = {
       t: iso(t),
       k: k,
       c: typeof c === 'number' && isFinite(c) ? Math.round(c) : scrub(c == null ? '' : c).slice(0, 16),
       m: scrub(m == null ? '' : m).slice(0, MSG_MAX),
       d: typeof d === 'number' && isFinite(d) ? Math.round(d) : null
-    });
-    prune(nowMs());
+    };
+    var last = mem.length ? mem[mem.length - 1] : null;
+    if (k === 'error' && last && last.k === 'error' && last.c === ev.c && last.m === ev.m) {
+      last.d = (last.d || 1) + 1;     // the same error again in a row: counted in d, not stored again
+      touch();
+      return;
+    }
+    mem.push(ev);
     if (mem.length > MAX_EVENTS) mem.splice(0, mem.length - MAX_EVENTS);
     touch();
+  }
+  // error names are identifiers (TypeError, RangeError ...); anything else becomes the fallback
+  function errorName(v, fallback) {
+    return typeof v === 'string' && /^[A-Za-z][A-Za-z0-9_]{0,39}$/.test(v) ? v : fallback;
   }
 
   /* ---------- storage: batched, at most one write per second ---------- */
@@ -219,7 +230,7 @@
         if (e.c !== 'online' && e.d) longest = Math.max(longest, e.d);
         prev = e.c;
       } else if (e.k === 'error') {
-        s.errors++;
+        s.errors += e.d || 1;           // d = repeats of the same error in a row
       } else if (e.k === 'stall') {
         s.stalls++;
         if (e.d) s.longestStallS = Math.max(s.longestStallS, Math.round(e.d / 1000));
@@ -300,7 +311,7 @@
     if (!box) return;
     var q = new URLSearchParams(location.search);
     box.textContent = '';
-    box.appendChild(el('p', 'note', 'Ein Protokoll über Verbindungsabbrüche, Fehler und Neustarts. Es bleibt auf diesem Gerät und wird nirgends hingeschickt. Es enthält keinen Standort, keine Rufzeichen, keine IP-Adresse und keine Flugdaten. Höchstens 500 Einträge aus 72 Stunden.'));
+    box.appendChild(el('p', 'note', 'Ein Protokoll über Verbindungsabbrüche, Fehler und Neustarts. Es bleibt auf diesem Gerät und wird nirgends hingeschickt. Es enthält keine Position, kein Rufzeichen und keine Adresse. Höchstens 500 Einträge aus 72 Stunden. Details: Datenschutz.'));
     boxCount = el('p', 'status');
     boxCount.setAttribute('role', 'status');
     var row = el('div', 'actions');
@@ -336,7 +347,7 @@
     var now = nowMs();
     var lines = ['MyAirspace Diagnoseprotokoll', 'Version: ' + VERSION, 'Erstellt (UTC): ' + iso(now),
       'Einträge: ' + mem.length + ' (höchstens 500, 72 Stunden)',
-      'Enthält keine Standort-, Rufzeichen- oder IP-Daten. Nichts davon wurde übertragen.', '',
+      'Enthält keine Position, kein Rufzeichen und keine Adresse. Nichts davon wurde übertragen.', '',
       'Zusammenfassung'].concat(summaryLines(summarize(mem, now)), ['',
       'Zeit (UTC)                 Art     Code  Meldung  [d = Millisekunden]']);
     mem.forEach(function (e) {
@@ -392,15 +403,17 @@
     lastFrameAt = 0;                       // a hidden tab stops frames: not a stall
     record(nowMs(), 'net', hidden ? 'verborgen' : 'sichtbar', hidden ? 'Seite im Hintergrund' : 'Seite wieder sichtbar', null);
   });
+  // Only the file, the line and the error NAME are stored, never the message (it can carry data).
   window.addEventListener('error', function (e) {
     var file = String(e.filename || '').split('/').pop().split('?')[0] || '?';
-    var line = e.lineno || 0;
-    record(nowMs(), 'error', 'js', file + ':' + line + ' ' + (e.message || 'Fehler'), null);
+    var line = e.lineno || 0, name;
+    try { name = e.error && typeof e.error === 'object' ? e.error.name : undefined; } catch (x) { name = undefined; }
+    record(nowMs(), 'error', 'js', file + ':' + line + ' ' + errorName(name, 'Fehler'), null);
   });
   window.addEventListener('unhandledrejection', function (e) {
-    var r = e.reason, msg;
-    try { msg = r && r.message ? r.message : String(r); } catch (x) { msg = 'Promise abgelehnt'; }
-    record(nowMs(), 'error', 'promise', msg, null);
+    var name;
+    try { name = e.reason && typeof e.reason === 'object' ? e.reason.name : undefined; } catch (x) { name = undefined; }
+    record(nowMs(), 'error', 'promise', errorName(name, 'Promise'), null);
   });
   window.addEventListener('pagehide', function () { if (pending) flush(); });
 
