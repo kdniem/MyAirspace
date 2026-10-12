@@ -10,6 +10,7 @@ import vm from 'node:vm';
 const root = new URL('../', import.meta.url);
 const ctx = { window: { MA: {} } };
 vm.runInNewContext(readFileSync(new URL('js/styles.js', root), 'utf8'), ctx);
+vm.runInNewContext(readFileSync(new URL('js/airlines.js', root), 'utf8'), ctx);
 const MA = ctx.window.MA;
 
 function parse(c) {
@@ -82,7 +83,10 @@ const ROWS = [
   ['Selected target', 'c.target', 'c.bg', 4.5],
   ['Special marker/label', 'c.special', 'c.bg', 4.5],
   ['Warning marker/label', 'c.alert', 'c.bg', 4.5],
-  ['Active runway (accent)', 'c.accent', 'c.bg', 4.5]
+  ['Active runway (accent)', 'c.accent', 'c.bg', 4.5],
+  ['Badge neutral tile text', 'c.badgeFg', 'c.badgeBg', 4.5],
+  ['Badge outline vs board', 'c.badgeEdge', '--panel', 3],
+  ['Badge outline vs map', 'c.badgeEdge', 'c.bg', 3]
 ];
 
 function table(style, theme, opts) {
@@ -120,5 +124,17 @@ combos.forEach(([s, t, a]) => {
   });
   if (lines.length) console.log('\n' + head.toUpperCase() + '\n' + lines.join('\n'));
 });
+// airline badge tiles: the automatically chosen text colour must reach 4.5:1 on every brand colour
+const air = MA.airlines, codes = Object.keys(air);
+let badFails = 0;
+codes.forEach((k) => {
+  const a = air[k], fg = MA.badge.textOn(a.color), r = ratio(fg, a.color);
+  if (!/^#[0-9a-f]{6}$/i.test(a.color)) { badFails++; console.log('  BAD colour ' + k + ' ' + a.color); }
+  if (r < 4.5) { badFails++; console.log('  LOW badge ' + k + ' ' + a.color + ' ' + fg + ' ' + r.toFixed(2)); }
+  if (!a.name || (a.iata && !/^[A-Z0-9]{2}$/.test(a.iata))) { badFails++; console.log('  BAD entry ' + k); }
+});
+if (codes.length < 60) { badFails++; console.log('  only ' + codes.length + ' airlines, expected >= 60'); }
+fails += badFails;
+console.log('\n' + codes.length + ' airline badges: ' + (badFails ? badFails + ' problem(s)' : 'text contrast >= 4.5 on every tile'));
 console.log('\n' + combos.length + ' combinations, ' + checked + ' checks: ' + (fails ? fails + ' below target' : 'all at or above target'));
 process.exit(fails ? 1 : 0);

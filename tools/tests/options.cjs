@@ -57,12 +57,12 @@ const MA = cfg('');
 MA.style.names().forEach((n) => ['dark', 'light'].forEach((t) => {
   const r = MA.style.resolve(n, t, {});
   ['--bg', '--panel', '--ink', '--dim', '--accent', '--target', '--special', '--warning'].forEach((k) => ok(/^#[0-9a-f]{6}$/.test(r.css[k]), n + '/' + t + ' ' + k));
-  ok(r.c.symbol && r.c.trail && typeof r.c.ring === 'string', n + '/' + t + ' canvas palette');
+  ok(r.c.plane > 0 && r.c.trail === 'line' && typeof r.c.badgeBg === 'string' && typeof r.c.ring === 'string', n + '/' + t + ' canvas palette');
 }));
 ok(MA.style.resolve('zzz', 'dark').style === 'atc', 'resolve fallback');
 
 // ES2017 only on the TV page: no optional chaining, nullish coalescing, class fields, modules
-const TV = ['pwa', 'styles', 'config', 'theme', 'hint', 'geo', 'format', 'special', 'demo', 'data', 'weather', 'radar', 'board', 'log', 'views', 'main', 'fullscreen'];
+const TV = ['pwa', 'styles', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'radar', 'board', 'log', 'views', 'main', 'fullscreen'];
 TV.forEach((n) => {
   const src = fs.readFileSync(ROOT + '/js/' + n + '.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''").replace(/\/\/.*$/gm, '');
