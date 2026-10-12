@@ -11,7 +11,7 @@
   --amber: #ffb547;
   --cyan: #63d3e8;
   --err: #ff5d5d;
-  --led: "Doto", "IBM Plex Mono", ui-monospace, monospace;
+  --led: "IBM Plex Mono", ui-monospace, monospace;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   color-scheme: dark;
 }
@@ -50,10 +50,9 @@ a { color: inherit; }
 
 .led {
   font-family: var(--led);
-  font-weight: 900;
-  color: var(--amber);
-  text-shadow: 0 0 12px rgba(255, 181, 71, 0.4), 0 0 2px rgba(255, 181, 71, 0.8);
-  letter-spacing: 0.04em;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.08em;
 }
 
 h1 {
@@ -70,6 +69,17 @@ h1 {
 .layout { max-width: 1240px; margin: 20px auto 0; }
 .col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .col + .col { margin-top: 16px; }
+
+/* phones: one column; the preview sits right after the theme so changes are visible at once */
+@media (max-width: 959px) {
+  .layout { display: flex; flex-direction: column; gap: 16px; }
+  .col { display: contents; }
+  .col + .col { margin-top: 0; }
+  .card-loc { order: 1; } .card-theme { order: 2; } .card-prev { order: 3; } .card-view { order: 4; }
+  .card-units { order: 5; } .card-elements { order: 6; } .card-night { order: 7; } .card-url { order: 8; }
+  .card-prev { position: sticky; top: 8px; z-index: 5; padding: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55); }
+  .card-prev h2, .card-prev .note { display: none; }
+}
 
 @media (min-width: 960px) {
   .layout { display: flex; gap: 24px; align-items: flex-start; }
@@ -335,3 +345,43 @@ input[type="range"] { width: 100%; margin: 6px 0 0; accent-color: var(--amber); 
 }
 
 .foot { max-width: 1240px; margin: 28px auto 0; font-size: 11px; letter-spacing: 0.12em; color: #7a7e83; }
+
+/* ---------- style cards, accent swatches, field chips, element toggles ---------- */
+
+small.opt { margin-left: 0.6em; font-size: 10px; letter-spacing: 0.06em; text-transform: none; color: var(--dim); }
+
+.styles { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 8px; }
+.stylecard { position: relative; display: block; margin: 0; padding: 0; text-transform: none; letter-spacing: 0; cursor: pointer; }
+.stylecard input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.stylecard { padding: 8px; border: 1px solid #22262b; border-radius: 9px; background: var(--field); color: var(--ink); }
+.stylecard .sw { display: flex; align-items: center; justify-content: space-between; height: 34px; padding: 0 10px; border: 1px solid; border-radius: 5px; }
+.stylecard .sw i { display: block; width: 14px; height: 14px; border-radius: 2px; }
+.stylecard b { display: block; margin-top: 8px; font-size: 13px; font-weight: 600; letter-spacing: 0.06em; }
+.stylecard small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.3; letter-spacing: 0; color: var(--dim); }
+.stylecard:hover { border-color: var(--dim); }
+.stylecard:has(input:checked) { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255, 181, 71, 0.14); }
+.stylecard:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { position: relative; display: flex; align-items: center; gap: 8px; margin: 0; padding: 6px 10px 6px 7px; border: 1px solid #22262b; border-radius: 9px; background: var(--field); color: var(--ink); text-transform: none; letter-spacing: 0; cursor: pointer; }
+.swatch input[type="radio"] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.swatch small { font-size: 12px; letter-spacing: 0.02em; color: var(--ink); }
+.swatch .dotc { flex: none; width: 18px; height: 18px; border-radius: 4px; border: 1px solid rgba(255, 255, 255, 0.25); }
+.swatch .dotc.auto { background: repeating-linear-gradient(45deg, #2a2e33 0 4px, #1a1d21 4px 8px) !important; }
+.swatch:hover { border-color: var(--dim); }
+.swatch:has(input[type="radio"]:checked) { border-color: var(--amber); box-shadow: 0 0 0 3px rgba(255, 181, 71, 0.14); }
+.swatch:has(input:focus-visible) { outline: 2px solid var(--amber); outline-offset: 2px; }
+.swatch-custom input[type="text"] { width: 92px; height: 28px; padding: 0 8px; font-size: 12px; border-radius: 6px; }
+
+.chips-fields .chip { flex-direction: row; align-items: center; gap: 8px; padding: 0 12px 0 8px; height: 38px; font-size: 13px; letter-spacing: 0.04em; }
+.chip-field em { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 4px; border: 1px solid #2b2f34; font-style: normal; font-size: 11px; color: var(--dim); }
+.chip-field.on em { background: var(--amber); border-color: var(--amber); color: #120c02; font-weight: 600; }
+
+.toggles .switch:first-child { margin-top: 0; }
+.switch b { display: block; font-weight: 500; }
+.toggles { display: block; }
+@media (min-width: 560px) and (max-width: 959px) {
+  .toggles { column-count: 2; column-gap: 24px; }
+  .toggles .switch { break-inside: avoid; }
+  .toggles .switch:first-child { margin-top: 16px; }
+}

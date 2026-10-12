@@ -71,7 +71,7 @@
   Board.prototype.setPhase = function (phase) {
     var leds = this.el.board.querySelectorAll('.led');
     for (var i = 0; i < leds.length; i++) {
-      leds[i].className = 'val led' + (phase === 'down' ? ' down' : '') + (phase === 'idle' ? ' idle' : '');
+      leds[i].className = 'val led' + (phase === 'idle' ? ' idle' : '');
     }
   };
 
@@ -119,13 +119,14 @@
 
     var alt = f.alt(ac.alt, cfg.units);
     flap(e.alt, alt.val, anim);
-    setSub(e.vs, esc(alt.unit + ' \u00b7 ' + f.vs(ac.vrate)));
+    setSub(e.vs, '<span class="u">' + esc(alt.unit) + '</span>' + esc(' \u00b7 ' + f.vs(ac.vrate, cfg.units)));
 
-    flap(e.spd, String(Math.round(ac.gs || 0)), anim);
-    setSub(e.spdSub, f.kmh(ac.gs || 0) + ' km/h');
+    var gsv = f.speed(ac.gs, cfg.speedUnit);
+    flap(e.spd, gsv.val, anim);
+    setSub(e.spdSub, '<span class="u">' + esc(gsv.unit) + '</span> \u00b7 ' + esc(gsv.other));
 
     flap(e.dist, f.km(ac.dist), anim);
-    setSub(e.dir, 'km · ' + f.compass(ac.brg) + ' · ' + Math.round(ac.brg) + '°');
+    setSub(e.dir, '<span class="u">km</span> \u00b7 ' + f.compass(ac.brg) + ' \u00b7 ' + ('00' + Math.round(ac.brg) % 360).slice(-3) + '\u00b0');
   };
 
   Board.prototype.empty = function (title, sub) {

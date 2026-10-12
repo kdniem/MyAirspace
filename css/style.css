@@ -1,66 +1,39 @@
 /* MyAirspace – ambient flight radar for the living-room TV.
-   Flexbox only (no grid), vh/vw sizing: works on older Tizen/webOS browsers. */
+   Flexbox only (no grid), vh/vw sizing: works on older Tizen/webOS browsers.
+
+   Colours are role tokens set by js/styles.js (one STYLES table, per style and theme) as custom
+   properties on <html>; the values below are only the fallback (atc, dark).
+   Text roles, used everywhere: label (small, quiet, caps) · value (large, strong, tabular)
+   · unit (small, quiet) · meta (secondary lines). */
 
 :root {
-  /* colours: dark theme (default); text contrast is checked by tools/contrast.mjs */
-  --bg: #050607;
-  --panel: #0a0b0d;
-  --ink: #e9e4d8;
-  --dim: #979ba0;    /* labels, secondary text (>= 4.5:1) */
-  --faint: #2a2e33;
-  --sub: #b9bdc1;    /* board sub-lines, weather */
-  --attrib: #85898e;
-  --line: #22262b;   /* panel borders and dividers */
-  --pager: #3a3e43;
-  --led-idle: #4a4e53;
-  --amber: #ffb547;
-  --cyan: #63d3e8;
-  --violet: #c78bff; /* special aircraft */
-  --red: #ff5d5d;    /* emergency squawks */
-  --ok: #6fdc8c;
-  --glow-amber: 0 0 1.2vh rgba(255, 181, 71, 0.45), 0 0 0.2vh rgba(255, 181, 71, 0.8);
-  --glow-cyan: 0 0 1.2vh rgba(99, 211, 232, 0.45), 0 0 0.2vh rgba(99, 211, 232, 0.8);
-  --glow-ink: 0 0 1.2vh rgba(233, 228, 216, 0.25), 0 0 0.2vh rgba(233, 228, 216, 0.6);
-  --glow-violet: 0 0 1.2vh rgba(199, 139, 255, 0.45);
-  --glow-red: 0 0 1.2vh rgba(255, 93, 93, 0.5);
-  --dots: rgba(0, 0, 0, 0.55);   /* dot-matrix texture on the panels */
-  --dots-opacity: 0.45;
-  --toast-bg: rgba(10, 11, 13, 0.94);
-  --toast-line: rgba(199, 139, 255, 0.45);
-  --toast-glow: 0 0 3vh rgba(199, 139, 255, 0.16);
+  --bg: #040706;
+  --panel: #09110d;
+  --ink: #e6eee8;        /* normal data */
+  --dim: #8fa597;        /* labels */
+  --sub: #b8c9be;        /* secondary lines */
+  --attrib: #7b8f82;
+  --line: #1c2a22;
+  --faint: #14201a;
+  --pager: #26362d;
+  --idle: #34463c;
+  --accent: #7fd99a;     /* active / signature */
+  --target: #5fd0e8;     /* selected target (the featured aircraft) */
+  --caution: #f0b04a;
+  --warning: #ff6a60;
+  --special: #e57ad8;
+  --ok: #7fd99a;
+  --toast-bg: rgba(9, 17, 13, 0.96);
+  --zebra: rgba(230, 238, 232, 0.035);
+  --head: #121c17;
+  --radius: 0.3vh;
+  --val-color: var(--accent);
+  --unit-color: var(--sub);
+  --call-color: var(--target);
+  --weight: 500;
+  --font: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --safe-x: 3.6vw;   /* overscan safe area */
   --safe-y: 3.6vh;
-  --led: "Doto", "DotGothic16", "IBM Plex Mono", ui-monospace, monospace;
-  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-}
-
-/* light theme: calm "paper / airport signage" look (theme=light, or theme=auto by day) */
-:root[data-theme="light"] {
-  --bg: #f4f2ec;
-  --panel: #e7e3d9;
-  --ink: #1b1d20;
-  --dim: #55595e;
-  --faint: #cdc8bb;
-  --sub: #33363a;
-  --attrib: #5c6065;
-  --line: #cdc8bb;
-  --pager: #c3beb1;
-  --led-idle: #a9a59b;
-  --amber: #a14f00;   /* climbing: deeper than the dark-mode amber so it reads on paper */
-  --cyan: #00668a;    /* descending */
-  --violet: #7a3fc4;
-  --red: #c41e1e;
-  --ok: #1f8a43;
-  --glow-amber: none;
-  --glow-cyan: none;
-  --glow-ink: none;
-  --glow-violet: none;
-  --glow-red: none;
-  --dots: rgba(70, 60, 40, 0.10);
-  --dots-opacity: 1;
-  --toast-bg: rgba(250, 249, 245, 0.96);
-  --toast-line: rgba(122, 63, 196, 0.55);
-  --toast-glow: 0 0.4vh 2.4vh rgba(40, 30, 10, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -72,7 +45,9 @@ html, body {
   overflow: hidden;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--mono);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
   cursor: none;
   -webkit-font-smoothing: antialiased;
   -webkit-user-select: none;
@@ -93,6 +68,11 @@ html, body {
   display: block;
 }
 
+/* element toggles (config show=…, classes set by js/main.js) */
+.no-board #board, .no-board #pager { display: none; }
+.no-clock #clockbox, .no-clock #utc { display: none; }
+.no-weather #wx { display: none !important; }
+
 /* ---------- top bar ---------- */
 
 #top {
@@ -100,68 +80,95 @@ html, body {
   top: var(--safe-y);
   left: var(--safe-x);
   right: var(--safe-x);
+  z-index: 3;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   pointer-events: none;
 }
 
-.brand {
-  font-size: 2vh;
-  letter-spacing: 0.24em;
+.brand-tag {
+  font-size: 1.35vh;
+  letter-spacing: 0.34em;
   color: var(--dim);
 }
-.brand-name { color: var(--ink); font-weight: 500; }
-.brand-sep { margin: 0 0.6em; }
+.brand-place {
+  margin-top: 0.7vh;
+  font-size: 2.5vh;
+  line-height: 1.1;
+  font-weight: var(--weight);
+  letter-spacing: 0.14em;
+  color: var(--ink);
+}
+.brand-title {
+  margin-top: 0.6vh;
+  font-size: 1.9vh;
+  letter-spacing: 0.06em;
+  color: var(--sub);
+}
+.brand-title:empty { display: none; }
 
 .meta { text-align: right; }
 
+.clockbox { display: block; line-height: 1; }
 .clock {
-  font-family: var(--led);
-  font-weight: 700;
-  font-size: 6.2vh;
+  font-size: 4.6vh;
+  font-weight: var(--weight);
   line-height: 1;
   color: var(--ink);
-  letter-spacing: 0.06em;
+  letter-spacing: 0.02em;
 }
+.clock-tz {
+  margin-left: 0.6vh;
+  font-size: 1.7vh;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+}
+.utc {
+  margin-top: 0.9vh;
+  font-size: 1.9vh;
+  letter-spacing: 0.1em;
+  color: var(--sub);
+}
+.utc:empty { display: none; }
 
 .summary {
-  margin-top: 1.1vh;
-  font-size: 1.9vh;
+  margin-top: 1.4vh;
+  font-size: 1.65vh;
   letter-spacing: 0.1em;
   color: var(--dim);
   text-transform: uppercase;
 }
 
-/* weather & runway in use (js/weather.js) */
+/* weather: compact METAR, QNH, runway in use (js/weather.js) */
 .wx {
-  margin-top: 0.9vh;
-  font-size: 1.65vh;
+  margin-top: 1vh;
+  font-size: 1.6vh;
   line-height: 1.6;
   letter-spacing: 0.04em;
   color: var(--sub);
   text-transform: uppercase;
   white-space: nowrap;
-  /* keeps the line readable where it overlaps aircraft labels on the map */
+  /* keeps the lines readable where they overlap map lines */
   text-shadow: 0 0 0.6vh var(--bg), 0 0 0.6vh var(--bg), 0 0 1.2vh var(--bg);
 }
-.wx b { font-weight: 500; color: var(--ink); }
+.wx b { font-weight: 600; color: var(--ink); }
+.wx b.n { text-transform: none; }
 .wx-gap { display: inline-block; width: 1.6em; }
 
 .dot {
   display: inline-block;
   width: 0.8vh;
   height: 0.8vh;
-  border-radius: 50%;
-  margin-right: 0.7em;
+  margin-right: 0.8em;
   vertical-align: middle;
   background: var(--dim);
 }
 .dot.ok { background: var(--ok); }
-.dot.warn { background: var(--amber); }
-.dot.err { background: var(--red); }
+.dot.warn { background: var(--caution); }
+.dot.err { background: var(--warning); }
 
-/* ---------- LED board ---------- */
+/* ---------- board: the selected aircraft ---------- */
 
 #board {
   position: absolute;
@@ -171,26 +178,16 @@ html, body {
   height: 18vh;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 1.2vh;
+  border-top: 0.3vh solid var(--accent);
+  border-radius: var(--radius);
   overflow: hidden;
-}
-
-/* dot-matrix screen texture */
-#board:after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(0, 0, 0, 0) 55%, var(--dots) 56%);
-  background-size: 0.42vh 0.42vh;
-  opacity: var(--dots-opacity);
 }
 
 .board-inner {
   position: relative;
   display: flex;
   height: 100%;
-  padding: 2vh 2.4vw;
+  padding: 1.8vh 2.2vw 1.6vh;
   align-items: stretch;
 }
 
@@ -204,40 +201,37 @@ html, body {
 }
 .cell:first-child { border-left: 0; padding-left: 0; }
 
-.cell-flight { flex: 1.45 1 0; }
-.cell-route  { flex: 1.75 1 0; }
-.cell-type   { flex: 1.15 1 0; }
-.cell-alt    { flex: 1.2 1 0; }
-.cell-spd    { flex: 0.85 1 0; }
+.cell-flight { flex: 1.8 1 0; }
+.cell-route  { flex: 1.9 1 0; }
+.cell-type   { flex: 1.1 1 0; }
+.cell-alt    { flex: 1.25 1 0; }
+.cell-spd    { flex: 0.9 1 0; }
 .cell-dist   { flex: 1.0 1 0; }
 
 .lbl {
-  font-size: 1.6vh;
-  letter-spacing: 0.16em;
+  font-size: 1.45vh;
+  letter-spacing: 0.18em;
   color: var(--dim);
-  margin-bottom: 0.8vh;
+  margin-bottom: 1vh;
 }
 
 .val {
-  font-size: 5.4vh;
+  font-size: 4.6vh;
   line-height: 1;
+  font-weight: var(--weight);
   white-space: nowrap;
   overflow: hidden;
 }
-
 .led {
-  font-family: var(--led);
-  font-weight: 900;
-  color: var(--amber);
-  text-shadow: var(--glow-amber);
-  letter-spacing: 0.04em;
+  color: var(--val-color);
+  letter-spacing: 0.02em;
 }
-.led.down { color: var(--cyan); text-shadow: var(--glow-cyan); }
-.led.idle { color: var(--led-idle); text-shadow: none; }
+.cell-flight .led { font-size: 5.2vh; color: var(--call-color); }
+.led.idle { color: var(--idle); }
 
 .sub {
-  margin-top: 0.9vh;
-  font-size: 1.9vh;
+  margin-top: 1vh;
+  font-size: 1.8vh;
   letter-spacing: 0.05em;
   color: var(--sub);
   white-space: nowrap;
@@ -246,35 +240,34 @@ html, body {
   text-transform: uppercase;
   min-height: 1.2em;
 }
+.sub .u { color: var(--unit-color); }
 
+/* tag: special aircraft and Anflug/Abflug, square corners like a sign */
 .badge {
   display: inline-block;
-  padding: 0.15em 0.6em;
-  border: 1px solid var(--amber);
-  border-radius: 0.3em;
-  color: var(--amber);
+  padding: 0.1em 0.6em;
+  border: 1px solid var(--caution);
+  border-radius: 0;
+  color: var(--caution);
   letter-spacing: 0.12em;
 }
-
-/* special aircraft (js/special.js) */
-.badge.special { border-color: var(--violet); color: var(--violet); }
-.badge.alert { border-color: var(--red); color: var(--red); }
+.badge.special { border-color: var(--special); color: var(--special); }
+.badge.alert { border-color: var(--warning); color: var(--warning); }
 
 .pager {
   position: absolute;
-  top: 1.2vh;
+  top: 1.3vh;
   right: 1.4vw;
   font-size: 0;
 }
 .pager span {
   display: inline-block;
-  width: 0.6vh;
-  height: 0.6vh;
-  margin-left: 0.6vh;
-  border-radius: 50%;
+  width: 0.7vh;
+  height: 0.7vh;
+  margin-left: 0.7vh;
   background: var(--pager);
 }
-.pager span.on { background: var(--amber); }
+.pager span.on { background: var(--accent); }
 
 #attrib {
   position: absolute;
@@ -285,21 +278,20 @@ html, body {
   color: var(--attrib);
   text-transform: uppercase;
 }
+.no-board #attrib { bottom: calc(var(--safe-y) - 1.2vh); }
 
-/* ---------- special aircraft toast ----------
-   left-aligned below the top bar: clear of the radar's N label and of the
-   traffic around the centre / north of the main ring */
+/* ---------- special aircraft announcement ---------- */
 
 .toast {
   position: absolute;
-  top: calc(var(--safe-y) + 11vh);
+  top: calc(var(--safe-y) + 13vh);
   left: var(--safe-x);
   transform: translateY(-1vh);
-  padding: 1.1vh 1.6vw;
+  padding: 1.1vh 1.6vw 1.1vh 1.4vw;
   background: var(--toast-bg);
-  border: 1px solid var(--toast-line);
-  border-radius: 1vh;
-  box-shadow: var(--toast-glow);
+  border: 1px solid var(--line);
+  border-left: 0.5vh solid var(--special);
+  border-radius: 0;
   font-size: 2vh;
   letter-spacing: 0.08em;
   color: var(--ink);
@@ -310,27 +302,21 @@ html, body {
   transition: opacity 1.2s ease, transform 1.2s ease;
 }
 .toast.on { opacity: 1; transform: translateY(0); }
-.toast-mark { color: var(--violet); margin-right: 0.8em; }
+.toast-mark { display: none; }
 .toast-label {
-  font-family: var(--led);
-  font-weight: 900;
-  font-size: 2.8vh;
-  color: var(--violet);
-  text-shadow: var(--glow-violet);
-  letter-spacing: 0.06em;
-  margin-right: 0.7em;
-  vertical-align: -0.12em;
+  font-weight: 600;
+  color: var(--special);
+  letter-spacing: 0.1em;
+  margin-right: 0.9em;
 }
-.toast.alert { border-color: var(--red); }
-.toast.alert .toast-mark, .toast.alert .toast-label { color: var(--red); }
-.toast.alert .toast-label { text-shadow: var(--glow-red); }
+.toast.alert { border-left-color: var(--warning); }
+.toast.alert .toast-label { color: var(--warning); }
 
 /* message overlay on the board (no data / error) */
 .board-msg .cell { opacity: 0.35; }
 
-/* ---------- Anzeigetafel (second view, js/views.js) ---------- */
+/* ---------- Anzeigetafel (second view, js/views.js): departures-board layout ---------- */
 
-#top { z-index: 3; }
 .brand { transition: opacity 1.2s ease; }
 .view-board .brand { opacity: 0; }
 /* the weather lines would run into the board's header row */
@@ -356,19 +342,22 @@ html, body {
 }
 
 .lv-title {
-  padding-right: 22vw;   /* the clock stays visible top right */
+  padding-right: 26vw;   /* the clock stays visible top right */
   min-height: 9.6vh;
 }
 .lv-heading {
-  font-size: 4.6vh;
+  font-size: 4.2vh;
+  font-weight: var(--weight);
   line-height: 1.1;
+  letter-spacing: 0.04em;
+  color: var(--val-color);
   white-space: nowrap;
   overflow: hidden;
   min-height: 1.1em;
 }
 .lv-date {
   margin-top: 1vh;
-  font-size: 2vh;
+  font-size: 1.9vh;
   letter-spacing: 0.14em;
   color: var(--dim);
   text-transform: uppercase;
@@ -380,22 +369,12 @@ html, body {
   display: flex;
   flex-direction: column;
   margin-top: 2.4vh;
-  padding: 0.6vh 1.6vw;
+  padding: 0 1.6vw;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 1.2vh;
+  border-radius: var(--radius);
   overflow: hidden;
   min-height: 0;
-}
-/* dot-matrix screen texture, as on the LED board */
-.lv-table:after {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(0, 0, 0, 0) 55%, var(--dots) 56%);
-  background-size: 0.42vh 0.42vh;
-  opacity: var(--dots-opacity);
 }
 .lv-rows {
   flex: 1 1 auto;
@@ -412,23 +391,26 @@ html, body {
   min-height: 0;
   border-top: 1px solid var(--line);
 }
+.lv-rows .lv-row:nth-child(even) { background: var(--zebra); }
 .lv-head {
   flex: 0 0 auto;
-  height: 4.4vh;
+  height: 4.6vh;
+  margin: 0 -1.6vw;
+  padding: 0 1.6vw;
   border-top: 0;
-  font-size: 1.65vh;
-  letter-spacing: 0.1em;
+  background: var(--head);
+  font-size: 1.55vh;
+  letter-spacing: 0.14em;
   color: var(--dim);
 }
 .lv-row.newest:before {
   content: "";
   position: absolute;
   left: -1.6vw;
-  top: 22%;
-  bottom: 22%;
-  width: 0.35vw;
-  border-radius: 0 0.3vh 0.3vh 0;
-  background: currentColor;
+  top: 0;
+  bottom: 0;
+  width: 0.3vw;
+  background: var(--target);
 }
 
 .lv-row .c {
@@ -438,8 +420,10 @@ html, body {
   min-width: 0;
 }
 .lv-rows .c {
-  font-size: 3.3vh;
+  font-size: 3.2vh;
   line-height: 1.15;
+  font-weight: var(--weight);
+  color: var(--ink);
 }
 /* column widths follow the character counts of their content */
 .c-time    { flex: 5 1 0; }
@@ -451,13 +435,11 @@ html, body {
 .c-dist    { flex: 4.6 1 0; text-align: right; }
 .c-status  { flex: 8 1 0; padding-left: 1.8vw; padding-right: 0; }
 
-/* row colour by phase at closest approach: cyan sinking, amber climbing, white level */
-.lv-row.ph-level .led { color: var(--ink); text-shadow: var(--glow-ink); }
-.lv-row.ph-down .led { color: var(--cyan); text-shadow: var(--glow-cyan); }
-.lv-row.ph-level { color: var(--ink); }
-.lv-row.ph-down { color: var(--cyan); }
-.lv-row.ph-up { color: var(--amber); }
-.lv-rows .c-time, .lv-rows .c-airline { opacity: 0.85; }
+/* white rows; the flight is the key column, the status carries the phase */
+.lv-rows .c-flight { color: var(--val-color); }
+.lv-rows .c-time, .lv-rows .c-airline { color: var(--sub); }
+.lv-row.ph-up .c-status, .lv-row.ph-down .c-status { color: var(--accent); }
+.lv-row.ph-level .c-status { color: var(--dim); }
 
 .lv-stats {
   display: flex;
@@ -476,8 +458,8 @@ html, body {
 }
 .st:first-child { border-left: 0; padding-left: 0; }
 .st-l {
-  font-size: 1.6vh;
-  letter-spacing: 0.12em;
+  font-size: 1.45vh;
+  letter-spacing: 0.16em;
   color: var(--dim);
   text-transform: uppercase;
   white-space: nowrap;
@@ -486,20 +468,17 @@ html, body {
 }
 .st-v {
   margin-top: 0.9vh;
-  font-family: var(--led);
-  font-weight: 900;
-  font-size: 3.4vh;
+  font-size: 3.2vh;
+  font-weight: var(--weight);
   line-height: 1.05;
-  color: var(--amber);
-  text-shadow: var(--glow-amber);
-  letter-spacing: 0.04em;
+  color: var(--val-color);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .st-x {
   margin-top: 0.7vh;
-  font-size: 1.8vh;
+  font-size: 1.7vh;
   letter-spacing: 0.05em;
   color: var(--sub);
   text-transform: uppercase;
@@ -535,7 +514,7 @@ html, body {
 .theme-fade #attrib,
 .theme-fade .toast,
 .theme-fade .toast * {
-  transition: color 1.8s ease, background-color 1.8s ease, border-color 1.8s ease, text-shadow 1.8s ease, opacity 1.2s ease;
+  transition: color 1.8s ease, background-color 1.8s ease, border-color 1.8s ease, opacity 1.2s ease;
 }
 .theme-fade #logview {
   transition-property: opacity, visibility, background-color;

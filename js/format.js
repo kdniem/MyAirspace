@@ -39,6 +39,7 @@
     CL35: 'Challenger 350', A400: 'A400M', C130: 'C-130', EUFI: 'Eurofighter', A310: 'A310'
   };
 
+  var TRANS_ALT = 5000;
   var COMPASS = ['N', 'NO', 'O', 'SO', 'S', 'SW', 'W', 'NW'];
 
   function thousands(n) {
@@ -72,25 +73,43 @@
         /^(EC\d\d|H1\d\d|H160|AS\d\d|R22|R44|R66|B06|B407|A109|A119|A139|A169|A189|S76|S92|NH90)$/.test(ac.type || '');
     },
 
-    // altitude (ft input) split into LED value and unit line
+    // altitude (ft input) split into board value and unit line. Above the transition
+    // altitude (5000 ft) pilots speak of flight levels (pressure altitude, STD 1013).
     alt: function (ft, units) {
       if (ft === null || ft === undefined) return { val: '-----', unit: '' };
       if (units === 'm') return { val: thousands(Math.round(ft * 0.3048 / 10) * 10), unit: 'm' };
-      if (ft >= 18000) return { val: 'FL' + ('00' + Math.round(ft / 100)).slice(-3), unit: 'Flugfläche' };
+      if (ft >= TRANS_ALT) return { val: 'FL' + ('00' + Math.round(ft / 100)).slice(-3), unit: 'STD' };
       return { val: thousands(Math.round(ft / 50) * 50), unit: 'ft' };
     },
 
-    altShort: function (ft) {
+    // ATC data block altitude: FL120 above the transition altitude, hundreds of feet (038) below
+    altShort: function (ft, units) {
       if (ft === null || ft === undefined) return '';
-      if (ft >= 18000) return 'FL' + Math.round(ft / 100);
-      return (Math.round(ft / 100) / 10).toFixed(1) + 'k';
+      if (units === 'm') return Math.round(ft * 0.3048 / 10) * 10 + 'm';
+      if (ft >= TRANS_ALT) return 'FL' + ('00' + Math.round(ft / 100)).slice(-3);
+      return ('00' + Math.max(0, Math.round(ft / 100))).slice(-3);
     },
 
-    vs: function (fpm) {
+    // vertical speed for the board (the unit is shown next to the altitude): "↓ 1.050/min"
+    vs: function (fpm, units) {
       if (fpm === null || fpm === undefined) return '';
-      if (fpm > 300) return '↑ ' + thousands(Math.abs(fpm)) + '/min';
-      if (fpm < -300) return '↓ ' + thousands(Math.abs(fpm)) + '/min';
+      var v = units === 'm' ? fpm * 0.3048 : fpm;
+      if (fpm > 300) return '↑ ' + thousands(Math.abs(v)) + '/min';
+      if (fpm < -300) return '↓ ' + thousands(Math.abs(v)) + '/min';
       return '→ Reiseflug';
+    },
+
+    // ground speed (kt input): {val, unit, other} for the chosen speed unit
+    speed: function (kt, unit) {
+      kt = kt || 0;
+      var k = Math.round(kt), h = Math.round(kt * 1.852);
+      return unit === 'kmh' ? { val: String(h), unit: 'km/h', other: k + ' kt' } : { val: String(k), unit: 'kt', other: h + ' km/h' };
+    },
+
+    // QNH from hPa: "1013 hPa" or "29.92 inHg"
+    qnh: function (hpa, unit) {
+      if (typeof hpa !== 'number') return '';
+      return unit === 'inhg' ? (hpa * 0.02953).toFixed(2) + ' inHg' : Math.round(hpa) + ' hPa';
     },
 
     phase: function (ac) {

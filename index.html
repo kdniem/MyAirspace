@@ -14,7 +14,8 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <title>MyAirspace</title>
   <script src="js/pwa.js"></script>
-  <!-- theme before first paint: config + theme set data-theme on <html> -->
+  <script src="js/styles.js"></script>
+  <!-- style and theme before first paint: styles + config + theme set data-theme and the colour tokens on <html> -->
   <script src="js/config.js"></script>
   <script src="js/theme.js"></script>
   <link rel="stylesheet" href="fonts/fonts.css">
@@ -26,17 +27,18 @@
 
     <header id="top">
       <div class="brand">
-        <span class="brand-name">MYAIRSPACE</span>
-        <span class="brand-sep">·</span>
-        <span id="place" class="brand-place"></span>
+        <div class="brand-tag">MYAIRSPACE</div>
+        <div id="place" class="brand-place"></div>
+        <div id="title" class="brand-title"></div>
       </div>
       <div class="meta">
-        <div id="clock" class="clock">--:--</div>
+        <div id="clockbox" class="clockbox"><span id="clock" class="clock">--:--</span><span id="clock-tz" class="clock-tz">LT</span></div>
+        <div id="utc" class="utc"></div>
         <div id="summary" class="summary">
           <span id="status-dot" class="dot"></span>
           <span id="summary-text">Verbinde…</span>
         </div>
-        <!-- weather & runway in use, filled by js/weather.js (hidden without a local airport) -->
+        <!-- compact METAR, QNH and runway in use, filled by js/weather.js (hidden without a local airport) -->
         <div id="wx" class="wx" style="display:none">
           <div id="wx-metar"></div>
           <div id="wx-rwy"></div>
@@ -57,22 +59,22 @@
           <div id="b-badge" class="sub"></div>
         </div>
         <div class="cell cell-type">
-          <div class="lbl">MUSTER</div>
+          <div class="lbl">TYP</div>
           <div id="b-type" class="val led">----</div>
           <div id="b-reg" class="sub"></div>
         </div>
         <div class="cell cell-alt">
-          <div class="lbl">HÖHE</div>
+          <div id="b-alt-lbl" class="lbl">ALT</div>
           <div id="b-alt" class="val led">-----</div>
           <div id="b-vs" class="sub"></div>
         </div>
         <div class="cell cell-spd">
-          <div class="lbl">SPEED</div>
+          <div class="lbl">GS</div>
           <div id="b-spd" class="val led">---</div>
           <div id="b-spd-sub" class="sub"></div>
         </div>
         <div class="cell cell-dist">
-          <div class="lbl">ENTFERNUNG</div>
+          <div class="lbl">DIST</div>
           <div id="b-dist" class="val led">--.-</div>
           <div id="b-dir" class="sub"></div>
         </div>
@@ -87,13 +89,13 @@
       </div>
       <div class="lv-table">
         <div class="lv-row lv-head">
-          <div class="c c-time">ZEIT</div>
+          <div class="c c-time">ZEIT LT</div>
           <div class="c c-flight">FLUG</div>
           <div class="c c-airline">AIRLINE</div>
-          <div class="c c-type">MUSTER</div>
+          <div class="c c-type">TYP</div>
           <div class="c c-route">ROUTE</div>
-          <div id="lv-h-alt" class="c c-alt">HÖHE FT</div>
-          <div class="c c-dist">ENTF. KM</div>
+          <div id="lv-h-alt" class="c c-alt">ALT</div>
+          <div class="c c-dist">DIST KM</div>
           <div class="c c-status">STATUS</div>
         </div>
         <div id="lv-rows" class="lv-rows"></div>
@@ -104,7 +106,7 @@
     <footer id="attrib"></footer>
 
     <!-- special aircraft announcement (js/main.js announce) -->
-    <div id="toast" class="toast"><span class="toast-mark">&#10022;</span><span id="toast-label" class="toast-label"></span><span id="toast-text"></span></div>
+    <div id="toast" class="toast"><span class="toast-mark"></span><span id="toast-label" class="toast-label"></span><span id="toast-text"></span></div>
   </div>
   <div id="dim"></div>
 

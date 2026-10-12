@@ -20,7 +20,7 @@
 
   <main class="layout">
     <div class="col col-form">
-      <section class="card" aria-labelledby="h-loc">
+      <section class="card card-loc" aria-labelledby="h-loc">
         <h2 id="h-loc"><span class="num">01</span>Standort</h2>
 
         <button id="geo" class="btn btn-primary btn-wide" type="button">
@@ -59,12 +59,45 @@
         </label>
       </section>
 
-      <section class="card" aria-labelledby="h-view">
-        <h2 id="h-view"><span class="num">02</span>Anzeige</h2>
+      <section class="card card-theme" aria-labelledby="h-theme">
+        <h2 id="h-theme"><span class="num">02</span>Theme</h2>
+
+        <div class="field">
+          <span class="label" id="style-lbl">Stil</span>
+          <div id="styles" class="styles" role="radiogroup" aria-labelledby="style-lbl"></div>
+        </div>
+
+        <div class="field">
+          <span class="label" id="theme-lbl">Hell / Dunkel</span>
+          <div class="seg" role="radiogroup" aria-labelledby="theme-lbl">
+            <label><input type="radio" name="theme" value="dark" checked><span>Dunkel</span></label>
+            <label><input type="radio" name="theme" value="light"><span>Hell</span></label>
+            <label><input type="radio" name="theme" value="auto"><span>Automatisch</span></label>
+          </div>
+          <p class="note">Automatisch: hell zwischen Sonnenauf- und -untergang am Standort, nachts dunkel.</p>
+        </div>
+
+        <div class="field">
+          <span class="label" id="accent-lbl">Akzentfarbe <output id="accent-out">Stil</output></span>
+          <div id="accents" class="swatches" role="radiogroup" aria-labelledby="accent-lbl"></div>
+        </div>
+
+        <div class="field">
+          <label for="brightness">Helligkeit der Karte <output id="brightness-out" for="brightness">100 %</output></label>
+          <input id="brightness" type="range" min="50" max="120" step="5" value="100">
+        </div>
+      </section>
+
+      <section class="card card-view" aria-labelledby="h-view">
+        <h2 id="h-view"><span class="num">03</span>Anzeige</h2>
 
         <div class="field">
           <label for="label">Ortsname oben links</label>
           <input id="label" type="text" maxlength="24" placeholder="Hamburg" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="title">Zweite Zeile <small class="opt">optional</small></label>
+          <input id="title" type="text" maxlength="32" placeholder="z. B. Zuhause" autocomplete="off">
         </div>
 
         <div class="field">
@@ -78,37 +111,59 @@
         </div>
 
         <div class="field">
-          <span class="label" id="theme-lbl">Darstellung</span>
-          <div class="seg" role="radiogroup" aria-labelledby="theme-lbl">
-            <label><input type="radio" name="theme" value="dark" checked><span>Dunkel</span></label>
-            <label><input type="radio" name="theme" value="light"><span>Hell</span></label>
-            <label><input type="radio" name="theme" value="auto"><span>Automatisch</span></label>
+          <span class="label" id="font-lbl">Schrift</span>
+          <div class="seg" role="radiogroup" aria-labelledby="font-lbl">
+            <label><input type="radio" name="font" value="mono" checked><span>Mono</span></label>
+            <label><input type="radio" name="font" value="sans"><span>Sans</span></label>
           </div>
-          <p class="note">Automatisch: hell zwischen Sonnenauf- und -untergang am Standort, nachts dunkel.</p>
         </div>
 
         <div class="field">
-          <span class="label" id="units-lbl">Höhe in</span>
+          <span class="label" id="fields-lbl">Datenblock am Flugzeug <small class="opt">Reihenfolge = Klickreihenfolge</small></span>
+          <div id="fields" class="chips chips-fields" role="group" aria-labelledby="fields-lbl"></div>
+        </div>
+      </section>
+
+      <section class="card card-units" aria-labelledby="h-units">
+        <h2 id="h-units"><span class="num">04</span>Einheiten</h2>
+        <div class="field">
+          <span class="label" id="units-lbl">Höhe</span>
           <div class="seg" role="radiogroup" aria-labelledby="units-lbl">
             <label><input type="radio" name="units" value="ft" checked><span>Fuß (ft)</span></label>
             <label><input type="radio" name="units" value="m"><span>Meter (m)</span></label>
           </div>
         </div>
-
-        <label class="switch">
-          <input id="labels" type="checkbox" checked>
-          <span class="track" aria-hidden="true"></span>
-          <span>Beschriftung an den Flugzeugen</span>
-        </label>
-        <label class="switch">
-          <input id="places" type="checkbox" checked>
-          <span class="track" aria-hidden="true"></span>
-          <span>Ortsnamen auf der Karte</span>
-        </label>
+        <div class="field">
+          <span class="label" id="speed-lbl">Geschwindigkeit</span>
+          <div class="seg" role="radiogroup" aria-labelledby="speed-lbl">
+            <label><input type="radio" name="speed" value="kt" checked><span>Knoten (kt)</span></label>
+            <label><input type="radio" name="speed" value="kmh"><span>km/h</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label" id="press-lbl">Luftdruck (QNH)</span>
+          <div class="seg" role="radiogroup" aria-labelledby="press-lbl">
+            <label><input type="radio" name="pressure" value="hpa" checked><span>hPa</span></label>
+            <label><input type="radio" name="pressure" value="inhg"><span>inHg</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <span class="label" id="time-lbl">Uhrzeit</span>
+          <div class="seg" role="radiogroup" aria-labelledby="time-lbl">
+            <label><input type="radio" name="time" value="both" checked><span>Lokal + UTC</span></label>
+            <label><input type="radio" name="time" value="local"><span>Lokal</span></label>
+            <label><input type="radio" name="time" value="utc"><span>UTC</span></label>
+          </div>
+        </div>
       </section>
 
-      <section class="card" aria-labelledby="h-night">
-        <h2 id="h-night"><span class="num">03</span>Nachts</h2>
+      <section class="card card-elements" aria-labelledby="h-el">
+        <h2 id="h-el"><span class="num">05</span>Elemente</h2>
+        <div id="elements" class="toggles"></div>
+      </section>
+
+      <section class="card card-night" aria-labelledby="h-night">
+        <h2 id="h-night"><span class="num">06</span>Nachts</h2>
         <label class="switch">
           <input id="night" type="checkbox" checked>
           <span class="track" aria-hidden="true"></span>
@@ -128,16 +183,16 @@
     </div>
 
     <div class="col col-out">
-      <section class="card" aria-labelledby="h-prev">
-        <h2 id="h-prev"><span class="num">04</span>Vorschau</h2>
+      <section class="card card-prev" aria-labelledby="h-prev">
+        <h2 id="h-prev"><span class="num">07</span>Vorschau</h2>
         <div id="preview" class="preview">
           <iframe id="frame" title="Vorschau des Fernsehbilds" tabindex="-1" src="about:blank"></iframe>
         </div>
         <p class="note">Live-Daten, wie sie der Fernseher zeigt. Aktualisiert sich nach jeder Änderung.</p>
       </section>
 
-      <section class="card" aria-labelledby="h-url">
-        <h2 id="h-url"><span class="num">05</span>Adresse für den Fernseher</h2>
+      <section class="card card-url" aria-labelledby="h-url">
+        <h2 id="h-url"><span class="num">08</span>Adresse für den Fernseher</h2>
         <p id="url-empty" class="status warn">Wähle zuerst einen Standort.</p>
         <code id="url" class="url" aria-label="Adresse für den Fernseher"></code>
         <div class="actions">
@@ -156,6 +211,8 @@
   <footer class="foot">Ortssuche: © OpenStreetMap-Mitwirkende, Nominatim · <a href="datenschutz.html">Datenschutz</a></footer>
 
   <script src="data/geo-features.js"></script>
+  <script src="js/styles.js"></script>
+  <script src="js/config.js"></script>
   <script src="js/qr.js"></script>
   <script src="js/setup.js"></script>
 </body>
