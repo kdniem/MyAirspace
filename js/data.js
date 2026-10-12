@@ -268,9 +268,10 @@
       self.idx = 0;
       self.lastSwitch = Date.now();
     }
-    var tried = 0;
+    var tried = 0, name = '', t0 = Date.now();
     function attempt() {
       var p = self.provider();
+      name = p.name;
       return p.fetch(lat, lon, km).catch(function (err) {
         tried++;
         if (tried >= self.order.length) throw err;
@@ -280,7 +281,14 @@
         return attempt();
       });
     }
-    return attempt();
+    // diagnostics (js/diag.js, local only): one result per poll, nothing else changes
+    return attempt().then(function (list) {
+      if (MA.diag) MA.diag.data(true, { name: name, ms: Date.now() - t0 });
+      return list;
+    }, function (err) {
+      if (MA.diag) MA.diag.data(false, { name: name, ms: Date.now() - t0, err: err });
+      throw err;
+    });
   };
 
   /* Origin/destination lookup by callsign (adsb.lol route database), cached. */
