@@ -11,241 +11,315 @@
   <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="stylesheet" href="css/setup.css">
 </head>
-<body>
-  <header class="top">
-    <a class="brand" href="./"><span class="brand-name">MYAIRSPACE</span><span class="brand-sep">·</span>EINRICHTEN</a>
-    <h1 class="led">Dein Luftraum</h1>
-    <p class="intro">Stell den Radar für deinen Fernseher ein. Alles steht am Ende in einer Adresse – gespeichert wird nichts.</p>
-    <p class="intro-link"><a id="wz-restart" href="setup.html?wizard=1">Geführte Einrichtung starten</a></p>
+<body data-mode="wizard" data-step="welcome">
+  <a class="skip" href="#main">Zum Inhalt springen</a>
 
-    <div id="wz" class="wz" hidden>
+  <header class="top">
+    <div class="top-row">
+      <a class="brand" href="./"><span class="brand-name">MYAIRSPACE</span><span class="brand-sep">·</span>EINRICHTEN</a>
+      <a id="wz-guided" class="toplink" href="#willkommen" hidden></a>
+    </div>
+    <div id="progress" class="progress" hidden>
       <p id="wz-step" class="wz-step" aria-live="polite"></p>
-      <ol id="wz-dots" class="wz-dots" aria-hidden="true"><li></li><li></li><li></li><li></li></ol>
-      <p id="wz-lead" class="wz-lead"></p>
+      <ol id="wz-dots" class="wz-dots" aria-hidden="true"><li></li><li></li><li></li><li></li><li></li></ol>
     </div>
   </header>
 
-  <main class="layout">
-    <div class="col col-form">
-      <section class="card card-welcome" aria-labelledby="h-welcome">
-        <h2 id="h-welcome" tabindex="-1">Willkommen</h2>
-        <p class="welcome-big">Dein Luftraum auf dem Fernseher.</p>
-        <p>MyAirspace zeigt die Flugzeuge um dich herum live als ruhiges Radar im Look echter Luftfahrt-Anzeigen. Du richtest es einmal hier am Handy ein und öffnest es dann am Fernseher.</p>
-        <ol class="welcome-steps">
-          <li><b>Standort</b> wählen</li>
-          <li><b>Stil</b> aussuchen</li>
-          <li><b>Feinschliff</b> nach Geschmack</li>
-          <li><b>Adresse</b> auf den Fernseher bringen</li>
-        </ol>
-        <p class="note">Dauert etwa zwei Minuten. Ein Konto brauchst du nicht, deine Einstellungen stehen am Ende in einer Adresse.</p>
-      </section>
-
-      <section class="card card-loc" aria-labelledby="h-loc">
-        <h2 id="h-loc"><span class="num">01</span>Standort</h2>
-
-        <button id="geo" class="btn btn-primary btn-wide" type="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/><circle cx="12" cy="12" r="2" class="fill"/></svg>
-          Meinen Standort verwenden
-        </button>
-        <p id="geo-status" class="status" role="status"></p>
-
-        <div class="field">
-          <label for="search">Ort suchen</label>
-          <input id="search" type="search" placeholder="z. B. Hamburg" autocomplete="off" spellcheck="false">
-          <ul id="results" class="results" hidden></ul>
-          <p id="search-status" class="status" role="status"></p>
-        </div>
-
-        <div class="field">
-          <span class="label">Flughäfen mit Karte</span>
-          <div id="airports" class="chips"></div>
-        </div>
-
-        <div class="row">
-          <div class="field">
-            <label for="lat">Breite (lat)</label>
-            <input id="lat" type="text" inputmode="decimal" placeholder="53.5511" autocomplete="off">
-          </div>
-          <div class="field">
-            <label for="lon">Länge (lon)</label>
-            <input id="lon" type="text" inputmode="decimal" placeholder="9.9937" autocomplete="off">
-          </div>
-        </div>
-
-        <label class="switch">
-          <input id="round" type="checkbox" checked>
-          <span class="track" aria-hidden="true"></span>
-          <span>Standort auf ~1 km runden <small>Deine genaue Adresse steht so nicht in der URL.</small></span>
-        </label>
-      </section>
-
-      <section class="card card-theme" aria-labelledby="h-theme">
-        <h2 id="h-theme"><span class="num">02</span>Theme</h2>
-
-        <div class="field">
-          <span class="label" id="style-lbl">Stil</span>
-          <div id="styles" class="styles" role="radiogroup" aria-labelledby="style-lbl"></div>
-        </div>
-
-        <div class="field">
-          <span class="label" id="theme-lbl">Hell / Dunkel</span>
-          <div class="seg" role="radiogroup" aria-labelledby="theme-lbl">
-            <label><input type="radio" name="theme" value="dark" checked><span>Dunkel</span></label>
-            <label><input type="radio" name="theme" value="light"><span>Hell</span></label>
-            <label><input type="radio" name="theme" value="auto"><span>Automatisch</span></label>
-          </div>
-          <p class="note">Automatisch: hell zwischen Sonnenauf- und -untergang am Standort, nachts dunkel.</p>
-        </div>
-
-        <div class="field">
-          <span class="label" id="accent-lbl">Akzentfarbe <output id="accent-out">Stil</output></span>
-          <div id="accents" class="swatches" role="radiogroup" aria-labelledby="accent-lbl"></div>
-        </div>
-
-        <div class="field">
-          <label for="brightness">Helligkeit der Karte <output id="brightness-out" for="brightness">100 %</output></label>
-          <input id="brightness" type="range" min="50" max="120" step="5" value="100">
-        </div>
-      </section>
-
-      <section class="card card-view" aria-labelledby="h-view">
-        <h2 id="h-view"><span class="num">03</span>Anzeige</h2>
-
-        <div class="field">
-          <label for="label">Ortsname oben links</label>
-          <input id="label" type="text" maxlength="24" placeholder="Hamburg" autocomplete="off">
-        </div>
-        <div class="field">
-          <label for="title">Zweite Zeile <small class="opt">optional</small></label>
-          <input id="title" type="text" maxlength="32" placeholder="z. B. Zuhause" autocomplete="off">
-        </div>
-
-        <div class="field">
-          <label for="radius">Radius <output id="radius-out" for="radius">25 km</output></label>
-          <input id="radius" type="range" min="5" max="80" step="1" value="25">
-        </div>
-
-        <div class="field">
-          <label for="trail">Flugspuren <output id="trail-out" for="trail">4 min</output></label>
-          <input id="trail" type="range" min="0" max="30" step="1" value="4">
-        </div>
-
-        <div class="field">
-          <span class="label" id="font-lbl">Schrift</span>
-          <div class="seg" role="radiogroup" aria-labelledby="font-lbl">
-            <label><input type="radio" name="font" value="mono" checked><span>Mono</span></label>
-            <label><input type="radio" name="font" value="sans"><span>Sans</span></label>
-          </div>
-        </div>
-
-        <div class="field">
-          <span class="label" id="fields-lbl">Datenblock am Flugzeug <small class="opt">Reihenfolge = Klickreihenfolge</small></span>
-          <div id="fields" class="chips chips-fields" role="group" aria-labelledby="fields-lbl"></div>
-        </div>
-      </section>
-
-      <section class="card card-units" aria-labelledby="h-units">
-        <h2 id="h-units"><span class="num">04</span>Einheiten</h2>
-        <div class="field">
-          <span class="label" id="units-lbl">Höhe</span>
-          <div class="seg" role="radiogroup" aria-labelledby="units-lbl">
-            <label><input type="radio" name="units" value="ft" checked><span>Fuß (ft)</span></label>
-            <label><input type="radio" name="units" value="m"><span>Meter (m)</span></label>
-          </div>
-        </div>
-        <div class="field">
-          <span class="label" id="speed-lbl">Geschwindigkeit</span>
-          <div class="seg" role="radiogroup" aria-labelledby="speed-lbl">
-            <label><input type="radio" name="speed" value="kt" checked><span>Knoten (kt)</span></label>
-            <label><input type="radio" name="speed" value="kmh"><span>km/h</span></label>
-          </div>
-        </div>
-        <div class="field">
-          <span class="label" id="press-lbl">Luftdruck (QNH)</span>
-          <div class="seg" role="radiogroup" aria-labelledby="press-lbl">
-            <label><input type="radio" name="pressure" value="hpa" checked><span>hPa</span></label>
-            <label><input type="radio" name="pressure" value="inhg"><span>inHg</span></label>
-          </div>
-        </div>
-        <div class="field">
-          <span class="label" id="time-lbl">Uhrzeit</span>
-          <div class="seg" role="radiogroup" aria-labelledby="time-lbl">
-            <label><input type="radio" name="time" value="both" checked><span>Lokal + UTC</span></label>
-            <label><input type="radio" name="time" value="local"><span>Lokal</span></label>
-            <label><input type="radio" name="time" value="utc"><span>UTC</span></label>
-          </div>
-        </div>
-      </section>
-
-      <section class="card card-elements" aria-labelledby="h-el">
-        <h2 id="h-el"><span class="num">05</span>Elemente</h2>
-        <div id="elements" class="toggles"></div>
-      </section>
-
-      <section class="card card-night" aria-labelledby="h-night">
-        <h2 id="h-night"><span class="num">06</span>Nachts</h2>
-        <label class="switch">
-          <input id="night" type="checkbox" checked>
-          <span class="track" aria-hidden="true"></span>
-          <span>Bildschirm nachts dimmen</span>
-        </label>
-        <div id="night-hours" class="row">
-          <div class="field">
-            <label for="night-from">von</label>
-            <select id="night-from"></select>
-          </div>
-          <div class="field">
-            <label for="night-to">bis</label>
-            <select id="night-to"></select>
-          </div>
-        </div>
-      </section>
-    </div>
-
-    <div class="col col-out">
-      <section class="card card-prev" aria-labelledby="h-prev">
-        <h2 id="h-prev"><span class="num">07</span>Vorschau</h2>
+  <main id="main" class="layout">
+    <aside class="col col-side" id="side" aria-label="Vorschau">
+      <section class="card-prev">
         <div id="preview" class="preview">
           <iframe id="frame" title="Vorschau des Fernsehbilds" tabindex="-1" src="about:blank"></iframe>
         </div>
-        <p class="note">Live-Daten, wie sie der Fernseher zeigt. Aktualisiert sich nach jeder Änderung.</p>
+        <p id="preview-note" class="note"></p>
+      </section>
+    </aside>
+
+    <div class="col col-main">
+
+      <!-- 0 Willkommen -->
+      <section class="step" id="step-welcome" data-id="welcome" aria-labelledby="h-welcome" hidden>
+        <header class="step-head">
+          <p class="eyebrow"></p>
+          <h2 id="h-welcome" tabindex="-1"></h2>
+          <p class="lead"></p>
+        </header>
+        <div class="step-body">
+          <ul id="promises" class="checks"></ul>
+        </div>
       </section>
 
-      <section class="card card-url" aria-labelledby="h-url">
-        <h2 id="h-url"><span class="num">08</span>Adresse für den Fernseher</h2>
-        <p id="url-empty" class="status warn">Wähle zuerst einen Standort.</p>
-        <code id="url" class="url" aria-label="Adresse für den Fernseher"></code>
-        <div class="actions">
-          <button id="copy" class="btn btn-primary" type="button">Kopieren</button>
-          <a id="open" class="btn" href="./" target="_blank" rel="noopener">Öffnen</a>
-        </div>
-        <ol class="wz-tips">
-          <li>Öffne die Adresse im Browser des Fernsehers (oder scanne den QR-Code).</li>
-          <li>Speichere sie als Lesezeichen oder Startseite, dann ist sie beim nächsten Mal sofort da.</li>
-          <li>Jede Änderung hier ergibt eine neue Adresse. Du kannst diese Seite jederzeit wieder öffnen.</li>
-        </ol>
-        <div class="qr-wrap">
-          <div id="qr" class="qr"></div>
-          <p class="note">Mit dem Handy scannen oder die Adresse im Browser des Fernsehers eingeben und als Lesezeichen speichern.
-            iPad/iPhone: in Safari öffnen, dann <em>Teilen → Zum Home-Bildschirm</em>.</p>
+      <!-- 1 Standort -->
+      <section class="step" id="step-standort" data-id="standort" aria-labelledby="h-standort" hidden>
+        <header class="step-head">
+          <p class="eyebrow"></p>
+          <h2 id="h-standort" tabindex="-1"></h2>
+          <p class="lead"></p>
+        </header>
+        <div class="step-body">
+          <div id="place-card" class="place-card" role="status" aria-live="polite">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            <div><b id="place-name"></b><small id="place-coords"></small></div>
+          </div>
+          <div class="group">
+            <button id="geo" class="btn btn-primary btn-xl btn-wide" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/><circle cx="12" cy="12" r="2" class="fill"/></svg>
+              <span id="geo-text">Meinen Standort verwenden</span>
+            </button>
+            <p id="geo-status" class="status" role="status"></p>
+          </div>
+
+          <div class="group">
+            <div class="field">
+              <label for="search">Oder einen Ort suchen</label>
+              <input id="search" type="search" placeholder="z. B. Hamburg" autocomplete="off" spellcheck="false">
+              <ul id="results" class="results" hidden></ul>
+              <p id="search-status" class="status" role="status"></p>
+            </div>
+          </div>
+
+          <div class="group">
+            <div class="field">
+              <span class="label" id="airports-lbl">Oder ein Flughafen mit Karte</span>
+              <div id="airports" class="chips" role="group" aria-labelledby="airports-lbl"></div>
+            </div>
+          </div>
+
+
+          <div class="group">
+            <label class="switch">
+              <input id="round" type="checkbox" checked>
+              <span class="track" aria-hidden="true"></span>
+              <span><b id="round-title">Auf etwa 1 km runden</b><small id="round-hint"></small></span>
+            </label>
+            <p id="round-warn" class="status warn" hidden></p>
+            <p id="privacy-note" class="note"></p>
+          </div>
+
+          <details id="coords" class="more">
+            <summary>Koordinaten selbst eingeben</summary>
+            <div class="row">
+              <div class="field">
+                <label for="lat">Breite (lat)</label>
+                <input id="lat" type="text" inputmode="decimal" placeholder="53.5511" autocomplete="off">
+              </div>
+              <div class="field">
+                <label for="lon">Länge (lon)</label>
+                <input id="lon" type="text" inputmode="decimal" placeholder="9.9937" autocomplete="off">
+              </div>
+            </div>
+          </details>
+
+          <div class="extra">
+            <div class="field">
+              <label for="label">Ortsname oben links</label>
+              <input id="label" type="text" maxlength="24" placeholder="Hamburg" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="title">Zweite Zeile <small class="opt">optional</small></label>
+              <input id="title" type="text" maxlength="32" placeholder="z. B. Zuhause" autocomplete="off">
+            </div>
+          </div>
         </div>
       </section>
+
+      <!-- 2 Look -->
+      <section class="step" id="step-look" data-id="look" aria-labelledby="h-look" hidden>
+        <header class="step-head">
+          <p class="eyebrow"></p>
+          <h2 id="h-look" tabindex="-1"></h2>
+          <p class="lead"></p>
+        </header>
+        <div class="step-body">
+          <div class="group">
+            <span class="label" id="style-lbl">Stil</span>
+            <div id="styles" class="styles" role="radiogroup" aria-labelledby="style-lbl"></div>
+          </div>
+
+          <div class="group">
+            <span class="label" id="theme-lbl">Hell oder dunkel</span>
+            <div class="seg" role="radiogroup" aria-labelledby="theme-lbl">
+              <label><input type="radio" name="theme" value="dark" checked><span>Dunkel</span></label>
+              <label><input type="radio" name="theme" value="light"><span>Hell</span></label>
+              <label><input type="radio" name="theme" value="auto"><span>Automatisch</span></label>
+            </div>
+            <p id="theme-hint" class="note"></p>
+          </div>
+
+          <div class="group">
+            <span class="label" id="accent-lbl">Akzentfarbe <output id="accent-out">Stil</output></span>
+            <div id="accents" class="swatches" role="radiogroup" aria-labelledby="accent-lbl"></div>
+          </div>
+
+          <div class="extra">
+            <div class="field">
+              <span class="label" id="font-lbl">Schrift</span>
+              <div class="seg" role="radiogroup" aria-labelledby="font-lbl">
+                <label><input type="radio" name="font" value="mono" checked><span>Mono</span></label>
+                <label><input type="radio" name="font" value="sans"><span>Sans</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <label for="brightness">Helligkeit der Karte <output id="brightness-out" for="brightness">100 %</output></label>
+              <input id="brightness" type="range" min="50" max="120" step="5" value="100">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3 Inhalt -->
+      <section class="step" id="step-inhalt" data-id="inhalt" aria-labelledby="h-inhalt" hidden>
+        <header class="step-head">
+          <p class="eyebrow"></p>
+          <h2 id="h-inhalt" tabindex="-1"></h2>
+          <p class="lead"></p>
+        </header>
+        <div class="step-body">
+          <div class="group">
+            <div id="elements-main" class="toggles"></div>
+          </div>
+
+          <div class="group">
+            <div class="field">
+              <span class="label" id="units-lbl">Höhe</span>
+              <div class="seg" role="radiogroup" aria-labelledby="units-lbl">
+                <label><input type="radio" name="units" value="ft" checked><span>Fuß (ft)</span></label>
+                <label><input type="radio" name="units" value="m"><span>Meter (m)</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label" id="speed-lbl">Geschwindigkeit</span>
+              <div class="seg" role="radiogroup" aria-labelledby="speed-lbl">
+                <label><input type="radio" name="speed" value="kt" checked><span>Knoten (kt)</span></label>
+                <label><input type="radio" name="speed" value="kmh"><span>km/h</span></label>
+              </div>
+            </div>
+            <p id="units-hint" class="note"></p>
+          </div>
+
+          <div class="group">
+            <label for="radius">Radius <output id="radius-out" for="radius">25 km</output></label>
+            <input id="radius" type="range" min="5" max="80" step="1" value="25" aria-describedby="radius-hint">
+            <p id="radius-hint" class="note"></p>
+          </div>
+
+          <div class="extra">
+            <div class="field">
+              <span class="label" id="elx-lbl">Weitere Elemente</span>
+              <div id="elements" class="toggles" role="group" aria-labelledby="elx-lbl"></div>
+            </div>
+            <div class="field">
+              <label for="trail">Länge der Flugspuren <output id="trail-out" for="trail">4 min</output></label>
+              <input id="trail" type="range" min="0" max="30" step="1" value="4">
+            </div>
+            <div class="field">
+              <span class="label" id="fields-lbl">Datenblock am Flugzeug <small class="opt">Reihenfolge = Klickreihenfolge</small></span>
+              <div id="fields" class="chips chips-fields" role="group" aria-labelledby="fields-lbl"></div>
+            </div>
+            <div class="field">
+              <span class="label" id="press-lbl">Luftdruck (QNH)</span>
+              <div class="seg" role="radiogroup" aria-labelledby="press-lbl">
+                <label><input type="radio" name="pressure" value="hpa" checked><span>hPa</span></label>
+                <label><input type="radio" name="pressure" value="inhg"><span>inHg</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label" id="time-lbl">Uhrzeit</span>
+              <div class="seg" role="radiogroup" aria-labelledby="time-lbl">
+                <label><input type="radio" name="time" value="both" checked><span>Lokal + UTC</span></label>
+                <label><input type="radio" name="time" value="local"><span>Lokal</span></label>
+                <label><input type="radio" name="time" value="utc"><span>UTC</span></label>
+              </div>
+            </div>
+            <div class="field">
+              <span class="label" id="night-lbl">Nachts</span>
+              <label class="switch" id="night-switch">
+                <input id="night" type="checkbox" checked>
+                <span class="track" aria-hidden="true"></span>
+                <span>Bildschirm nachts dimmen</span>
+              </label>
+              <div id="night-hours" class="row">
+                <div class="field">
+                  <label for="night-from">von</label>
+                  <select id="night-from"></select>
+                </div>
+                <div class="field">
+                  <label for="night-to">bis</label>
+                  <select id="night-to"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4 Fernseher -->
+      <section class="step" id="step-fernseher" data-id="fernseher" aria-labelledby="h-fernseher" hidden>
+        <header class="step-head">
+          <p class="eyebrow"></p>
+          <h2 id="h-fernseher" tabindex="-1"></h2>
+          <p class="lead"></p>
+        </header>
+        <div class="step-body">
+          <div class="group result">
+            <p id="url-empty" class="status warn">Wähle zuerst einen Standort.</p>
+            <code id="url" class="url" aria-label="Adresse für den Fernseher"></code>
+            <div class="actions">
+              <button id="copy" class="btn btn-lg" type="button">Kopieren</button>
+              <button id="share" class="btn btn-lg" type="button" hidden>Link teilen</button>
+              <a id="open" class="btn btn-lg" href="./" target="_blank" rel="noopener">Testen</a>
+            </div>
+            <p id="copy-status" class="status" role="status"></p>
+            <div class="qr-wrap">
+              <div id="qr" class="qr" role="img" aria-label="QR-Code mit der Adresse"></div>
+              <p id="qr-note" class="note"></p>
+            </div>
+          </div>
+
+          <div class="group">
+            <span class="label" id="device-lbl">Wo soll es laufen?</span>
+            <div id="devices" class="devices" role="radiogroup" aria-labelledby="device-lbl"></div>
+            <div id="device-panel" class="device-panel">
+              <p id="device-intro" class="note"></p>
+              <ol id="device-steps" class="guide"></ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5 Fertig -->
+      <section class="step" id="step-fertig" data-id="fertig" aria-labelledby="h-fertig" hidden>
+        <header class="step-head">
+          <p class="eyebrow"></p>
+          <h2 id="h-fertig" tabindex="-1"></h2>
+          <p class="lead"></p>
+        </header>
+        <div class="step-body">
+          <p id="recap" class="recap"></p>
+          <ol id="tips" class="tips"></ol>
+        </div>
+      </section>
+
+      <p class="expert"><button id="wz-all" class="linkbtn" type="button"></button></p>
     </div>
   </main>
 
   <nav id="wz-nav" class="wz-nav" aria-label="Einrichtung" hidden>
-    <button id="wz-back" class="btn" type="button">Zurück</button>
-    <button id="wz-skip" class="btn btn-link" type="button">Überspringen</button>
-    <button id="wz-next" class="btn btn-primary" type="button">Los geht’s</button>
+    <div class="wz-nav-in">
+      <button id="wz-back" class="btn btn-lg" type="button">Zurück</button>
+      <button id="wz-next" class="btn btn-primary btn-lg" type="button">Los geht’s</button>
+      <a id="wz-test" class="btn btn-primary btn-lg" href="./" target="_blank" rel="noopener" hidden>Testen</a>
+    </div>
+    <p id="wz-hint" class="wz-hint" role="status"></p>
   </nav>
 
   <footer class="foot">Ortssuche: © OpenStreetMap-Mitwirkende, Nominatim · <a href="datenschutz.html">Datenschutz</a></footer>
 
   <script src="data/geo-features.js"></script>
   <script src="js/styles.js"></script>
+  <script src="js/onboarding.js"></script>
   <script src="js/config.js"></script>
   <script src="js/qr.js"></script>
   <script src="js/setup.js"></script>
-  <script src="js/onboarding.js"></script>
 </body>
 </html>

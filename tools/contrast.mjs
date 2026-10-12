@@ -120,5 +120,29 @@ combos.forEach(([s, t, a]) => {
   });
   if (lines.length) console.log('\n' + head.toUpperCase() + '\n' + lines.join('\n'));
 });
+// setup page (css/setup.css, guided setup): fixed colour pairs, checked only in the full run
+if (!args[0]) {
+  const SETUP = [
+    ['Setup body text', '#e9e4d8', '#050607', 4.5],
+    ['Setup lead text', '#c2bfb5', '#050607', 4.5],
+    ['Setup card text', '#c2bfb5', '#101216', 4.5],
+    ['Setup secondary text', '#9a9ea4', '#0a0b0d', 4.5],
+    ['Setup secondary on field', '#9a9ea4', '#0e1013', 4.5],
+    ['Setup placeholder', '#7d8187', '#0e1013', 4.5],
+    ['Setup amber on bg', '#ffb547', '#050607', 4.5],
+    ['Setup amber on panel', '#ffb547', '#0a0b0d', 4.5],
+    ['Setup button label', '#120c02', '#ffb547', 4.5],
+    ['Setup error text', '#ff7a7a', '#050607', 4.5],
+    ['Setup status on dark', '#c2bfb5', '#050607', 4.5],
+    ['Setup URL text', '#ffb547', '#0e1013', 4.5],
+    ['Setup QR panel (dark on light)', '#050607', '#f4efe3', 4.5]
+  ];
+  SETUP.forEach(([label, fg, bg, min]) => {
+    const r = ratio(fg, bg);
+    checked++;
+    if (r < min) { fails++; console.log('SETUP LOW ' + label.padEnd(30) + r.toFixed(2).padStart(6) + ' : 1   (min ' + min + ')'); }
+    else if (verbose) console.log('SETUP ok  ' + label.padEnd(30) + r.toFixed(2).padStart(6) + ' : 1   (min ' + min + ')');
+  });
+}
 console.log('\n' + combos.length + ' combinations, ' + checked + ' checks: ' + (fails ? fails + ' below target' : 'all at or above target'));
 process.exit(fails ? 1 : 0);
