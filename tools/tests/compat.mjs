@@ -114,7 +114,7 @@ for (const [re, what] of CSS) {
     const ch = css[i];
     if (ch === '\n') line++;
     if (ch === '{') {
-      const head = css.slice(Math.max(0, css.lastIndexOf('}', i), css.lastIndexOf(';', i), css.lastIndexOf('{', i) ) + 1, i).trim();
+      const head = css.slice(Math.max(0, css.lastIndexOf('}', i - 1), css.lastIndexOf(';', i - 1), css.lastIndexOf('{', i - 1)) + 1, i).trim();
       const isAt = head[0] === '@';
       if (depth > 0 && !stackAt[depth - 1] && !isAt) add('css/style.css', line, 'nested rule (CSS nesting, Chrome 112): ' + head.slice(0, 60));
       stackAt[depth++] = isAt;

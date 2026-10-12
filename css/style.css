@@ -426,7 +426,7 @@ html, body {
   min-width: 0;
 }
 .lv-rows .c {
-  font-size: 3.2vh;
+  font-size: 2.9vh;
   line-height: 1.15;
   font-weight: var(--weight);
   color: var(--ink);
@@ -434,12 +434,12 @@ html, body {
 /* column widths follow the character counts of their content */
 .c-time    { flex: 4.6 1 0; }
 .c-flight  { flex: 8 1 0; text-overflow: ellipsis; }
-.c-airline { flex: 15 1 0; text-overflow: ellipsis; }
+.c-airline { flex: 13.8 1 0; text-overflow: ellipsis; }
 .c-type    { flex: 4.4 1 0; }
 .c-route   { flex: 9 1 0; }
 .c-alt     { flex: 5.4 1 0; text-align: right; }
 .c-dist    { flex: 4.6 1 0; text-align: right; }
-.c-status  { flex: 7 1 0; padding-left: 1.8vw; padding-right: 0; }
+.c-status  { flex: 8.6 1 0; padding-left: 1.8vw; padding-right: 0; }
 
 /* white rows; the flight is the key column, the status carries the phase */
 .lv-rows .c-flight { color: var(--val-color); }
