@@ -757,6 +757,85 @@ async function settingsTouchCase(browser) {
   } finally { await ctx.close(); }
 }
 
+// ---------- Anzeigetafel: the stats line keeps clear of the title, the clock and the fullscreen button ----------
+// the log is seeded for today so that the stats show all five cells (an empty log shows one)
+const SEED_LOG = () => {
+  const d = new Date(), pad = (n) => String(n).padStart(2, '0');
+  const k = 'myairspace.log.' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const now = Date.now(), types = ['A320', 'B738', 'A359', 'E190', 'B789', 'A388', 'DH8D', 'A21N', 'B763', 'C172'];
+  const airlines = ['Lufthansa', 'Eurowings', 'KLM', 'Ryanair', 'British Airways', 'Emirates', 'SAS', 'Condor'];
+  const list = [];
+  for (let i = 0; i < 14; i++) list.push({ hex: 'abc' + i, cs: 'DLH' + (100 + i), al: airlines[i % airlines.length], t: types[i % types.length], reg: '', from: 'HAM', to: 'FRA',
+    first: now - (i + 1) * 900000, last: now - (i + 1) * 900000 + 60000, dmin: 3 + i * 1.7, tmin: now - (i + 1) * 900000, altC: 2000 + i * 900, amin: 2000, amax: 9000, ph: i % 2 ? 'up' : 'down' });
+  try { localStorage.setItem(k, JSON.stringify({ v: 1, entries: list })); } catch (e) { /* storage off */ }
+};
+const BOARD_GEO = () => {
+  const box = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null; };
+  const text = (e) => { if (!e || !(e.textContent || '').trim()) return null; const r = document.createRange(); r.selectNodeContents(e); const b = r.getBoundingClientRect(); return b.width > 0 && b.height > 0 ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null; };
+  const cells = Array.from(document.querySelectorAll('#lv-stats .st')).map((e) => ({ n: 'stat "' + e.textContent.trim().slice(0, 18) + '"', box: box(e), txt: Array.from(e.querySelectorAll('.st-l, .st-v, .st-x')).map(text).filter(Boolean) }));
+  return { cells, title: text(document.querySelector('.lv-heading')), date: text(document.querySelector('.lv-date')), clock: box(document.getElementById('clock')), fs: box(document.getElementById('fs-btn')), view: document.body.classList.contains('view-board') };
+};
+async function boardStatsCase(browser, vp) {
+  const id = 'board_stats_no_overlap';
+  const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
+  const problems = [];
+  const at = vp.w + 'x' + vp.h;
+  try {
+    await ctx.addInitScript(SEED_LOG);
+    await page.goto(BASE + '/index.html?demo=1&view=board', { waitUntil: 'load' });
+    await page.waitForTimeout(9000);   // the board refreshes every 5 s; the first refresh loads the seeded log
+    const g = await page.evaluate(BOARD_GEO);
+    if (!g.view) problems.push('view=board did not show the Anzeigetafel at ' + at);
+    if (!g.fs) problems.push('no fullscreen button to check against at ' + at);
+    if (g.cells.length < 5) problems.push('stats line has ' + g.cells.length + ' cells, expected 5 (seeded log not shown) at ' + at);
+    const hit = (a, b) => !!a && !!b && Math.min(a.r, b.r) - Math.max(a.l, b.l) > 1 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 1;
+    const fmt = (b) => b ? [b.l, b.t, b.r, b.b].map((v) => Math.round(v)).join(',') : 'none';
+    g.cells.forEach((c) => {
+      if (hit(c.box, g.fs)) problems.push(c.n + ' runs under the fullscreen button at ' + at + ' (cell ' + fmt(c.box) + '; button ' + fmt(g.fs) + ')');
+      if (hit(c.box, g.clock)) problems.push(c.n + ' overlaps the clock at ' + at);
+      c.txt.forEach((t) => {
+        if (hit(t, g.title)) problems.push(c.n + ' text overlaps the title ÜBERFLÜGE at ' + at + ' (text ' + fmt(t) + '; title ' + fmt(g.title) + ')');
+        if (hit(t, g.date)) problems.push(c.n + ' text overlaps the date at ' + at);
+      });
+    });
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id + '_' + vp.w); }
+  } catch (e) { record(id, 'test crashed at ' + at + ': ' + e.message); await shot(page, id + '_' + vp.w); } finally { await ctx.close(); }
+}
+
+// ---------- radar: the METAR and runway lines stay clear of the special-aircraft banner ----------
+const RADAR_GEO = () => {
+  const box = (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+  const text = (e) => { if (!e || !(e.textContent || '').trim()) return null; const r = document.createRange(); r.selectNodeContents(e); const b = r.getBoundingClientRect(); return b.width > 0 && b.height > 0 ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null; };
+  const toast = document.getElementById('toast');
+  return { toast: box(toast), on: toast.classList.contains('on'), vw: innerWidth, vh: innerHeight,
+    wx: ['wx-metar', 'wx-rwy'].map((id) => ({ n: id, box: text(document.getElementById(id)) })).filter((x) => x.box) };
+};
+async function radarMetarCase(browser, vp) {
+  const id = 'radar_metar_not_under_alert';
+  const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
+  const problems = [];
+  const at = vp.w + 'x' + vp.h;
+  try {
+    await page.goto(BASE + '/index.html?demo=1&style=tower', { waitUntil: 'load' });
+    // the demo has a squawk 7700 aircraft that comes into range: its banner is the one under test
+    const t0 = Date.now();
+    while (Date.now() - t0 < 60000 && !(await page.evaluate(() => document.getElementById('toast').classList.contains('on')))) await page.waitForTimeout(250);
+    await page.waitForTimeout(1500);   // the banner slides in over 1.2 s
+    const g = await page.evaluate(RADAR_GEO);
+    if (!g.on) problems.push('no special-aircraft banner in demo mode at ' + at);
+    if (!g.wx.length) problems.push('no METAR or runway line to check against at ' + at);
+    const hit = (a, b) => !!a && !!b && Math.min(a.r, b.r) - Math.max(a.l, b.l) > 1 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 1;
+    const fmt = (b) => b ? [b.l, b.t, b.r, b.b].map((v) => Math.round(v)).join(',') : 'none';
+    g.wx.forEach((w) => { if (hit(w.box, g.toast)) problems.push(w.n + ' runs under the special-aircraft banner at ' + at + ' (line ' + fmt(w.box) + '; banner ' + fmt(g.toast) + ')'); });
+    if (g.on && (g.toast.r > g.vw + 1 || g.toast.b > g.vh + 1 || g.toast.l < -1)) problems.push('special-aircraft banner leaves the screen at ' + at + ' (' + fmt(g.toast) + ')');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id + '_' + vp.w); }
+  } catch (e) { record(id, 'test crashed at ' + at + ': ' + e.message); await shot(page, id + '_' + vp.w); } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -773,6 +852,8 @@ jobs.push({ n: 'canvas_res', run: () => resCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });
 jobs.push({ n: 'settings_1280', run: () => settingsCase(browser) }, { n: 'settings_touch_390', run: () => settingsTouchCase(browser) });
+jobs.push({ n: 'board_stats_no_overlap_1920', run: () => boardStatsCase(browser, { w: 1920, h: 1080 }) }, { n: 'board_stats_no_overlap_1280', run: () => boardStatsCase(browser, { w: 1280, h: 720 }) });
+jobs.push({ n: 'radar_metar_not_under_alert_1280', run: () => radarMetarCase(browser, { w: 1280, h: 720 }) }, { n: 'radar_metar_not_under_alert_390', run: () => radarMetarCase(browser, { w: 390, h: 844 }) });
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;
 await Promise.all(Array.from({ length: CONC }, async () => { while (next < filtered.length) await filtered[next++].run(); }));
