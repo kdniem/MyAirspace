@@ -64,13 +64,13 @@ function record(id, msg) {
 // ---------- request policy ----------
 const ALLOW = {
   demo: [],
-  setup: [/^https:\/\/nominatim\.openstreetmap\.org\//],
+  setup: [/^https:\/\/nominatim\.openstreetmap\.org\//, /^https:\/\/myairspace-nu\.vercel\.app\/api\/proxy\?/],   // the preview runs live (mocked)
   live: [/^https:\/\/myairspace-nu\.vercel\.app\/api\/proxy\?/, /^https:\/\/api\.adsb\.lol\/api\/0\/route\//]
 };
-async function newPage(browser, vp, mode) {
-  const ctx = await browser.newContext({ viewport: vp, serviceWorkers: 'block', deviceScaleFactor: 1 });
+async function newPage(browser, vp, mode, geo) {
+  const ctx = await browser.newContext(Object.assign({ viewport: vp, serviceWorkers: 'block', deviceScaleFactor: 1 }, geo ? { permissions: ['geolocation'], geolocation: { latitude: 53.5511, longitude: 9.9937 } } : {}));
   const page = await ctx.newPage();
-  const st = { errors: [], blocked: [], dialogs: 0, local404: [], reqs: [] };
+  const st = { errors: [], blocked: [], dialogs: 0, local404: [], reqs: [], nom: '[]' };
   page.on('pageerror', (e) => st.errors.push('pageerror: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) st.errors.push('console.error: ' + m.text()); });
   page.on('dialog', (d) => { st.dialogs++; d.dismiss().catch(() => {}); });
@@ -80,7 +80,8 @@ async function newPage(browser, vp, mode) {
     if (u.startsWith(BASE) || u.startsWith('data:') || u.startsWith('blob:') || u.startsWith('about:')) return route.continue();
     st.reqs.push(u);
     if (ALLOW[mode].some((re) => re.test(u))) {
-      if (/nominatim/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+      if (/nominatim.*reverse/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: '{"address":{"city":"Hamburg"}}' });
+      if (/nominatim/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: st.nom });
       if (/\/route\//.test(u)) return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
       if (/aviationweather/.test(decodeURIComponent(u))) return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
       return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ac":[],"now":0,"total":0}' });
@@ -227,46 +228,155 @@ async function setupCase(browser, vp) {
   } finally { await ctx.close(); }
 }
 
-// ---------- guided setup (wizard) ----------
-async function wizardCase(browser, vp) {
-  const id = 'wizard_' + vp.width + 'x' + vp.height;
-  const { ctx, page, st } = await newPage(browser, vp, 'setup');
+// ---------- guided setup: the whole journey ----------
+const SHOTS = process.env.JOURNEY_SHOTS || '';
+async function journeyCase(browser, vp) {
+  const id = 'journey_' + vp.width + 'x' + vp.height;
+  const { ctx, page, st } = await newPage(browser, vp, 'setup', true);
+  st.nom = JSON.stringify([{ lat: '53.55', lon: '10.0', name: '<img src=x onerror="window.__pwn=1">', display_name: '<img src=x onerror="window.__pwn=1">, Hamburg' }]);
   const problems = [];
   const vis = (sel) => page.locator(sel).first().isVisible();
+  const stepIs = async (n, what) => { const got = await page.getAttribute('body', 'data-step'); if (got !== n) problems.push(what + ': expected step ' + n + ', got ' + got); };
+  const snap = async (n) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.waitForTimeout(700); await page.screenshot({ path: path.join(SHOTS, vp.width + '_' + n + '.png') }); } };
+  const noHScroll = async (what) => { const r = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]); if (r[0] > r[1]) problems.push('horizontal scroll at ' + what + ': ' + r[0] + ' > ' + r[1]); };
+  const focusOk = async (what) => { const t = await page.evaluate(() => { const a = document.activeElement; return a && a.tagName === 'H2' ? 'ok' : (a ? a.tagName : 'none'); }); if (t !== 'ok') problems.push('focus not on the step heading after ' + what + ' (' + t + ')'); };
   try {
-    await page.goto(BASE + '/setup.html?demo=1', { waitUntil: 'load' });
-    if (!(await vis('.card-welcome'))) problems.push('wizard step 1 does not show the welcome card');
-    if (await vis('.card-loc')) problems.push('wizard step 1 shows the location card too early');
+    await page.goto(BASE + '/setup.html', { waitUntil: 'load' });
+    await stepIs('welcome', 'start');
+    if (!(await vis('#frame'))) problems.push('welcome: preview missing');
+    await page.waitForTimeout(2500);
+    const wsrc = await page.getAttribute('#frame', 'src');
+    if (!/demo=1/.test(wsrc || '')) problems.push('welcome preview is not the demo: ' + wsrc);
+    if (await vis('#wz-back')) problems.push('welcome shows Zurück');
+    if (!(await vis('#wz-all'))) problems.push('welcome lacks the expert link');
+    await noHScroll('welcome'); await snap('0_welcome');
     await page.click('#wz-next');
-    if (!(await vis('.card-loc'))) problems.push('step 2 does not show the location card');
-    if (!(await page.locator('#wz-next').isDisabled())) problems.push('"Weiter" is enabled without a location');
+    await stepIs('standort', 'next'); await focusOk('Los geht’s');
+    if ((await page.textContent('#wz-step')).indexOf('Schritt 1 von 5') < 0) problems.push('progress text: ' + (await page.textContent('#wz-step')));
+    if ((await page.getAttribute('#wz-next', 'aria-disabled')) !== 'true') problems.push('Weiter is not disabled without a location');
+    await page.click('#wz-next', { force: true });   // aria-disabled: the click must not leave the step
+    await stepIs('standort', 'blocked next');
+    await snap('1_standort');
+    // hostile search result stays inert text
+    await page.fill('#search', 'hamburg');
+    await page.waitForSelector('#results button', { timeout: 6000 });
+    if (await page.locator('#results img').count()) problems.push('search result rendered markup');
+    await page.click('#results button');
+    if (await page.locator('#place-card img').count()) problems.push('place card rendered markup');
+    // GPS
+    await page.click('#geo');
+    await page.waitForFunction(() => /übernommen/.test(document.getElementById('geo-status').textContent), null, { timeout: 5000 }).catch(() => problems.push('GPS did not report success'));
+    await page.waitForTimeout(1500);
+    // manual coordinates
+    await page.click('#coords summary');
     await page.fill('#lat', '53.55');
     await page.fill('#lon', '9.99');
-    if (await page.locator('#wz-next').isDisabled()) problems.push('"Weiter" stays disabled with a valid location');
+    if ((await page.getAttribute('#wz-next', 'aria-disabled')) === 'true') problems.push('Weiter stays disabled with a location');
+    if (!(await page.textContent('#place-name')).trim()) problems.push('chosen place name is empty');
+    await noHScroll('standort'); await snap('1b_standort_gps');
     await page.click('#wz-next');
-    if (!(await vis('.card-theme'))) problems.push('step 3 does not show the style card');
+    await stepIs('look', 'to look'); await focusOk('Weiter');
+    await page.waitForTimeout(800);
+    const minis = await page.evaluate(() => Array.from(document.querySelectorAll('.stylecard canvas')).map((c) => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const seen = {}; for (let i = 0; i < d.length; i += 400) seen[d[i] + ',' + d[i + 1]] = 1; return Object.keys(seen).length; }));
+    if (minis.length !== STYLE_NAMES.length || minis.some((n) => n < 6)) problems.push('style mini previews missing or blank: ' + minis.join(','));
+    await page.click('.stylecard[data-style=boeing]');
+    await page.click('input[name=accent][value=cyan]', { force: true });
+    await noHScroll('look'); await snap('2_look');
     await page.click('#wz-next');
-    if (!(await vis('.card-units'))) problems.push('step 4 does not show the fine tuning cards');
+    await stepIs('inhalt', 'to inhalt');
+    await page.click('#elements-main .switch:nth-child(3)');   // Spuren off
+    await page.locator('#radius').evaluate((e) => { e.value = '30'; e.dispatchEvent(new Event('input', { bubbles: true })); });
+    await noHScroll('inhalt'); await snap('3_inhalt');
+    // Back keeps state
     await page.click('#wz-back');
+    await page.waitForFunction(() => document.body.dataset.step === 'look', null, { timeout: 3000 }).catch(() => {});
+    await stepIs('look', 'back');
+    if (!(await page.isChecked('input[name=style][value=boeing]'))) problems.push('Back lost the style choice');
+    await page.click('#wz-back');
+    await page.waitForFunction(() => document.body.dataset.step === 'standort', null, { timeout: 3000 }).catch(() => {});
+    await stepIs('standort', 'back 2');
+    if ((await page.inputValue('#lat')) !== '53.55') problems.push('Back lost the location');
+    await page.click('#wz-next'); await page.click('#wz-next');
+    await stepIs('inhalt', 'again to inhalt');
+    await page.evaluate(() => history.back());   // browser Back re-renders the previous step
+    await page.waitForFunction(() => document.body.dataset.step !== 'inhalt', null, { timeout: 3000 }).catch(() => {});
+    if ((await page.getAttribute('body', 'data-step')) === 'inhalt') problems.push('browser Back did not change the step');
+    await page.evaluate(() => history.forward());
+    await page.waitForFunction(() => document.body.dataset.step === 'inhalt', null, { timeout: 3000 }).catch(() => {});
+    if (await page.locator('#elements-main .switch:nth-child(3) input').isChecked()) problems.push('Back lost the toggle state');
     await page.click('#wz-next');
-    await page.click('#wz-next');
-    if (!(await vis('.card-url'))) problems.push('step 5 does not show the TV address');
+    await stepIs('fernseher', 'to fernseher');
     const url = await page.textContent('#url');
-    if (!/lat=53\.5/.test(url)) problems.push('wizard URL lacks the location: ' + url);
-    await page.waitForTimeout(500);
-    await shot(page, id + '_final');
+    if (!/lat=53\.5/.test(url) || !/lon=9\.9/.test(url)) problems.push('URL lacks the location: ' + url);
+    if (!/style=boeing/.test(url)) problems.push('URL lacks the style: ' + url);
+    if (!/trails=0/.test(url)) problems.push('URL lacks trails=0: ' + url);
+    if (!/r=30/.test(url)) problems.push('URL lacks r=30: ' + url);
+    if (!(await page.locator('#qr svg').count())) problems.push('QR code missing');
+    if (await vis('#frame')) problems.push('preview still visible on the TV step');
+    const before = await page.locator('#device-steps li').count();
+    await page.click('label.device:nth-child(2)');
+    const apple = await page.textContent('#device-steps');
+    if (!/AirPlay|Kontrollzentrum/.test(apple) || before < 3) problems.push('device chooser did not change the steps');
+    for (const nm of ['label.device:nth-child(3)', 'label.device:nth-child(4)']) { await page.click(nm); if (!(await page.locator('#device-steps li').count())) problems.push('device ' + nm + ' has no steps'); }
+    await noHScroll('fernseher'); await snap('4_fernseher');
     await page.click('#wz-next');
-    if (await page.evaluate(() => document.body.classList.contains('wizard'))) problems.push('wizard stays active after finishing');
+    await stepIs('fertig', 'to fertig');
+    if (!(await vis('#wz-test')) || !/lat=53/.test(await page.getAttribute('#wz-test', 'href'))) problems.push('Testen link missing or without the address');
+    if ((await page.locator('#tips li').count()) !== 3) problems.push('expected 3 tips');
+    await noHScroll('fertig'); await snap('5_fertig');
+    // resume after reload (sessionStorage)
     await page.reload({ waitUntil: 'load' });
-    if (await page.evaluate(() => document.body.classList.contains('wizard'))) problems.push('wizard shows again after finishing');
-    await page.goto(BASE + '/setup.html?wizard=1&demo=1', { waitUntil: 'load' });
-    if (!(await vis('.card-welcome'))) problems.push('?wizard=1 does not restart the wizard');
+    await page.waitForTimeout(500);
+    await stepIs('fertig', 'resume');
+    if (!/style=boeing/.test(await page.getAttribute('#wz-test', 'href'))) problems.push('resume lost the choices');
+    if (/lat=/.test(await page.evaluate(() => location.search))) problems.push('resumed session left lat/lon in the address bar');
+    // all settings, hostile label
+    await page.click('#wz-all');
+    await stepIs('all', 'all settings');
+    await page.fill('#label', '<svg onload=window.__pwn=1>');
+    await page.waitForTimeout(500);
+    await noHScroll('alle'); await snap('6_alle');
+    if (!(await vis('#night-from')) || !(await vis('#fields'))) problems.push('all settings lack extra controls');
+    const pwn = await page.evaluate(() => !!window.__pwn || document.querySelectorAll('img[src="x"], [onerror], [onload]').length);
+    if (pwn) problems.push('hostile text became active');
+    // deep links
+    await page.goto(BASE + '/setup.html?lat=50.03&lon=8.57&demo=1', { waitUntil: 'load' });
+    await stepIs('all', 'deep link with location');
+    await page.evaluate(() => sessionStorage.clear());
+    await page.goto(BASE + '/setup.html?wizard=1&demo=1#fernseher', { waitUntil: 'load' });
+    await stepIs('standort', 'deep link to a step that needs a location');
     collect(st, problems);
     checked.pages++;
     if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
   } catch (e) {
+    problems.forEach((p) => record(id, p));
     record(id, 'test crashed: ' + e.message); await shot(page, id);
   } finally { await ctx.close(); }
+}
+
+// ---------- TV first-run welcome overlay ----------
+async function hintCase(browser) {
+  const id = 'tv_welcome';
+  const { ctx, page, st } = await newPage(browser, { width: 1920, height: 1080 }, 'live');   // live: the second load asks the (mocked) proxy
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html', { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+    const r = await page.evaluate(() => { const h = document.getElementById('hint'); return h ? { qr: !!h.querySelector('svg'), op: getComputedStyle(h).opacity, text: h.textContent } : null; });
+    if (!r) problems.push('no welcome overlay without a location');
+    else {
+      if (!r.qr) problems.push('welcome overlay has no QR code');
+      if (!/Willkommen bei MyAirspace/.test(r.text) || !/setup\.html/.test(r.text)) problems.push('welcome overlay text: ' + r.text);
+      if (+r.op < 0.9) problems.push('overlay not visible, opacity ' + r.op);
+    }
+    if (!(await page.evaluate(() => document.getElementById('radar').width))) problems.push('no radar behind the overlay');
+    await page.goto(BASE + '/index.html?lat=53.55&lon=9.99', { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    if (await page.evaluate(() => { const h = document.getElementById('hint'); return !!h && /Willkommen/.test(h.textContent); })) problems.push('welcome overlay shown although a location is set');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
 // ---------- hostile parameters ----------
@@ -330,7 +440,7 @@ const jobs = [];
 const VPS = QUICK ? [{ w: 1920, h: 1080 }] : [{ w: 1920, h: 1080 }, { w: 1280, h: 720 }, { w: 3840, h: 2160 }];
 for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 'light'] : ['dark'])
   for (const vp of VPS) for (const view of ['radar', 'board']) jobs.push({ n: [style, theme, vp.w, view].join('_'), run: () => matrixCase(browser, { style, theme, vp, view }) });
-jobs.push({ n: 'wizard_390', run: () => wizardCase(browser, { width: 390, height: 844 }) }, { n: 'wizard_1280', run: () => wizardCase(browser, { width: 1280, height: 800 }) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
+jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;

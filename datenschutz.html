@@ -77,7 +77,7 @@
 
   <section>
     <h2>Speicher im Browser</h2>
-    <p>Die App nutzt den lokalen Speicher deines Browsers (<code>localStorage</code>) für deine Einstellungen (zuletzt geöffnete Adresse für die Home-Bildschirm-App) und Merker, dass die geführte Einrichtung bzw. der Willkommenshinweis schon gezeigt wurde (<code>ma.onboarded</code>, <code>ma.tvSeen</code>, enthalten keine Standortdaten) und für ein Überflug-Protokoll der letzten zwei Tage für die Anzeigetafel. Diese Daten verlassen dein Gerät nicht. Ein Service Worker legt die App-Dateien (nie Flugdaten) für den Offline-Start ab. Du kannst alles in den Browser-Einstellungen unter „Websitedaten“ löschen. Es werden keine Cookies gesetzt.</p>
+    <p>Die App nutzt den lokalen Speicher deines Browsers (<code>localStorage</code>) für deine Einstellungen (zuletzt geöffnete Adresse für die Home-Bildschirm-App) und Merker, dass die geführte Einrichtung bzw. der Willkommenshinweis schon gezeigt wurde (<code>ma.tvSeen</code>, enthält keine Standortdaten) und die zuletzt geöffnete Adresse (<code>ma.lastQuery</code>, enthält Standort und Einstellungen, damit die Home-Bildschirm-App sie wiederherstellt) und für ein Überflug-Protokoll der letzten zwei Tage für die Anzeigetafel. Diese Daten verlassen dein Gerät nicht. Die geführte Einrichtung merkt sich außerdem deinen Fortschritt im Tab (<code>sessionStorage</code>, <code>ma.wz</code>, mit Standort und Auswahl); er wird beim Schließen des Tabs gelöscht. Ein Service Worker legt die App-Dateien (nie Flugdaten) für den Offline-Start ab. Du kannst alles in den Browser-Einstellungen unter „Websitedaten“ löschen. Es werden keine Cookies gesetzt.</p>
   </section>
 
   <section>
