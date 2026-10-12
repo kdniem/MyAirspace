@@ -458,6 +458,7 @@
     }
     el.copy.textContent = 'Kopieren';
     schedulePreview(params);
+    document.dispatchEvent(new CustomEvent('ma:update', { detail: { loc: !!loc, url: currentUrl } }));
   }
 
   /* ---------- QR ---------- */
