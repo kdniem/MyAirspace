@@ -637,6 +637,7 @@ html, body {
 [data-style="efis-airbus"] .board-inner { padding: 1.4vh 1.2vw; }
 [data-style="efis-airbus"] .cell { border: 1px solid var(--line); border-radius: var(--radius); margin: 0 0.3vw; padding: 1.4vh 1vw; }
 [data-style="efis-airbus"] .cell:first-child { border: 1px solid var(--line); padding-left: 1vw; }
+[data-style="efis-airbus"] .cell-route { padding-left: 0.6vw; padding-right: 0.6vw; }
 [data-style="efis-airbus"] .lv-table { border: 1px solid var(--line); }
 [data-style="efis-airbus"] .lv-head { background: var(--panel); }
 
