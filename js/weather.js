@@ -137,7 +137,7 @@
           if (r.land.indexOf(rw.ids[i]) < 0) return;
           var thr = i ? rw.b : rw.a;
           var far = g.dest(thr[0], thr[1], rw.hdg + (i ? 0 : 180), APPROACH_KM);
-          active.push({ thr: thr, far: far, rev: !!i, est: r.est });
+          active.push({ thr: thr, far: far, rev: !!i, est: r.est, end: rw.ids[i] });
         });
       });
     });
@@ -192,6 +192,23 @@
     return p.join(' · ');
   }
 
+  // METAR-style compact line: the raw report without the type word and remarks,
+  // e.g. "EDDH 120820Z 23012G22KT 9999 FEW025 BKN042 14/08 Q1013 NOSIG"
+  function compactMetar(m) {
+    var raw = String(m.rawOb || '').replace(/^(METAR|SPECI)\s+/, '').replace(/\s+(RMK|BECMG|TEMPO)\b.*$/, '').replace(/\s+=?$/, '');
+    if (/^[A-Z]{4} \d{6}Z /.test(raw)) return raw;
+    // no raw text in the response: build from the decoded fields
+    var p = [m.icaoId];
+    if (typeof m.wspd === 'number') {
+      p.push((typeof m.wdir === 'number' ? pad3(m.wdir) : 'VRB') + ('0' + m.wspd).slice(-2) + (m.wgst ? 'G' + m.wgst : '') + 'KT');
+    }
+    if (typeof m.temp === 'number' && typeof m.dewp === 'number') {
+      p.push((m.temp < 0 ? 'M' : '') + ('0' + Math.abs(Math.round(m.temp))).slice(-2) + '/' + (m.dewp < 0 ? 'M' : '') + ('0' + Math.abs(Math.round(m.dewp))).slice(-2));
+    }
+    if (typeof m.altim === 'number') p.push('Q' + Math.round(m.altim));
+    return p.join(' ');
+  }
+
   function validMetar(j) {
     return Array.isArray(j) && j.every(function (m) { return m && typeof m.icaoId === 'string'; });
   }
@@ -216,12 +233,14 @@
 
   /* ---------- header ---------- */
 
-  // Runway line as [text, bold] pieces; null marks the gap between airports.
+  // QNH and runway line as [text, bold] pieces; null marks a gap.
   function rwyPieces() {
     var out = [];
+    var qm = airports.length && metars[airports[0].ap.icao];
+    if (qm && typeof qm.altim === 'number') out.push(['QNH ', false], [MA.fmt.qnh(qm.altim, cfg.pressure), true, true]);
     results.forEach(function (r, i) {
-      if (i) out.push(null);
-      out.push([r.code + ' \u25B8 ', false]);
+      if (out.length) out.push(null);
+      out.push([r.code + ' \u25B8 RWY ', false]);
       if (r.est) { out.push([r.land.join('/'), true], [' laut Wind', false]); return; }
       if (r.land.join() === r.start.join()) { out.push([r.land.join('/'), true], [' Landung & Start', false]); return; }
       if (r.land.length) out.push([r.land.join('/'), true], [' Landung', false]);
@@ -234,7 +253,7 @@
   function render(now) {
     if (!els) return;
     var m = airports.length && metars[airports[0].ap.icao];
-    var mt = m ? metarText(m, now) : '';
+    var mt = m ? compactMetar(m) : '';
     var pieces = rwyPieces(), key = JSON.stringify(pieces);
     if (mt !== shown.metar) { els.metar.textContent = mt; shown.metar = mt; }
     if (key !== shown.rwy) {
@@ -243,7 +262,7 @@
       pieces.forEach(function (p) {
         var node;
         if (!p) { node = document.createElement('span'); node.className = 'wx-gap'; }
-        else if (p[1]) { node = document.createElement('b'); node.textContent = p[0]; }
+        else if (p[1]) { node = document.createElement('b'); node.textContent = p[0]; if (p[2]) node.className = 'n'; }
         else node = document.createTextNode(p[0]);
         els.rwy.appendChild(node);
       });
@@ -270,6 +289,7 @@
     _store: function (list, now) { list.forEach(function (m) { metars[m.icaoId] = m; }); update(now); },
     _results: function () { return results; },
     _rwyText: function () { return rwyPieces().map(function (p) { return p ? p[0] : '   '; }).join(''); },
-    _metarText: metarText
+    _metarText: metarText,
+    _compact: compactMetar
   };
 })(window.MA);

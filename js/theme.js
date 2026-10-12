@@ -1,10 +1,10 @@
-/* Colour theme: dark | light | auto (light from sunrise to sunset at the configured place).
+/* Colour theme (dark | light | auto) and style tokens: sets data-theme and the CSS custom properties.
+   dark | light | auto (light from sunrise to sunset at the configured place).
    Loaded in <head> right after config.js, so data-theme is set before the first paint.
    CSS colours live in custom properties (css/style.css), the canvas palette in js/radar.js. */
 (function (MA) {
   var cfg = MA.config;
   var root = document.documentElement;
-  var META = { dark: '#050607', light: '#f4f2ec' };
   var CHECK_MS = 3 * 60 * 1000;
   var FADE_MS = 1800;
   var RAD = Math.PI / 180;
@@ -60,8 +60,11 @@
       fadeTimer = setTimeout(function () { root.className = root.className.replace(/\s*theme-fade/g, '').trim(); }, FADE_MS + 400);
     }
     root.setAttribute('data-theme', name);
+    // role tokens of the chosen style for this theme -> CSS custom properties (js/styles.js)
+    var res = MA.style.resolve(cfg.style, name, { accent: cfg.accent, font: cfg.font, brightness: cfg.brightness });
+    MA.style.apply(root, res);
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', META[name]);
+    if (meta) meta.setAttribute('content', res.c.bg);
     for (var i = 0; i < listeners.length; i++) listeners[i](name, fade);
   }
 

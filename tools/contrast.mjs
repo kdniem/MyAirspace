@@ -1,12 +1,16 @@
-// WCAG contrast check for the TV page's text colours, per theme.
-//   node tools/contrast.mjs          current files (css/style.css vars + js/radar.js palettes)
-//   node tools/contrast.mjs before   the hard-coded colours of Release 1 (reference)
-// Semi-transparent colours are blended over their background first. The board's
-// dot-matrix overlay is ignored (it darkens ~half of each dot cell slightly).
+// WCAG contrast check for the TV page, for every style x theme (js/styles.js STYLES table),
+// plus the accent presets and a few typed hex accents.
+//   node tools/contrast.mjs            all combinations, prints failures and a summary
+//   node tools/contrast.mjs -v         also prints passing rows
+//   node tools/contrast.mjs atc light  one style and theme, all rows
+// Semi-transparent colours are blended over their background first.
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
 const root = new URL('../', import.meta.url);
+const ctx = { window: { MA: {} } };
+vm.runInNewContext(readFileSync(new URL('js/styles.js', root), 'utf8'), ctx);
+const MA = ctx.window.MA;
 
 function parse(c) {
   if (Array.isArray(c)) return [c[0], c[1], c[2], c.length > 3 ? c[3] : 1];
@@ -38,107 +42,83 @@ function ratio(fg, bg) {
   const l1 = lum(f), l2 = lum(b);
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
-const alpha = (c, a) => { const p = parse(c); return [p[0], p[1], p[2], p[3] * a]; };
 
-// [label, fg key, bg key, minimum]  (3 = large text / graphics, 4.5 = normal text)
+// [label, fg, bg, minimum]; keys: css custom property names ('--ink') or canvas keys ('c.label')
 const ROWS = [
-  ['Header brand MYAIRSPACE', 'brandName', 'bg', 4.5],
-  ['Header place', 'brandPlace', 'bg', 4.5],
-  ['Clock', 'clock', 'bg', 3],
-  ['Summary', 'summary', 'bg', 4.5],
-  ['Weather lines #wx', 'wx', 'bg', 4.5],
-  ['Weather bold runway', 'wxBold', 'bg', 4.5],
-  ['Board label .lbl', 'lbl', 'panel', 4.5],
-  ['Board sub-line .sub', 'sub', 'panel', 4.5],
-  ['Board LED climbing/level', 'amber', 'panel', 3],
-  ['Board LED descending', 'cyan', 'panel', 3],
-  ['Board badge special', 'violet', 'panel', 4.5],
-  ['Board badge alert', 'red', 'panel', 4.5],
-  ['Attribution', 'attrib', 'bg', 4.5],
-  ['Setup hint', 'hint', 'bg', 4.5],
-  ['Toast text', 'ink', 'toastBg', 4.5],
-  ['Tafel date', 'dim', 'bg', 4.5],
-  ['Tafel column heads', 'dim', 'panel', 4.5],
-  ['Tafel row level', 'rowLevel', 'panel', 3],
-  ['Tafel row climbing', 'amber', 'panel', 3],
-  ['Tafel row descending', 'cyan', 'panel', 3],
-  ['Tafel stat label', 'dim', 'bg', 4.5],
-  ['Tafel stat value', 'amber', 'bg', 3],
-  ['Tafel stat extra', 'sub', 'bg', 4.5],
+  ['Header place', '--ink', '--bg', 4.5],
+  ['Header brand tag', '--dim', '--bg', 4.5],
+  ['Clock', '--ink', '--bg', 3],
+  ['Date/UTC line', '--sub', '--bg', 4.5],
+  ['Summary', '--dim', '--bg', 4.5],
+  ['Weather lines', '--sub', '--bg', 4.5],
+  ['Weather bold', '--ink', '--bg', 4.5],
+  ['Board label', '--dim', '--panel', 4.5],
+  ['Board value', '--val-color', '--panel', 3],
+  ['Board callsign', '--call-color', '--panel', 3],
+  ['Board unit', '--unit-color', '--panel', 4.5],
+  ['Board sub-line', '--sub', '--panel', 4.5],
+  ['Board tag special', '--special', '--panel', 4.5],
+  ['Board tag warning', '--warning', '--panel', 4.5],
+  ['Board tag caution', '--caution', '--panel', 4.5],
+  ['Attribution', '--attrib', '--bg', 4.5],
+  ['Toast text', '--ink', '--toast-bg', 4.5],
+  ['Toast label special', '--special', '--toast-bg', 4.5],
+  ['Tafel column heads', '--dim', '--head', 4.5],
+  ['Tafel row text', '--ink', '--panel', 4.5],
+  ['Tafel row secondary', '--sub', '--panel', 4.5],
+  ['Tafel status', '--accent', '--panel', 4.5],
+  ['Tafel stat value', '--val-color', '--bg', 3],
   ['Map place', 'c.place', 'c.bg', 4.5],
-  ['Map place on water (halo-outlined)', 'c.place', 'c.water', 3],
+  ['Map place on water', 'c.place', 'c.water', 3],
   ['Map place major', 'c.placeMajor', 'c.bg', 4.5],
   ['Map ring label', 'c.ringLabel', 'c.bg', 4.5],
+  ['Map compass label', 'c.tickLabel', 'c.bg', 4.5],
   ['Map airport code', 'c.airport', 'c.bg', 4.5],
-  ['Aircraft callsign', 'c.label', 'c.bg', 4.5],
-  ['Aircraft callsign >FL200', 'c.labelDim', 'c.bg', 4.5],
-  ['Aircraft alt/type', 'c.detail', 'c.bg', 4.5],
-  ['Aircraft alt/type >FL200', 'c.detailDim', 'c.bg', 4.5],
-  ['Aircraft climbing (glyph)', 'c.up', 'c.bg', 3],
-  ['Aircraft descending (glyph)', 'c.down', 'c.bg', 3],
-  ['Aircraft level (glyph)', 'c.level', 'c.bg', 3],
-  ['Special label/halo', 'c.special', 'c.bg', 4.5],
-  ['Alert label/halo', 'c.alert', 'c.bg', 4.5]
+  ['Data block callsign', 'c.label', 'c.bg', 4.5],
+  ['Data block callsign >FL200', 'c.labelDim', 'c.bg', 4.5],
+  ['Data block values', 'c.detail', 'c.bg', 4.5],
+  ['Data block units >FL200', 'c.detailDim', 'c.bg', 4.5],
+  ['Traffic symbol (normal)', 'c.level', 'c.bg', 3],
+  ['Selected target', 'c.target', 'c.bg', 4.5],
+  ['Special marker/label', 'c.special', 'c.bg', 4.5],
+  ['Warning marker/label', 'c.alert', 'c.bg', 4.5],
+  ['Active runway (accent)', 'c.accent', 'c.bg', 4.5]
 ];
 
-// Release 1 (main before "Lesbarkeit"): literal colours incl. element opacities.
-const INK = '#e9e4d8', DIM = '#6d7176';
-const BEFORE = {
-  dark: {
-    bg: '#050607', panel: '#0a0b0d', ink: INK, dim: DIM,
-    brandName: alpha(INK, 0.85), brandPlace: DIM, clock: alpha(INK, 0.9), summary: DIM,
-    wx: alpha(DIM, 0.85), wxBold: alpha(INK, 0.68), lbl: DIM, sub: '#9a9ea3',
-    amber: '#ffb547', cyan: '#63d3e8', violet: '#c78bff', red: '#ff5d5d',
-    attrib: '#3d4146', hint: alpha(DIM, 0.8), toastBg: 'rgba(10, 11, 13, 0.92)', rowLevel: INK,
-    c: {
-      bg: '#050607', water: '#121c23', place: 'rgba(255,255,255,0.20)', placeMajor: 'rgba(255,255,255,0.30)',
-      ringLabel: 'rgba(255,255,255,0.22)', airport: 'rgba(233,228,216,0.45)',
-      label: 'rgba(233,228,216,0.78)', labelDim: 'rgba(233,228,216,0.45)',
-      detail: 'rgba(233,228,216,0.55)', detailDim: 'rgba(233,228,216,0.3)',
-      up: [255, 181, 71], down: [99, 211, 232], level: [233, 228, 216], special: [199, 139, 255], alert: [255, 93, 93]
-    }
-  }
-};
-
-// Current files: CSS custom properties per theme + canvas palettes from js/radar.js.
-function current() {
-  const css = readFileSync(new URL('css/style.css', root), 'utf8');
-  function block(sel) {
-    const i = css.indexOf(sel + ' {');
-    if (i < 0) throw new Error('no block ' + sel);
-    const body = css.slice(i, css.indexOf('}', i));
-    const out = {};
-    body.replace(/--([\w-]+):\s*([^;]+);/g, (m, k, v) => { out[k] = v.trim(); });
-    return out;
-  }
-  const dark = block(':root');
-  const light = Object.assign({}, dark, block(':root[data-theme="light"]'));
-  const ctx = { window: { MA: {} } };
-  vm.runInNewContext(readFileSync(new URL('js/radar.js', root), 'utf8'), ctx);
-  const pal = ctx.window.MA.Radar.palettes;
-  function map(v, c) {
-    return {
-      bg: v.bg, panel: v.panel, ink: v.ink, dim: v.dim,
-      brandName: v.ink, brandPlace: v.dim, clock: v.ink, summary: v.dim,
-      wx: v.sub, wxBold: v.ink, lbl: v.dim, sub: v.sub,
-      amber: v.amber, cyan: v.cyan, violet: v.violet, red: v.red,
-      attrib: v.attrib, hint: v.dim, toastBg: v['toast-bg'], rowLevel: v.ink, c
-    };
-  }
-  return { dark: map(dark, pal.dark), light: map(light, pal.light) };
+function table(style, theme, opts) {
+  const r = MA.style.resolve(style, theme, opts);
+  const toastBg = over(r.css['--toast-bg'], r.css['--bg']);
+  const get = (k) => {
+    if (k.indexOf('c.') === 0) return r.c[k.slice(2)];
+    let v = r.css[k] !== undefined ? r.css[k] : (k === '--call-color' ? 'var(--target)' : undefined);
+    if (v === undefined) throw new Error('token ' + k);
+    const m = /^var\((--[\w-]+)\)$/.exec(v);
+    if (m) v = r.css[m[1]];
+    return k === '--toast-bg' ? toastBg : v;
+  };
+  return { get };
 }
 
-const themes = process.argv[2] === 'before' ? BEFORE : current();
-let fails = 0;
-for (const name of Object.keys(themes)) {
-  const t = themes[name];
-  const get = (k) => (k.indexOf('c.') === 0 ? t.c[k.slice(2)] : t[k]);
-  console.log('\n' + name.toUpperCase());
-  for (const [label, fk, bk, min] of ROWS) {
-    const r = ratio(get(fk), get(bk));
-    const ok = r >= min;
-    if (!ok) fails++;
-    console.log((ok ? '  ok  ' : '  LOW ') + label.padEnd(30) + r.toFixed(2).padStart(6) + ' : 1   (min ' + min + ')');
-  }
-}
-console.log('\n' + (fails ? fails + ' below target' : 'all at or above target'));
+const args = process.argv.slice(2).filter((a) => a !== '-v');
+const verbose = process.argv.indexOf('-v') >= 0 || args.length > 0;
+const combos = [];
+const styles = args[0] ? [args[0]] : Object.keys(MA.STYLES);
+const themes = args[1] ? [args[1]] : ['dark', 'light'];
+const accents = args[0] ? [''] : [''].concat(Object.keys(MA.ACCENTS), ['#ff8800', '#336699', '#ffffff', '#000000']);
+styles.forEach((s) => themes.forEach((t) => accents.forEach((a) => combos.push([s, t, a]))));
+
+let fails = 0, checked = 0;
+combos.forEach(([s, t, a]) => {
+  const tb = table(s, t, { accent: a });
+  const head = s + ' / ' + t + (a ? ' / accent ' + a : '');
+  const lines = [];
+  ROWS.forEach(([label, fk, bk, min]) => {
+    const r = ratio(tb.get(fk), tb.get(bk));
+    checked++;
+    if (r < min) { fails++; lines.push('  LOW ' + label.padEnd(30) + r.toFixed(2).padStart(6) + ' : 1   (min ' + min + ')'); }
+    else if (verbose) lines.push('  ok  ' + label.padEnd(30) + r.toFixed(2).padStart(6) + ' : 1   (min ' + min + ')');
+  });
+  if (lines.length) console.log('\n' + head.toUpperCase() + '\n' + lines.join('\n'));
+});
+console.log('\n' + combos.length + ' combinations, ' + checked + ' checks: ' + (fails ? fails + ' below target' : 'all at or above target'));
+process.exit(fails ? 1 : 0);
