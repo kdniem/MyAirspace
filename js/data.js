@@ -73,9 +73,29 @@
 
   function isReadsb(json) { return !!json && Array.isArray(json.ac); }
 
+  /* When did an aircraft really have this position? A response can be old when it comes from
+     a cache (CDN, public CORS proxies), so the time of arrival says nothing; the server's own
+     timestamps do. `offset` = server clock - local clock. Cached responses only make the
+     observed offset smaller, so the maximum of the recent observations is the best estimate. */
+  var clockObs = [];
+  function clockOffset(serverNowMs, rxMs) {
+    if (typeof serverNowMs !== 'number' || !isFinite(serverNowMs)) return null;
+    clockObs.push(serverNowMs - rxMs);
+    if (clockObs.length > 12) clockObs.shift();
+    return Math.max.apply(null, clockObs);
+  }
+  // fixServerMs: the server-side time of the position; never later than the arrival (rx)
+  function fixTime(fixServerMs, offset, rx, fallback) {
+    if (offset === null || typeof fixServerMs !== 'number' || !isFinite(fixServerMs)) return fallback;
+    return Math.min(rx, fixServerMs - offset);
+  }
+
   // readsb "v2" format used by adsb.lol and airplanes.live
   function parseReadsb(json) {
     var now = Date.now();
+    var srv = json.now;                          // server time, ms (seconds on some servers)
+    if (typeof srv === 'number' && srv < 1e11) srv *= 1000;
+    var off = clockOffset(srv, now);
     var out = [];
     var list = json.ac || json.aircraft || [];
     for (var i = 0; i < list.length; i++) {
@@ -101,7 +121,7 @@
         track: typeof a.track === 'number' ? a.track : (typeof a.true_heading === 'number' ? a.true_heading : null),
         vrate: vrate,
         squawk: a.squawk || '',
-        ts: now - (a.seen_pos || 0) * 1000
+        ts: fixTime(srv - (a.seen_pos || 0) * 1000, off, now, now - (a.seen_pos || 0) * 1000)
       });
     }
     return out;
@@ -110,6 +130,8 @@
   // OpenSky state vectors (indices per https://openskynetwork.github.io/opensky-api/)
   function parseOpenSky(json) {
     var now = Date.now();
+    var srv = typeof json.time === 'number' ? json.time * 1000 : null;
+    var off = clockOffset(srv, now);
     var out = [];
     var states = json.states || [];
     for (var i = 0; i < states.length; i++) {
@@ -128,7 +150,8 @@
         track: s[10],
         vrate: s[11] === null ? 0 : s[11] * 196.85,
         squawk: s[14] || '',
-        ts: now - Math.max(0, (json.time || 0) - (s[3] || json.time || 0)) * 1000
+        ts: fixTime((s[3] || json.time || 0) * 1000, off, now,
+          now - Math.max(0, (json.time || 0) - (s[3] || json.time || 0)) * 1000)
       });
     }
     return out;

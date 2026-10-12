@@ -1,14 +1,14 @@
 /* MyAirspace service worker: keeps the app shell available offline.
    Network-first for the shell only; flight APIs, proxies, search and fonts are never touched.
    Bump VERSION when the shell file list changes; every deploy is picked up anyway (network-first). */
-var VERSION = 'v2';
+var VERSION = 'v3';
 var CACHE = 'myairspace-shell-' + VERSION;
 var SHELL = [
   './', 'index.html', 'setup.html', 'manifest.webmanifest',
   'css/style.css', 'css/setup.css',
   'data/geo-features.js',
   'js/pwa.js', 'js/config.js', 'js/hint.js', 'js/geo.js', 'js/format.js', 'js/special.js', 'js/demo.js',
-  'js/data.js', 'js/weather.js', 'js/radar.js', 'js/board.js', 'js/log.js', 'js/views.js', 'js/main.js',
+  'js/data.js', 'js/weather.js', 'js/radar.js', 'js/board.js', 'js/log.js', 'js/views.js', 'js/main.js', 'js/fullscreen.js',
   'js/qr.js', 'js/setup.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg'
 ];

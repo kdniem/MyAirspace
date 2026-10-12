@@ -37,7 +37,9 @@ export default async function handler(req, res) {
     // a short CDN cache keeps several screens from multiplying upstream requests
     // (METAR changes at most every 30 min: cache it for 5 min)
     const maxAge = url.hostname === 'aviationweather.gov' ? 300 : 3;
-    res.setHeader('Cache-Control', upstream.ok ? 'public, s-maxage=' + maxAge : 'no-store');
+    // stale-while-revalidate: if the upstream throttles us (429 from the shared Vercel address),
+    // clients still get the last good answer; the app reads the real age from the server timestamps
+    res.setHeader('Cache-Control', upstream.ok ? 'public, s-maxage=' + maxAge + ', stale-while-revalidate=' + (maxAge === 3 ? 20 : 600) : 'no-store');
     return res.status(upstream.status).send(body);
   } catch (e) {
     res.setHeader('Cache-Control', 'no-store');
