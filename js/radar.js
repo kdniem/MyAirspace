@@ -14,13 +14,24 @@
     this.show = cfg.show || { rings: true, compass: true, places: true, ground: true, labels: true, trails: true };
     this.org = { lat: cfg.lat, lon: cfg.lon };   // projection origin (the airport focus view moves it to the bbox centre)
     this.cosLat = Math.cos(cfg.lat * PI / 180);
-    // focus view (view=airport, js/airport.js): layout and base layer come from there; set before the first resize
-    this.airport = cfg.view === 'airport' && MA.airport ? MA.airport.target(cfg) : null;
+    // focus view (js/airport.js): layout and base layer come from there; set by setAirport() (main.js, per view)
+    this.airport = null;
     this.setTheme(MA.theme ? MA.theme.current() : 'dark', false);
     this.resize();
     var self = this;
     if (MA.theme) MA.theme.onChange(function (name, fade) { self.setTheme(name, fade); });
   }
+
+  // Switch between the radar layout (cfg holds the location) and the focus view (cfg holds the airport, see
+  // MA.airport.enter). Called by js/main.js while the canvas is faded out.
+  Radar.prototype.setAirport = function (on) {
+    this.airport = on && MA.airport ? MA.airport.target(this.cfg) : null;
+    this.org = { lat: this.cfg.lat, lon: this.cfg.lon };   // the radar projects around the location (layoutAirport overrides)
+    this.cosLat = Math.cos(this.cfg.lat * PI / 180);
+    this._base = null;
+    this._prev = null;
+    this.resize();
+  };
 
   // Switch the palette; with `fade` the old base layer is crossfaded out (see render).
   Radar.prototype.setTheme = function (name, fade) {
@@ -28,6 +39,7 @@
     this.theme = name;
     C = MA.style.resolve(this.cfg.style, name, { accent: this.cfg.accent, font: this.cfg.font, brightness: this.cfg.brightness }).c;
     this.pal = C;
+    this.palette = C;
     this._prev = fade && this._base ? this._base : null;
     this._fadeAt = Date.now();
     this._base = null;
@@ -168,6 +180,7 @@
     grd.addColorStop(1, C.land[1]);
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, this.w, this.h);
+    if (this.cfg.chartbg && MA.chart) MA.chart.under(this);   // chart background: paper and grid (js/chart.js), off by default
 
     // water: rivers and coasts at least 2.5 / 2 px at 1080p, the Elbe at its real width
     ctx.lineCap = 'round';
@@ -195,6 +208,8 @@
         ctx.fill();
       }
     });
+
+    if (this.cfg.chartbg && MA.chart) MA.chart.over(this);   // airspaces, navaids, obstacles, magnetic marker (js/chart.js)
 
     // range rings, labelled at 45 degrees below the east axis (clear of header and traffic labels)
     if (show.rings !== false) {
@@ -665,6 +680,11 @@
         ctx.drawImage(this._prev, 0, 0, this.w, this.h);
         ctx.globalAlpha = 1;
       } else this._prev = null;
+    }
+    // weather radar (js/wxradar.js, wx=radar): over the map, under the approach lines, aircraft and labels
+    if (this.wxOn && MA.wxradar) {
+      var wxl = MA.wxradar.layer(this);
+      if (wxl) { ctx.globalAlpha = C.wxAlpha; ctx.drawImage(wxl, 0, 0, this.w, this.h); ctx.globalAlpha = 1; }
     }
     if (active && active.length) this.drawActive(active, now);
     if (show.ground !== false && ground && ground.length) this.drawGround(ground);

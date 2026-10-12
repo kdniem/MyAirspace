@@ -14,6 +14,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <title>MyAirspace</title>
   <script src="js/pwa.js"></script>
+  <script src="js/diag.js"></script>
   <script src="js/styles.js"></script>
   <!-- style and theme before first paint: styles + config + theme set data-theme and the colour tokens on <html> -->
   <script src="js/config.js"></script>
@@ -46,6 +47,15 @@
         </div>
       </div>
     </header>
+
+    <!-- weather radar legend (wx=radar), filled by js/wxradar.js; the colours are the style's wx steps -->
+    <div id="wx-legend" class="wx-legend" style="display:none">
+      <div id="wx-legend-head" class="wx-legend-head">Niederschlag</div>
+      <div class="wx-steps">
+        <span><i class="s1"></i>leicht</span><span><i class="s2"></i>mäßig</span><span><i class="s3"></i>stark</span><span><i class="s4"></i>sehr stark</span>
+      </div>
+      <div id="wx-legend-foot" class="wx-legend-foot"></div>
+    </div>
 
     <section id="board" aria-live="polite">
       <div class="board-inner">
@@ -113,6 +123,7 @@
 
   <script src="data/geo-features.js"></script>
   <script src="data/airport-detail.js"></script>
+  <script src="data/chart-features.js"></script>
   <script src="js/qr.js"></script>
   <script src="js/hint.js"></script>
   <script src="js/geo.js"></script>
@@ -123,12 +134,15 @@
   <script src="js/demo.js"></script>
   <script src="js/data.js"></script>
   <script src="js/weather.js"></script>
+  <script src="js/wxradar.js"></script>
   <script src="js/glyphs.js"></script>
   <script src="js/motion.js"></script>
+  <script src="js/chart.js"></script>
   <script src="js/radar.js"></script>
   <script src="js/airport.js"></script>
   <script src="js/board.js"></script>
   <script src="js/log.js"></script>
+  <script src="js/rotation.js"></script>
   <script src="js/views.js"></script>
   <script src="js/main.js"></script>
   <script src="js/fullscreen.js"></script>

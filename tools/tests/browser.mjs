@@ -221,12 +221,24 @@ async function setupCase(browser, vp) {
     if (!/style=boeing/.test(info.url)) problems.push('generated URL lacks style=boeing: ' + info.url);
     if (!/accent=amber/.test(info.url)) problems.push('generated URL lacks accent=amber: ' + info.url);
     // focus view choice: the address gets view=airport and the airport, the airport row shows up
-    await page.check('input[name=view][value=airport]', { force: true });
-    await page.check('input[name=airport][value=FRA]', { force: true });
+    await page.selectOption('#view-sel', 'airport');
+    await page.selectOption('#airport-sel', 'FRA');
     await page.waitForTimeout(300);
     const u2 = await page.textContent('#url');
     if (!/view=airport/.test(u2) || !/airport=FRA/.test(u2)) problems.push('generated URL lacks the focus view: ' + u2);
     if (!(await page.locator('#airport-field').isVisible())) problems.push('airport choice hidden in the focus view');
+    // the rotation with the focus view: views= and the airport, the duration sliders show up
+    await page.selectOption('#view-sel', 'rot3');
+    await page.waitForTimeout(300);
+    const u3 = await page.textContent('#url');
+    if (!/views=radar(%2C|,)board(%2C|,)airport/.test(u3) || !/airport=FRA/.test(u3)) problems.push('generated URL lacks the rotation: ' + u3);
+    if (!(await page.locator('#rot-field').isVisible())) problems.push('rotation durations hidden in a rotation preset');
+    if (!(await page.locator('#airportsec-row').isVisible())) problems.push('airport duration hidden in the rotation with the airport');
+    await page.selectOption('#view-sel', 'rot2');
+    await page.waitForTimeout(300);
+    const u4 = await page.textContent('#url');
+    if (/views=|airport=|airportsec=/.test(u4)) problems.push('default rotation writes non-default options: ' + u4);
+    if (!/lat=53\.5/.test(u4)) problems.push('default rotation URL lost its location: ' + u4);
     if (!/lat=53\.5/.test(info.url) || !/lon=9\.9/.test(info.url)) problems.push('generated URL lacks the location: ' + info.url);
     checked.pages++;
     if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
@@ -407,6 +419,36 @@ async function airportCase(browser, code, vp) {
   } finally { await ctx.close(); }
 }
 
+// ---------- rotation with the focus view: the canvas switches after radarsec, the body gets view-airport ----------
+async function rotationCase(browser) {
+  const id = 'rotation_airport_1280x720';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&views=radar,airport&radarsec=10&airportsec=10', { waitUntil: 'load' });
+    await page.waitForTimeout(1000);
+    if (await page.evaluate(() => document.body.classList.contains('view-airport'))) problems.push('focus view on before the first switch');
+    await page.waitForTimeout(12500);   // radar 10 s, then the 1.2 s fade to the focus view
+    const s = await page.evaluate(() => ({
+      view: document.body.classList.contains('view-airport'),
+      board: getComputedStyle(document.getElementById('board')).display,
+      opacity: getComputedStyle(document.getElementById('radar')).opacity,
+      place: document.getElementById('place').textContent,
+      attrib: document.getElementById('attrib').textContent
+    }));
+    collect(st, problems);
+    if (!s.view) problems.push('body has no view-airport after the switch');
+    if (s.board !== 'none') problems.push('board visible in the focus view');
+    if (s.opacity !== '1') problems.push('canvas not back at full opacity after the fade: ' + s.opacity);
+    if (s.place !== 'HAMBURG') problems.push('header does not show the airport: ' + s.place);
+    if (!/OpenStreetMap/.test(s.attrib)) problems.push('attribution lacks the OpenStreetMap credit in the focus view');
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
 // ---------- TV first-run welcome overlay ----------
 async function hintCase(browser) {
   const id = 'tv_welcome';
@@ -509,6 +551,73 @@ async function motionCase(browser, level) {
   } finally { await ctx.close(); }
 }
 
+// ---------- chart background (chartbg=1, demo traffic, no third-party requests) ----------
+async function chartCase(browser, vp) {
+  const id = 'chart_' + vp.w + 'x' + vp.h;
+  const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&chartbg=1&style=chart', { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+    const r = await page.evaluate(PROBE);
+    collect(st, problems);
+    const data = await page.evaluate(() => (window.MA && MA.chartData) ? { air: MA.chartData.airspaces.length, nav: MA.chartData.navaids.length } : null);
+    if (!data || data.air < 10 || data.nav < 10) problems.push('chart data not loaded (' + JSON.stringify(data) + ')');
+    if (!r.canvas) problems.push('canvas missing or hidden');
+    else if (r.canvas.std < 1.5 || r.canvas.colors < 6) problems.push('canvas looks blank (std ' + r.canvas.std + ', colors ' + r.canvas.colors + ')');
+    r.overlap.forEach((m) => problems.push('header overlap: ' + m));
+    r.clipped.forEach((m) => problems.push('clipped: ' + m));
+    r.offscreen.forEach((m) => problems.push('outside viewport: ' + m));
+    r.contrast.forEach((x) => { if (x.ratio < x.min) problems.push('contrast ' + x.s + ' = ' + x.ratio + ':1 < ' + x.min); });
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); await shot(page, id); } finally { await ctx.close(); }
+}
+
+async function diagPanelCase(browser) {
+  const id = 'diag_panel';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?diag=1&demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(1500);
+    const info = await page.evaluate(() => {
+      const p = document.getElementById('diag-panel');
+      if (!p) return null;
+      const box = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+      return { panel: box(p), brand: box(document.querySelector('.brand')), meta: box(document.querySelector('#top .meta')),
+        board: box(document.getElementById('board')), text: p.textContent, display: getComputedStyle(p).display, fonts: document.fonts.status };
+    });
+    if (!info) problems.push('?diag=1 shows no diagnostics panel');
+    else {
+      if (!/\bboot\b/.test(info.text)) problems.push('diagnostics panel has no boot event');
+      const hit = (a, b) => a && b && Math.min(a.r, b.r) - Math.max(a.l, b.l) > 1 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 1;
+      const fmt = (b) => b ? [b.l, b.t, b.r, b.b].map((v) => Math.round(v)).join(',') : 'none';
+      if (hit(info.panel, info.brand) || hit(info.panel, info.meta)) problems.push('diagnostics panel overlaps the header (panel l,t,r,b ' + fmt(info.panel) + '; brand ' + fmt(info.brand) + '; meta ' + fmt(info.meta) + '; fonts ' + info.fonts + ')');
+      if (hit(info.panel, info.board)) problems.push('diagnostics panel overlaps the board');
+      if (info.panel.r > 1280 || info.panel.b > 720 || info.panel.l < 0 || info.panel.t < 0) problems.push('diagnostics panel leaves the 1280x720 screen');
+    }
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); }
+    await shot(page, id + '_1280');
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
+}
+async function diagSetupCase(browser) {
+  const id = 'diag_setup';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 800 }, 'setup');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/setup.html?demo=1&wizard=0', { waitUntil: 'load' });
+    const btns = await page.evaluate(() => Array.from(document.querySelectorAll('#diag-box button')).map((b) => b.textContent));
+    if (!btns.some((t) => /Diagnoseprotokoll herunterladen/.test(t))) problems.push('setup page has no "Diagnoseprotokoll herunterladen" button');
+    if (!btns.some((t) => /Protokoll leeren/.test(t))) problems.push('setup page has no "Protokoll leeren" button');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -518,9 +627,11 @@ for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 
   for (const vp of VPS) for (const view of ['radar', 'board']) jobs.push({ n: [style, theme, vp.w, view].join('_'), run: () => matrixCase(browser, { style, theme, vp, view }) });
 for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }])
   jobs.push({ n: 'airport_' + code + '_' + vp.width, run: () => airportCase(browser, code, vp) });
+jobs.push({ n: 'rotation_airport_1280', run: () => rotationCase(browser) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
 jobs.push({ n: 'motion_off', run: () => motionCase(browser, 'off') }, { n: 'motion_full', run: () => motionCase(browser, 'full') });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
+jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;
 await Promise.all(Array.from({ length: CONC }, async () => { while (next < filtered.length) await filtered[next++].run(); }));

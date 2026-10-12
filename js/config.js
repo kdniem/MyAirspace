@@ -27,6 +27,17 @@ window.MA = MA;
     return /^[A-Z]{3}$/.test(up) ? up : 'HAM';
   }
 
+  // views=radar,board,airport: the rotation order (duplicates weight a view); invalid entries are dropped silently
+  var VIEW_NAMES = ['radar', 'board', 'airport'];
+  function viewList(name) {
+    var out = [];
+    String(q.get(name) || '').toLowerCase().split(',').forEach(function (x) {
+      x = x.trim();
+      if (VIEW_NAMES.indexOf(x) >= 0) out.push(x);
+    });
+    return out;
+  }
+
   // "23-6" -> {from: 23, to: 6}; "off" -> null
   function hours(name, def) {
     var v = str(name, def);
@@ -72,7 +83,8 @@ window.MA = MA;
   }
   list('hide').forEach(function (k) { if (show.hasOwnProperty(k)) show[k] = false; });
   KEYS.forEach(function (k) { if (q.has(k)) show[k] = bool(k, show[k]); });
-  if (q.has('wx')) show.weather = bool('wx', show.weather);
+  // wx=radar is the weather radar overlay (below), not the weather box: only other values toggle the box
+  if (q.has('wx') && !/^radar$/i.test(q.get('wx'))) show.weather = bool('wx', show.weather);
 
   // datablock=callsign,fl,gs,type: fields and their order; datablock=0 switches the labels off
   var FIELDS = ['callsign', 'fl', 'gs', 'type', 'route', 'reg'];
@@ -94,6 +106,7 @@ window.MA = MA;
   try { reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { reducedMotion = false; }
   var motionArg = (q.get('motion') || '').toLowerCase();
   var motion = /^(off|calm|full)$/.test(motionArg) ? motionArg : (reducedMotion ? 'off' : 'calm');
+  var view = /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : 'auto';
 
   MA.config = {
     lat: num('lat', 53.5511, -90, 90),          // default: Hamburg city centre
@@ -115,6 +128,7 @@ window.MA = MA;
     places: show.places,                        // town names on the map
     title: str('title', '').slice(0, 32),       // optional second line under the place name
     style: style,                               // atc | terminal | chart | airbus | boeing | night | military
+    chartbg: bool('chartbg', false),            // aeronautical-chart background: airspaces, navaids, grid (js/chart.js), off by default
     accent: accent,                             // '' (style default) | preset name | '#rrggbb'
     font: pick('font', /^(mono|sans)$/, STY[style].font || 'mono'),
     show: show,                                 // element toggles
@@ -125,10 +139,15 @@ window.MA = MA;
     brightness: num('brightness', 1, 0.5, 1.2),
     motion: motion,                             // off | calm | full (js/motion.js)
     orient: 'north',                            // track-up is not built: north-up only
-    view: /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : 'auto', // radar | board | auto | airport (focus view, js/airport.js)
+    view: view,                                 // radar | board | airport: one fixed view; auto: the rotation below
+    // the rotation, in order: views=radar,board,airport (view=auto). A fixed view is a one-entry list. An empty or
+    // one-entry views= falls back to the old rotation radar,board.
+    views: view !== 'auto' ? [view] : (viewList('views').length >= 2 ? viewList('views') : ['radar', 'board']),
     airport: airportCode(str('airport', 'HAM')),  // focus view: HAM | XFW | FRA | FMO | CPH, checked against MA.features in js/airport.js (unknown = HAM)
-    boardSec: num('boardsec', 40, 5, 600),      // auto: seconds on the Anzeigetafel
-    radarSec: num('radarsec', 240, 10, 3600),   // auto: seconds on the radar
-    theme: /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (STY[style].theme || 'dark') // auto: light from sunrise to sunset
+    boardSec: num('boardsec', 40, 5, 600),      // rotation: seconds on the Anzeigetafel
+    radarSec: num('radarsec', 240, 10, 3600),   // rotation: seconds on the radar
+    airportSec: num('airportsec', 60, 10, 3600), // rotation: seconds on the focus view
+    theme: /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (STY[style].theme || 'dark'), // auto: light from sunrise to sunset
+    wxRadar: str('wx', '').toLowerCase() === 'radar'   // weather radar overlay (js/wxradar.js), default off
   };
 })();

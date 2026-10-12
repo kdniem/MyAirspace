@@ -66,6 +66,7 @@ html, body {
   width: 100%;
   height: 100%;
   display: block;
+  transition: opacity 0.6s ease;   /* radar <-> focus view switch (js/main.js): out, swap, in = 1.2 s */
 }
 
 /* element toggles (config show=…, classes set by js/main.js) */
@@ -155,6 +156,35 @@ html, body {
 .wx b { font-weight: 600; color: var(--ink); }
 .wx b.n { text-transform: none; }
 .wx-gap { display: inline-block; width: 1.6em; }
+
+/* weather radar legend (js/wxradar.js): lower left, above the board; text on a panel, not on the map */
+.wx-legend {
+  position: absolute;
+  left: var(--safe-x);
+  bottom: calc(var(--safe-y) + 20.4vh);
+  padding: 0.9vh 1.1vw;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 0.3vh solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 1.7vh;
+  line-height: 1.35;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.wx-legend-head { font-weight: 600; letter-spacing: 0.06em; color: var(--accent); }
+.wx-steps { margin: 0.6vh 0; }
+.wx-steps span { display: inline-block; margin-right: 1.4vw; }
+.wx-steps span:last-child { margin-right: 0; }
+.wx-steps i { vertical-align: middle; }
+.wx-steps i { display: inline-block; width: 1.8vh; height: 1.8vh; margin-right: 0.5vw; border-radius: 0.2vh; }
+.wx-steps .s1 { background: var(--wx1); }
+.wx-steps .s2 { background: var(--wx2); }
+.wx-steps .s3 { background: var(--wx3); }
+.wx-steps .s4 { background: var(--wx4); }
+.wx-legend-foot { color: var(--sub); font-size: 1.5vh; text-transform: none; }
+.wx-legend.demo .wx-legend-foot { color: var(--caution); }
 
 .dot {
   display: inline-block;
@@ -524,7 +554,9 @@ html, body {
   text-overflow: ellipsis;
 }
 
-/* ---------- focus view (view=airport, js/airport.js): no board; METAR and runway in use bottom left ---------- */
+/* ---------- focus view (js/airport.js, in the rotation or with view=airport): no board; METAR and runway in use bottom left ---------- */
+.view-airport #board, .view-airport #pager { display: none; }
+.view-airport #attrib { bottom: calc(var(--safe-y) - 1.2vh); }
 .view-airport #wx {
   position: fixed;
   top: auto;
