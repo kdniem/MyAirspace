@@ -18,6 +18,7 @@ MyAirspace selbst steht unter der MIT-Lizenz (siehe [LICENSE](LICENSE)). Die fol
 |-------|------------|--------|
 | [OurAirports](https://ourairports.com) | Pisten und Flughäfen (`data/geo-features.js`) | Gemeinfrei (Public Domain) |
 | [Natural Earth](https://www.naturalearthdata.com) | Flüsse und Küsten (`data/geo-features.js`) | Gemeinfrei (Public Domain) |
+| [OpenStreetMap](https://www.openstreetmap.org/copyright) | Vorfelder, Rollwege, Terminals, Gates u. a. der Flughäfen (`data/airport-detail.js`) | Daten © OpenStreetMap-Mitwirkende, [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) |
 
 ## Code
 

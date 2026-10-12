@@ -145,6 +145,10 @@ Fertige Karten gibt es für Hamburg (HAM, XFW), Frankfurt (FRA), Münster/Osnabr
 
 Die Pisten stammen aus [OurAirports](https://ourairports.com), Flüsse und Küsten außerhalb Hamburgs aus [Natural Earth](https://www.naturalearthdata.com) (beide gemeinfrei). Elbe, Alster und die Orte sind von Hand eingetragen. `data/geo-features.js` wird mit `python3 tools/build-geo.py` erzeugt; weitere Flughäfen ergänzt man dort in `AIRPORTS`, `AREAS` und `AREA_PLACES`. Die Karte ist absichtlich vereinfacht und taugt nicht zur Navigation.
 
+### Flughafen-Detaildaten
+
+`data/airport-detail.js` enthält für HAM, XFW, FRA, FMO und CPH Vorfelder, Rollwege, Terminals, Hangars, Gates, Abstellpositionen, Hubschrauberlandeplätze und Pisten für eine vergrößerte Flughafenansicht (`MA.airportDetail`, Koordinaten als `[lat, lon]` mit 5 Nachkommastellen, auf etwa 2 m vereinfacht). Quelle ist OpenStreetMap, Daten © OpenStreetMap-Mitwirkende, [ODbL](https://www.openstreetmap.org/copyright). Neu erzeugen mit `python3 -I tools/build-airport-detail.py [cache_dir]`; das Skript lädt die Rohdaten kachelweise von der OSM-API (mit Pausen und User-Agent) und legt sie in `cache_dir` ab, weitere Läufe arbeiten offline. Größe: siehe Commit-Nachricht bzw. `ls -l data/airport-detail.js` (Ziel höchstens 120 KB je Flughafen). Wie vollständig ein Flughafen ist, hängt von den Mappern ab; nicht jeder hat Gates oder Rollwegnamen. Nicht zur Navigation geeignet.
+
 ### Routen
 
 Die Route (z. B. `NCE → HAM`) kommt aus der Routendatenbank von adsb.lol. Bei Umläufen wie `HAM-NCE-HAM` zeigt die App nur den Abschnitt, den das Flugzeug gerade fliegt: Ausschlaggebend sind Position, Kurs und Steig- oder Sinkflug. „Anflug“ bzw. „Abflug“ erscheint bei Flughäfen bis 60 km vom Standort. Für Privatflieger, Hubschrauber und manche Charterflüge kennt die Datenbank keine Route.
