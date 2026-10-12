@@ -125,6 +125,14 @@ adsb.lol und die METAR-Quelle erlauben keine Abfragen direkt aus dem Browser (CO
 
 Weitere Schutzmaßnahmen: nur die Herkunft `kdniem.github.io`, `myairspace-nu.vercel.app` und `localhost`/`127.0.0.1` (Entwicklung); Weiterleitungen des Ziels werden nicht verfolgt; Antworten müssen gültiges JSON sein und werden immer als `application/json` mit `nosniff` und strenger CSP ausgeliefert (Fehler nie als HTML); Fehlerantworten enthalten keinen Inhalt des Ziels; Koordinaten in `/v2/point/` werden serverseitig auf 2 Nachkommastellen gerundet und der Radius auf 250 nm begrenzt. Die App schickt den Standort ohnehin nur auf etwa 1 km gerundet ab. Rechtliches: [LICENSE](LICENSE), [THIRD_PARTY.md](THIRD_PARTY.md), [datenschutz.html](datenschutz.html).
 
+### Verbindung & Ausfälle
+
+adsb.lol drosselt die gemeinsame Vercel-Adresse gelegentlich (HTTP 429). Damit der Fernseher dann nicht leer wird:
+
+- **Proxy:** Antworten für `/v2/point` gelten 3 s als frisch, danach liefert das CDN bis zu 30 s die letzte gute Antwort weiter und holt im Hintergrund eine neue (`stale-while-revalidate=30`); bei Fehlern des Ziels zusätzlich bis 120 s (`stale-if-error=120`). Fehlerantworten (429, 5xx) werden nie zwischengespeichert; ein `Retry-After` des Ziels (nur Sekunden, höchstens 120) gibt der Proxy weiter.
+- **App, Abfragetakt:** Bei Fehlern wird der Takt schrittweise langsamer (bis 60 s, nie kürzer als `Retry-After`, höchstens 120 s), nach einer Wiederherstellung kehrt er in wenigen Schritten zum normalen Takt zurück. Anzeige und Status setzen sich sofort zurück, sobald wieder Daten kommen.
+- **App, Anzeige:** Bis zu 20 s ohne neue Daten werden Flugzeuge weitergerechnet, danach blenden sie über etwa 40 s langsam aus. Die Statuszeile unter der Uhr zeigt das Alter der Daten selbst (auch wenn eine Antwort aus dem Cache kommt): unter 30 s normal, ab 30 s gelb „Daten 45 s alt“, ab 2 min rot „Keine Verbindung · Daten 3 min alt“. Ohne Flugzeuge steht auf der Tafel „OFFLINE“ statt eines leeren Bildes.
+
 Steigen und Sinken zeigt der Pfeil im Datenblock (↑ ↓). Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der Tafel ein eigenes Abzeichen.
 
 ### Karten
@@ -162,7 +170,7 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           options.cjs (URL-Optionen, ES2017-Prüfung), motion-sim.js
+tools/tests/           options.cjs (URL-Optionen, ES2017-Prüfung), poll-test.cjs (Abfragetakt), proxy-test.mjs, motion-sim.js
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)

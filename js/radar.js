@@ -653,7 +653,7 @@
       var high = (ac.alt || 0) > 20000;
       var featured = ac.hex === featuredHex;
       var sp = ac.special, spCol = sp ? (sp.alert ? C.alert : C.special) : null;
-      var baseA = (featured || sp) ? 1 : (high ? C.high : 1);
+      var baseA = ((featured || sp) ? 1 : (high ? C.high : 1)) * (typeof ac.fade === 'number' ? ac.fade : 1);   // fade: stale data, see main.js
       var col = featured ? C.target : C.level;
 
       // history: dots every 15 s (ATC) or a thin fading line, ends at the symbol
@@ -745,7 +745,12 @@
       placed.push(r.rect);
       it.m = m; it.r = r;
     });
-    items.forEach(function (it) { if (!it.skip) self.drawBlock(it, it.m, it.r, now); });
+    items.forEach(function (it) {
+      if (it.skip) return;
+      ctx.globalAlpha = typeof it.ac.fade === 'number' ? it.ac.fade : 1;
+      self.drawBlock(it, it.m, it.r, now);
+      ctx.globalAlpha = 1;
+    });
 
     // range readout of the selected aircraft, on its line to home
     items.forEach(function (it) {

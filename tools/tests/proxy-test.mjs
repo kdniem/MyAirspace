@@ -4,12 +4,14 @@ import handler from '../../api/proxy.js';
 
 let calls = [];
 let upstream = () => ({ status: 200, ct: 'application/json', body: '{"ac":[]}' });
+let throwing = false;
 globalThis.fetch = async (url, opts) => {
   calls.push({ url, opts });
+  if (throwing) throw new Error('network');
   const u = upstream(url);
   return {
     status: u.status, ok: u.status >= 200 && u.status < 300,
-    headers: { get: (k) => (k.toLowerCase() === 'content-type' ? u.ct : null) },
+    headers: { get: (k) => ({ 'content-type': u.ct, 'retry-after': u.retryAfter }[k.toLowerCase()] ?? null) },
     text: async () => u.body
   };
 };
@@ -37,7 +39,7 @@ await t('allowed path passes', async () => {
   assert.equal(r.code, 200);
   assert.equal(r.body, '{"ac":[]}');
   assert.equal(r.h['access-control-allow-origin'], ORIGIN);
-  assert.match(r.h['cache-control'], /s-maxage=3, stale-while-revalidate=20/);
+  assert.match(r.h['cache-control'], /^public, s-maxage=3, stale-while-revalidate=30, stale-if-error=120$/);
   assert.equal(r.h.vary, 'Origin');
 });
 await t('all allowlisted host/path pairs pass', async () => {
@@ -95,10 +97,41 @@ await t('upstream 429 -> 429, other errors generic', async () => {
   let r = await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN });
   assert.equal(r.code, 429);
   assert.ok(!r.body.includes('secret'));
+  assert.equal(r.h['retry-after'], undefined);
+  upstream = () => ({ status: 429, ct: 'text/html', body: 'x', retryAfter: '17' });
+  r = await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN });
+  assert.equal(r.code, 429);
+  assert.equal(r.h['retry-after'], '17');
+  for (const bad of ['Wed, 21 Oct 2026 07:28:00 GMT', '-5', '1e9', '']) {   // only plain seconds are passed on
+    upstream = () => ({ status: 429, ct: 'text/html', body: 'x', retryAfter: bad });
+    assert.equal((await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN })).h['retry-after'], undefined, bad);
+  }
+  upstream = () => ({ status: 429, ct: 'text/html', body: 'x', retryAfter: '99999' });
+  assert.equal((await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN })).h['retry-after'], '120');
   upstream = () => ({ status: 500, ct: 'application/json', body: '{"upstream":"detail"}' });
   r = await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN });
   assert.equal(r.code, 502);
   assert.ok(!r.body.includes('detail'));
+});
+await t('errors are never cacheable', async () => {
+  const statuses = [429, 500, 503, 302, 404];
+  for (const st of statuses) {
+    upstream = () => ({ status: st, ct: 'application/json', body: '{"ac":[]}' });
+    const r = await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN });
+    assert.equal(r.h['cache-control'], 'no-store', 'status ' + st);
+  }
+  upstream = () => ({ status: 200, ct: 'text/html', body: 'not json' });
+  assert.equal((await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN })).h['cache-control'], 'no-store');
+  assert.equal((await call('https://evil.example/x', { origin: ORIGIN })).h['cache-control'], 'no-store');
+  assert.equal((await call('https://api.adsb.lol/v2/point/1/2/3', { origin: 'https://evil.example' })).h['cache-control'], 'no-store');
+  throwing = true;
+  try { assert.equal((await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN })).h['cache-control'], 'no-store'); }
+  finally { throwing = false; }
+});
+await t('CORS exposes Retry-After; METAR cache is longer', async () => {
+  const r = await call('https://aviationweather.gov/api/data/metar?ids=EDDH', { origin: ORIGIN });
+  assert.equal(r.h['access-control-expose-headers'], 'Retry-After');
+  assert.equal(r.h['cache-control'], 'public, s-maxage=300, stale-while-revalidate=600, stale-if-error=3600');
 });
 await t('content-type forced JSON and hardening headers', async () => {
   upstream = () => ({ status: 200, ct: 'text/html', body: '{"a":1}' });

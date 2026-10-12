@@ -167,6 +167,12 @@ html, body {
 .dot.ok { background: var(--ok); }
 .dot.warn { background: var(--caution); }
 .dot.err { background: var(--warning); }
+/* stale or no data: the summary takes the colour and the dot breathes slowly (calm, no blinking) */
+.summary.warn { color: var(--caution); }
+.summary.err { color: var(--warning); }
+.dot.warn, .dot.err { animation: dot-breathe 4s ease-in-out infinite; }
+@keyframes dot-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .dot.warn, .dot.err { animation: none; } }
 
 /* ---------- board: the selected aircraft ---------- */
 

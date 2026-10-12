@@ -2,7 +2,10 @@
 (function (MA) {
   var cfg = MA.config;
   var STALE_MS = 60 * 1000;      // drop aircraft not updated for a minute
-  var MAX_EXTRAP_MS = 20 * 1000; // stop dead-reckoning after 20 s without data
+  var MAX_EXTRAP_MS = 20 * 1000; // stop dead-reckoning after 20 s without data, then fade out until STALE_MS
+  var FADE_MIN = 0.3;            // below this opacity an aircraft is no longer picked as the featured one
+  var WARN_AGE_S = 30;           // data older than this: amber "Daten N s alt"
+  var ERR_AGE_S = 120;           // older than this: red "Keine Verbindung"
   var TRAIL_JUMP_KM = 5;         // break trails on implausible jumps
   var TRAIL_STEP_MS = 2000;      // trail sampling interval (keeps segment count low on TV browsers)
   var SPECIAL_REPEAT_MS = 30 * 60 * 1000; // special aircraft: jump/toast once per hex per 30 min
@@ -19,7 +22,8 @@
   var GROUND_STALE_MS = 90 * 1000;
   var featured = { hex: null, idx: 0, since: 0, jumpAt: -1 };
   var jumped = {}, announced = {}; // special aircraft: hex -> time of board jump / toast
-  var status = { ok: false, lastOk: 0, failures: 0 };
+  // dataAt: time of the newest position in the last answer (a cached answer is old although it just arrived)
+var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAfterMs: 0, nextAt: 0 };
 
   document.getElementById('place').textContent = cfg.label;
   document.getElementById('title').textContent = cfg.title;
@@ -60,6 +64,9 @@
     forget(jumped, now);
     forget(announced, now);
     MA.data.lookupRoutes(nearest(), cfg.demo);
+    var newest = 0;
+    list.forEach(function (n) { if (typeof n.ts === 'number' && n.ts > newest) newest = n.ts; });
+    status.dataAt = list.length ? Math.min(now, newest || now) : now;
   }
 
   // Aircraft on the ground are kept only at mapped airports; they are shown dimmed, never featured.
@@ -85,20 +92,29 @@
     var started = Date.now();
     feed.fetch(cfg.lat, cfg.lon, radar.coverKm()).then(function (list) {
       ingest(list);
+      // recovered: status resets at once; only the poll rate comes back gradually (see pollDelay)
+      status.recover = status.failures ? Math.min(3, status.failures) : Math.max(0, status.recover - 1);
       status.ok = true;
       status.lastOk = Date.now();
       status.failures = 0;
+      status.retryAfterMs = 0;
     }, function (err) {
       status.ok = false;
       status.failures++;
+      status.retryAfterMs = (err && err.retryAfter) || 0;
       if (window.console) console.warn('[MyAirspace] no data:', err && err.message);
     }).then(function () {
       var p = feed.provider();
       document.getElementById('attrib').textContent = p.attrib + ' · Karte: Natural Earth, OurAirports' + (cfg.public ? ' · öffentliche Proxys (public=1)' : '');
       var interval = Math.max(cfg.pollSec, p.minPollSec) * 1000;
       if (!cfg.demo && !cfg.proxy) interval = Math.max(interval, 8000); // be gentle with shared public proxies
-      if (!status.ok) interval = Math.min(60000, interval * Math.pow(1.6, status.failures)); // back off
-      setTimeout(poll, Math.max(500, interval - (Date.now() - started)));
+      // back off on failures (respecting Retry-After), come back to the normal rate gradually
+      interval = MA.data.pollDelay({ baseMs: interval, failures: status.failures, recover: status.recover,
+        retryAfterMs: status.retryAfterMs, jitter: Math.random() });
+      var wait = Math.max(500, interval - (Date.now() - started));
+      status.nextAt = Date.now() + wait;
+      setTimeout(poll, wait);
+      updateSummary(Date.now());
     });
   }
 
@@ -117,6 +133,10 @@
     for (var hex in aircraft) {
       var ac = aircraft[hex];
       MA.geo.glide(ac, now, dt, MAX_EXTRAP_MS);
+      // position older than MAX_EXTRAP_MS (feed down or answer from a cache): fade out instead of vanishing
+      var posAge = now - (typeof ac.ts === 'number' ? ac.ts : ac.seen);
+      ac.fade = posAge <= MAX_EXTRAP_MS ? 1 : Math.max(0, 1 - (posAge - MAX_EXTRAP_MS) / (STALE_MS - MAX_EXTRAP_MS));
+      if (!ac.fade) { delete aircraft[hex]; continue; }
       // the trail is drawn from the smoothed on-screen position, independent of poll timing
       var last = ac.trail[ac.trail.length - 1];
       if (!last || now - last[2] >= TRAIL_STEP_MS) ac.trail.push([ac.dlat, ac.dlon, now]);
@@ -155,7 +175,7 @@
 
   // Rotate through the nearest aircraft; jump to a newcomer that is very close.
   function pickFeatured(now) {
-    var inRange = visible.filter(function (ac) { return ac.dist <= cfg.radiusKm * 1.15; });
+    var inRange = visible.filter(function (ac) { return ac.dist <= cfg.radiusKm * 1.15 && ac.fade >= FADE_MIN; });
     var cand = inRange.slice(0, 4);
     if (!cand.length) { featured.hex = null; return null; }
     jumpSpecial(inRange, now);
@@ -218,7 +238,10 @@
     if (now - lastBoard > 1000) {
       lastBoard = now;
       if (feat) board.show(feat, featured.idx, featured.count);
-      else if (!status.ok && status.failures > 0) board.empty('OFFLINE', 'Neuer Versuch läuft…');
+      else if (!status.lastOk && !status.failures) board.empty('------', 'Verbinde…');
+      else if (status.lastOk ? (now - status.dataAt) / 1000 >= WARN_AGE_S : status.failures) {
+        board.empty('OFFLINE', status.lastOk ? 'Daten veraltet' : 'Keine Verbindung');
+      }
       else if (status.lastOk) board.empty('RUHE', 'Kein Flugverkehr im Umkreis');
       else board.empty('------', 'Verbinde…');
       updateSummary(now);
@@ -245,13 +268,26 @@
     var dot = document.getElementById('status-dot');
     var txt = document.getElementById('summary-text');
     var n = featured.inRange || 0;
+    var sum = txt.parentNode;
+    function state(dotClass, level, text) {   // level: '' | 'warn' | 'err' also colours the text
+      dot.className = 'dot' + (dotClass ? ' ' + dotClass : '');
+      sum.className = 'summary' + (level ? ' ' + level : '');
+      if (txt.textContent !== text) txt.textContent = text;
+    }
     if (!status.lastOk) {
-      dot.className = status.failures ? 'dot err' : 'dot';
-      txt.textContent = status.failures ? 'Keine Verbindung' : 'Verbinde…';
+      if (status.failures) state('err', 'err', 'Keine Verbindung'); else state('', '', 'Verbinde…');
       return;
     }
-    var age = (now - status.lastOk) / 1000;
-    dot.className = 'dot ' + (age < 30 ? 'ok' : (age < 120 ? 'warn' : 'err'));
+    // age of the data itself, not of the last request: an answer from a cache can arrive fresh but be old
+    var age = Math.max(0, (now - status.dataAt) / 1000);
+    if (age >= WARN_AGE_S) {
+      var ageTxt = age < 90 ? Math.round(age) + ' s' : Math.round(age / 60) + ' min';
+      if (age >= ERR_AGE_S) state('err', 'err', 'Keine Verbindung · Daten ' + ageTxt + ' alt');
+      else state('warn', 'warn', 'Daten ' + ageTxt + ' alt');
+      return;
+    }
+    dot.className = 'dot ok';
+    sum.className = 'summary';
     var g = cfg.show.ground === false ? 0 : groundList().filter(function (a) {
       return MA.geo.distKm(cfg.lat, cfg.lon, a.lat, a.lon) <= cfg.radiusKm * 1.15;
     }).length;
