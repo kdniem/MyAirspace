@@ -179,9 +179,28 @@ function stubRadar(status, body, headers = {}) {
     return {
       status, ok: status >= 200 && status < 300,
       headers: { get: (k) => headers[k.toLowerCase()] ?? null },
-      arrayBuffer: async () => body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)
+      body: new Response(body).body      // a stream, as the real fetch returns it
     };
   };
+}
+// a chunked upstream of `total` bytes without Content-Length, read by the handler through its stream
+function stubStream(total, chunk = 1024 * 1024) {
+  let sent = 0;
+  globalThis.fetch = async (url, opts) => {
+    radarFetch = { url, opts };
+    return {
+      status: 200, ok: true, headers: { get: () => null },
+      body: new ReadableStream({
+        pull(c) {
+          if (sent >= total) { c.close(); return; }
+          const n = Math.min(chunk, total - sent);
+          sent += n;
+          c.enqueue(new Uint8Array(n));
+        }
+      })
+    };
+  };
+  return () => sent;
 }
 async function callRadar(url, { origin, method = 'GET' } = {}) {
   const headers = {};
@@ -230,6 +249,15 @@ await t('radar: upstream errors, redirects and oversize bodies are not cached', 
   assert.equal((await callRadar({}, { origin: ORIGIN })).code, 502);
   globalThis.fetch = async () => { throw new Error('network'); };
   assert.equal((await callRadar({}, { origin: ORIGIN })).code, 502);
+  globalThis.fetch = realFetch;
+});
+await t('radar: a chunked body without Content-Length is cut off at the byte cap', async () => {
+  const read = stubStream(9 * 1024 * 1024);     // 9 MB, no length header
+  const r = await callRadar({}, { origin: ORIGIN });
+  assert.equal(r.code, 502);
+  assert.equal(r.h['cache-control'], 'no-store');
+  // the stream reads ahead by a chunk or two; the handler stops at the cap, far short of the 9 MB body
+  assert.ok(read() < 8 * 1024 * 1024, 'read stopped near the 4 MB cap, read ' + read());
   globalThis.fetch = realFetch;
 });
 await t('radar: a fresh observation is answered with the grid and a short CDN cache', async () => {

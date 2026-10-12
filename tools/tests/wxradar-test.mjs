@@ -5,6 +5,8 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
+import zlib from 'node:zlib';
+import { Filters } from 'jsfive';
 import { fileURLToPath } from 'node:url';
 import * as R from '../../lib/dwd-radar.js';
 
@@ -177,6 +179,33 @@ t('client parity: js/wxradar.js decodes the same runs and steps as the server', 
   const demo = W._demo({ lat: 53.55, lon: 9.99 });
   assert.equal(demo.demo, true);
   assert.ok(Array.from(demo.levels).some((v) => v >= 9), 'demo has strong cells');
+});
+
+t('inflate: output past the declared chunk size is refused (decompression bomb)', () => {
+  const bomb = zlib.deflateSync(Buffer.alloc(8 * 1024 * 1024, 0));     // 8 MB of zeros in a few KB
+  assert.ok(bomb.length < 64 * 1024);
+  assert.throws(() => R.inflateBounded(bomb, R.MAX_CELLS * 2), { code: 'ERR_BUFFER_TOO_LARGE' });
+  const ok = zlib.deflateSync(Buffer.alloc(1000, 7));
+  assert.equal(R.inflateBounded(ok, 2640000).byteLength, 1000);
+  assert.throws(() => R.inflateBounded(ok, 0), /no chunk cap/);
+});
+
+t('jsfive gzip filter (id 1) is the bounded one: no chunk cap set outside a frame read', () => {
+  const bomb = zlib.deflateSync(Buffer.alloc(1024 * 1024, 0));
+  const ab = bomb.buffer.slice(bomb.byteOffset, bomb.byteOffset + bomb.byteLength);
+  assert.throws(() => Filters.get(1)(ab, 2, null), /no chunk cap/);
+});
+
+t('frame too large: a declared grid above MAX_CELLS is refused before any cell is read', () => {
+  const big = fs.readFileSync(path.join(HERE, 'fixtures/wn-oversize.h5'));   // 1201 x 2300 declared
+  assert.ok(1201 * 2300 > R.MAX_CELLS);
+  assert.throws(() => R.decodeFrame(big), /frame too large/);
+});
+
+t('toLevels: cells with non-finite coordinates are skipped, not written', () => {
+  const broken = Object.assign({}, f, { xscale: NaN });   // every cell centre becomes NaN
+  const levels = R.toLevels(broken, R.GRID);
+  assert.equal(levels.reduce((a, b) => a + b, 0), 0);
 });
 
 console.log(n + ' wxradar tests passed');

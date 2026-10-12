@@ -89,15 +89,6 @@
     return p ? p.replace(/\/proxy(\?[\s\S]*)?$/, '/radar') : '';
   }
 
-  function withTimeout(promise) {
-    return new Promise(function (resolve, reject) {
-      var done = false;
-      var timer = setTimeout(function () { if (!done) { done = true; reject(new Error('timeout')); } }, TIMEOUT_MS);
-      promise.then(function (v) { if (!done) { done = true; clearTimeout(timer); resolve(v); } },
-        function (e) { if (!done) { done = true; clearTimeout(timer); reject(e); } });
-    });
-  }
-
   function setData(d) {
     data = d;
     stamp++;
@@ -115,13 +106,29 @@
     if (cfg.demo) { setData(demoData(cfg)); return; }   // synthetic, shown only with ?demo=1
     var url = endpoint();
     if (!url) { updateLegend(); return; }
-    withTimeout(fetch(url, { headers: { Accept: 'application/json' } }).then(function (res) {
+    // A timeout stops the wait and schedules a retry; an answer that arrives later is ignored. (No
+    // AbortController: the TV compatibility scan requires guards for it, and the server caps its own wait.)
+    var done = false;
+    var guard = setTimeout(function () {
+      if (done) return;
+      done = true;
+      if (window.console) console.warn('[MyAirspace] radar: timeout');
+      schedule(RETRY_MS);
+      updateLegend();
+    }, TIMEOUT_MS);
+    fetch(url, { headers: { Accept: 'application/json' } }).then(function (res) {
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
-    })).then(function (j) {
+    }).then(function (j) {
+      if (done) return;
+      done = true;
+      clearTimeout(guard);
       setData(parseAnswer(j));
       schedule(PERIOD_MS);
-    }, function (err) {
+    }).catch(function (err) {      // also a malformed answer: it is retried, not left unhandled
+      if (done) return;
+      done = true;
+      clearTimeout(guard);
       if (window.console) console.warn('[MyAirspace] radar:', err && err.message);
       schedule(RETRY_MS);
       updateLegend();

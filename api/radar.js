@@ -20,12 +20,25 @@ function fail(res, status, error) {
   return res.status(status).json({ error });
 }
 
+// Streamed read with a byte counter: a chunked response without Content-Length cannot grow past MAX_BYTES
 async function readLimited(resp) {
   const len = Number(resp.headers && resp.headers.get ? resp.headers.get('content-length') : 0);
   if (len > MAX_BYTES) throw new Error('too large');
-  const buf = Buffer.from(await resp.arrayBuffer());
-  if (buf.length > MAX_BYTES) throw new Error('too large');
-  return buf;
+  if (!resp.body || typeof resp.body.getReader !== 'function') throw new Error('no body');
+  const reader = resp.body.getReader();
+  const parts = [];
+  let total = 0;
+  for (;;) {
+    const step = await reader.read();
+    if (step.done) break;
+    total += step.value.length;
+    if (total > MAX_BYTES) {
+      try { await reader.cancel(); } catch (e) { /* the upstream may already be closed */ }
+      throw new Error('too large');
+    }
+    parts.push(Buffer.from(step.value));
+  }
+  return Buffer.concat(parts, total);
 }
 
 export default async function handler(req, res) {

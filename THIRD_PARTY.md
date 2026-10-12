@@ -24,7 +24,9 @@ MyAirspace selbst steht unter der MIT-Lizenz (siehe [LICENSE](LICENSE)). Die fol
 
 ### jsfive und pako (Server, `api/radar.js`)
 
-Die Funktion `api/radar.js` liest die DWD-Datei (HDF5) mit der Bibliothek **jsfive** 0.4.2 (<https://github.com/usnistgov/jsfive>, Version fest in `package.json` und `package-lock.json`). jsfive steht laut seiner LICENSE.txt in der Public Domain und basiert auf pyfive (© 2016 Jonathan J. Helmus). jsfive braucht **pako** 2.2.0 (MIT License, © 2014-2017 Vitaly Puzrin and Andrei Tuputcyn, <https://github.com/nodeca/pako>). Beide laufen nur auf dem Server, nicht im Browser.
+Die Funktion `api/radar.js` liest die DWD-Datei (HDF5) mit der Bibliothek **jsfive** 0.4.2 (<https://github.com/usnistgov/jsfive>, Version fest in `package.json` und `package-lock.json`). jsfive steht laut seiner LICENSE.txt in der Public Domain und basiert auf pyfive (© 2016 Jonathan J. Helmus). Die Datei `dist/esm/index.mjs` von jsfive enthält eine eingebaute Kopie von **pako** 2.1.0 (MIT License, © 2014-2017 Vitaly Puzrin and Andrei Tuputcyn, <https://github.com/nodeca/pako>; Banner: „pako 2.1.0 … @license (MIT AND Zlib)“). Das separate Paket `pako` (2.2.0 laut `package-lock.json`) installiert npm nur, weil jsfive es als Abhängigkeit deklariert; die Funktion lädt es zur Laufzeit nicht. Alles läuft nur auf dem Server, nicht im Browser.
+
+Die Dekompression ist begrenzt: `lib/dwd-radar.js` ersetzt den gzip-Filter von jsfive durch eine Inflate-Funktion mit Obergrenze (die deklarierte Chunkgröße, Node `zlib`), damit eine Dekompressionsbombe nicht unbegrenzt Speicher belegt.
 
 ### QR Code generator library (Project Nayuki)
 
