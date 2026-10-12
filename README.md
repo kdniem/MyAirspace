@@ -6,9 +6,9 @@ Die App ist nur zum Anschauen gedacht: URL öffnen, fertig. Es gibt keine Bedien
 
 ## Einrichten
 
-Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace/setup.html)** öffnen. Dort wählst du deinen Standort (per GPS, Ortssuche oder einen der Flughäfen mit Karte), stellst Radius, Einheiten, Spuren und Nachtdimmen ein und siehst sofort eine Vorschau. Am Ende bekommst du die fertige Adresse für den Fernseher zum Kopieren, Öffnen oder als QR-Code. Der Standort wird standardmäßig auf etwa 1 km gerundet. Die Seite speichert nichts; die Ortssuche nutzt Nominatim von OpenStreetMap.
+Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace/setup.html)** öffnen. Dort wählst du deinen Standort (per GPS, Ortssuche oder einen der Flughäfen mit Karte), stellst Radius, Einheiten, Spuren und Nachtdimmen ein und siehst sofort eine Vorschau. Am Ende bekommst du die fertige Adresse für den Fernseher zum Kopieren, Öffnen oder als QR-Code. Der Standort wird standardmäßig auf etwa 1 km gerundet. Beim ersten Besuch führt ein Assistent in fünf Schritten durch Standort, Stil, Feinschliff und die Adresse für den Fernseher (`setup.html?wizard=1` startet ihn erneut, `wizard=0` blendet ihn aus). Die Seite speichert nur den Merker, dass du fertig bist, nichts weiter; die Ortssuche nutzt Nominatim von OpenStreetMap.
 
-Öffnest du die TV-Seite ohne Standort, zeigt sie unten links für 20 Sekunden einen kleinen Hinweis auf die Einrichtungsseite.
+Öffnest du die TV-Seite ohne Standort, zeigt sie 45 Sekunden ein Willkommensfeld mit QR-Code zur Einrichtungsseite. Mit Standort erscheint einmalig pro Gerät kurz ein „Alles bereit“-Hinweis.
 
 **Als App:** Die Seite hat ein Web-App-Manifest. Auf iPad/iPhone in Safari *Teilen → Zum Home-Bildschirm*, auf Android *Zum Startbildschirm hinzufügen*. Die App startet im Vollbild mit deinen zuletzt geöffneten Einstellungen. Ein kleiner Service Worker (`sw.js`) hält nur die App-Dateien offline vor, nie Flugdaten.
 

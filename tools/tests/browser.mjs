@@ -201,7 +201,7 @@ async function setupCase(browser, vp) {
   const { ctx, page, st } = await newPage(browser, vp, 'setup');
   const problems = [];
   try {
-    await page.goto(BASE + '/setup.html?demo=1', { waitUntil: 'load' });
+    await page.goto(BASE + '/setup.html?demo=1&wizard=0', { waitUntil: 'load' });
     await page.waitForTimeout(500);
     await page.fill('#lat', '53.55');
     await page.fill('#lon', '9.99');
@@ -220,6 +220,48 @@ async function setupCase(browser, vp) {
     if (!/style=boeing/.test(info.url)) problems.push('generated URL lacks style=boeing: ' + info.url);
     if (!/accent=amber/.test(info.url)) problems.push('generated URL lacks accent=amber: ' + info.url);
     if (!/lat=53\.5/.test(info.url) || !/lon=9\.9/.test(info.url)) problems.push('generated URL lacks the location: ' + info.url);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
+// ---------- guided setup (wizard) ----------
+async function wizardCase(browser, vp) {
+  const id = 'wizard_' + vp.width + 'x' + vp.height;
+  const { ctx, page, st } = await newPage(browser, vp, 'setup');
+  const problems = [];
+  const vis = (sel) => page.locator(sel).first().isVisible();
+  try {
+    await page.goto(BASE + '/setup.html?demo=1', { waitUntil: 'load' });
+    if (!(await vis('.card-welcome'))) problems.push('wizard step 1 does not show the welcome card');
+    if (await vis('.card-loc')) problems.push('wizard step 1 shows the location card too early');
+    await page.click('#wz-next');
+    if (!(await vis('.card-loc'))) problems.push('step 2 does not show the location card');
+    if (!(await page.locator('#wz-next').isDisabled())) problems.push('"Weiter" is enabled without a location');
+    await page.fill('#lat', '53.55');
+    await page.fill('#lon', '9.99');
+    if (await page.locator('#wz-next').isDisabled()) problems.push('"Weiter" stays disabled with a valid location');
+    await page.click('#wz-next');
+    if (!(await vis('.card-theme'))) problems.push('step 3 does not show the style card');
+    await page.click('#wz-next');
+    if (!(await vis('.card-units'))) problems.push('step 4 does not show the fine tuning cards');
+    await page.click('#wz-back');
+    await page.click('#wz-next');
+    await page.click('#wz-next');
+    if (!(await vis('.card-url'))) problems.push('step 5 does not show the TV address');
+    const url = await page.textContent('#url');
+    if (!/lat=53\.5/.test(url)) problems.push('wizard URL lacks the location: ' + url);
+    await page.waitForTimeout(500);
+    await shot(page, id + '_final');
+    await page.click('#wz-next');
+    if (await page.evaluate(() => document.body.classList.contains('wizard'))) problems.push('wizard stays active after finishing');
+    await page.reload({ waitUntil: 'load' });
+    if (await page.evaluate(() => document.body.classList.contains('wizard'))) problems.push('wizard shows again after finishing');
+    await page.goto(BASE + '/setup.html?wizard=1&demo=1', { waitUntil: 'load' });
+    if (!(await vis('.card-welcome'))) problems.push('?wizard=1 does not restart the wizard');
+    collect(st, problems);
     checked.pages++;
     if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
   } catch (e) {
@@ -288,7 +330,7 @@ const jobs = [];
 const VPS = QUICK ? [{ w: 1920, h: 1080 }] : [{ w: 1920, h: 1080 }, { w: 1280, h: 720 }, { w: 3840, h: 2160 }];
 for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 'light'] : ['dark'])
   for (const vp of VPS) for (const view of ['radar', 'board']) jobs.push({ n: [style, theme, vp.w, view].join('_'), run: () => matrixCase(browser, { style, theme, vp, view }) });
-jobs.push({ n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
+jobs.push({ n: 'wizard_390', run: () => wizardCase(browser, { width: 390, height: 844 }) }, { n: 'wizard_1280', run: () => wizardCase(browser, { width: 1280, height: 800 }) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;

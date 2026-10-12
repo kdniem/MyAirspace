@@ -385,3 +385,55 @@ small.opt { margin-left: 0.6em; font-size: 10px; letter-spacing: 0.06em; text-tr
   .toggles .switch { break-inside: avoid; }
   .toggles .switch:first-child { margin-top: 16px; }
 }
+
+/* ---------- guided setup (js/onboarding.js) ---------- */
+
+.intro-link { margin: 8px 0 0; font-size: 12px; color: var(--dim); }
+.intro-link a { color: var(--amber); }
+.card-welcome, .wz-tips { display: none; }
+.welcome-big { margin: 0 0 10px; font: 500 20px/1.3 var(--led); color: var(--ink); letter-spacing: 0.04em; }
+.card-welcome p { color: #9a9ea3; font-size: 14px; }
+.welcome-steps { margin: 14px 0; padding-left: 1.4em; color: var(--ink); font-size: 14px; line-height: 1.9; }
+.welcome-steps b { color: var(--amber); font-weight: 500; }
+
+.wz { margin-top: 18px; }
+.wz-step { margin: 0; min-height: 1.5em; font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--amber); }
+.wz-dots { display: flex; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+.wz-dots li { flex: 1 1 0; max-width: 64px; height: 4px; border-radius: 2px; background: var(--faint); }
+.wz-dots li.done { background: var(--dim); }
+.wz-dots li.cur { background: var(--amber); }
+.wz-lead { margin: 12px 0 0; max-width: 52ch; font-size: 14px; color: var(--ink); }
+
+.wz-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; gap: 10px; align-items: center;
+  padding: 10px max(16px, env(safe-area-inset-left)) max(10px, env(safe-area-inset-bottom));
+  background: rgba(5, 6, 7, 0.94);
+  border-top: 1px solid var(--line);
+}
+.wz-nav[hidden], .wz[hidden], [hidden].intro-link { display: none; }
+.wz-nav .btn-primary { margin-left: auto; min-width: 130px; }
+.btn-link { border-color: transparent; color: var(--dim); }
+
+body.wizard { padding-bottom: 88px; }
+body.wizard .num { display: none; }
+body.wizard .card { display: none; }
+body.wizard[data-step="1"] .card-welcome,
+body.wizard[data-step="2"] .card-loc,
+body.wizard[data-step="3"] .card-theme,
+body.wizard[data-step="4"] .card-view,
+body.wizard[data-step="4"] .card-units,
+body.wizard[data-step="4"] .card-night,
+body.wizard[data-step="5"] .card-url { display: block; }
+body.wizard[data-step="1"] .card-prev,
+body.wizard[data-step="3"] .card-prev,
+body.wizard[data-step="4"] .card-prev,
+body.wizard[data-step="5"] .card-prev { display: block; }
+body.wizard[data-step="5"] .wz-tips { display: block; margin: 14px 0 0; padding-left: 1.4em; font-size: 13px; line-height: 1.7; color: #9a9ea3; }
+body.wizard h2 { outline: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  body.wizard .card { animation: wz-in 0.25s ease-out; }
+}
+@keyframes wz-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.wz-nav [hidden] { display: none; }

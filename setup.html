@@ -16,10 +16,30 @@
     <a class="brand" href="./"><span class="brand-name">MYAIRSPACE</span><span class="brand-sep">·</span>EINRICHTEN</a>
     <h1 class="led">Dein Luftraum</h1>
     <p class="intro">Stell den Radar für deinen Fernseher ein. Alles steht am Ende in einer Adresse – gespeichert wird nichts.</p>
+    <p class="intro-link"><a id="wz-restart" href="setup.html?wizard=1">Geführte Einrichtung starten</a></p>
+
+    <div id="wz" class="wz" hidden>
+      <p id="wz-step" class="wz-step" aria-live="polite"></p>
+      <ol id="wz-dots" class="wz-dots" aria-hidden="true"><li></li><li></li><li></li><li></li></ol>
+      <p id="wz-lead" class="wz-lead"></p>
+    </div>
   </header>
 
   <main class="layout">
     <div class="col col-form">
+      <section class="card card-welcome" aria-labelledby="h-welcome">
+        <h2 id="h-welcome" tabindex="-1">Willkommen</h2>
+        <p class="welcome-big">Dein Luftraum auf dem Fernseher.</p>
+        <p>MyAirspace zeigt die Flugzeuge um dich herum live als ruhiges Radar im Look echter Luftfahrt-Anzeigen. Du richtest es einmal hier am Handy ein und öffnest es dann am Fernseher.</p>
+        <ol class="welcome-steps">
+          <li><b>Standort</b> wählen</li>
+          <li><b>Stil</b> aussuchen</li>
+          <li><b>Feinschliff</b> nach Geschmack</li>
+          <li><b>Adresse</b> auf den Fernseher bringen</li>
+        </ol>
+        <p class="note">Dauert etwa zwei Minuten. Ein Konto brauchst du nicht, deine Einstellungen stehen am Ende in einer Adresse.</p>
+      </section>
+
       <section class="card card-loc" aria-labelledby="h-loc">
         <h2 id="h-loc"><span class="num">01</span>Standort</h2>
 
@@ -199,6 +219,11 @@
           <button id="copy" class="btn btn-primary" type="button">Kopieren</button>
           <a id="open" class="btn" href="./" target="_blank" rel="noopener">Öffnen</a>
         </div>
+        <ol class="wz-tips">
+          <li>Öffne die Adresse im Browser des Fernsehers (oder scanne den QR-Code).</li>
+          <li>Speichere sie als Lesezeichen oder Startseite, dann ist sie beim nächsten Mal sofort da.</li>
+          <li>Jede Änderung hier ergibt eine neue Adresse. Du kannst diese Seite jederzeit wieder öffnen.</li>
+        </ol>
         <div class="qr-wrap">
           <div id="qr" class="qr"></div>
           <p class="note">Mit dem Handy scannen oder die Adresse im Browser des Fernsehers eingeben und als Lesezeichen speichern.
@@ -208,6 +233,12 @@
     </div>
   </main>
 
+  <nav id="wz-nav" class="wz-nav" aria-label="Einrichtung" hidden>
+    <button id="wz-back" class="btn" type="button">Zurück</button>
+    <button id="wz-skip" class="btn btn-link" type="button">Überspringen</button>
+    <button id="wz-next" class="btn btn-primary" type="button">Los geht’s</button>
+  </nav>
+
   <footer class="foot">Ortssuche: © OpenStreetMap-Mitwirkende, Nominatim · <a href="datenschutz.html">Datenschutz</a></footer>
 
   <script src="data/geo-features.js"></script>
@@ -215,5 +246,6 @@
   <script src="js/config.js"></script>
   <script src="js/qr.js"></script>
   <script src="js/setup.js"></script>
+  <script src="js/onboarding.js"></script>
 </body>
 </html>
