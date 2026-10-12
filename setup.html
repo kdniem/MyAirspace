@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#050607">
+  <meta name="color-scheme" content="dark">
+  <title>MyAirspace einrichten</title>
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Doto:wght@700;900&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="css/setup.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="./"><span class="brand-name">MYAIRSPACE</span><span class="brand-sep">·</span>EINRICHTEN</a>
+    <h1 class="led">Dein Luftraum</h1>
+    <p class="intro">Stell den Radar für deinen Fernseher ein. Alles steht am Ende in einer Adresse – gespeichert wird nichts.</p>
+  </header>
+
+  <main class="layout">
+    <div class="col col-form">
+      <section class="card" aria-labelledby="h-loc">
+        <h2 id="h-loc"><span class="num">01</span>Standort</h2>
+
+        <button id="geo" class="btn btn-primary btn-wide" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 1v4M12 19v4M1 12h4M19 12h4"/><circle cx="12" cy="12" r="2" class="fill"/></svg>
+          Meinen Standort verwenden
+        </button>
+        <p id="geo-status" class="status" role="status"></p>
+
+        <div class="field">
+          <label for="search">Ort suchen</label>
+          <input id="search" type="search" placeholder="z. B. Langenhorn, Hamburg" autocomplete="off" spellcheck="false">
+          <ul id="results" class="results" hidden></ul>
+          <p id="search-status" class="status" role="status"></p>
+        </div>
+
+        <div class="field">
+          <span class="label">Flughäfen mit Karte</span>
+          <div id="airports" class="chips"></div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <label for="lat">Breite (lat)</label>
+            <input id="lat" type="text" inputmode="decimal" placeholder="53.66" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="lon">Länge (lon)</label>
+            <input id="lon" type="text" inputmode="decimal" placeholder="10.05" autocomplete="off">
+          </div>
+        </div>
+
+        <label class="switch">
+          <input id="round" type="checkbox" checked>
+          <span class="track" aria-hidden="true"></span>
+          <span>Standort auf ~1 km runden <small>Deine genaue Adresse steht so nicht in der URL.</small></span>
+        </label>
+      </section>
+
+      <section class="card" aria-labelledby="h-view">
+        <h2 id="h-view"><span class="num">02</span>Anzeige</h2>
+
+        <div class="field">
+          <label for="label">Ortsname oben links</label>
+          <input id="label" type="text" maxlength="24" placeholder="Hamburg" autocomplete="off">
+        </div>
+
+        <div class="field">
+          <label for="radius">Radius <output id="radius-out" for="radius">25 km</output></label>
+          <input id="radius" type="range" min="5" max="80" step="1" value="25">
+        </div>
+
+        <div class="field">
+          <label for="trail">Flugspuren <output id="trail-out" for="trail">4 min</output></label>
+          <input id="trail" type="range" min="0" max="30" step="1" value="4">
+        </div>
+
+        <div class="field">
+          <span class="label" id="units-lbl">Höhe in</span>
+          <div class="seg" role="radiogroup" aria-labelledby="units-lbl">
+            <label><input type="radio" name="units" value="ft" checked><span>Fuß (ft)</span></label>
+            <label><input type="radio" name="units" value="m"><span>Meter (m)</span></label>
+          </div>
+        </div>
+
+        <label class="switch">
+          <input id="labels" type="checkbox" checked>
+          <span class="track" aria-hidden="true"></span>
+          <span>Beschriftung an den Flugzeugen</span>
+        </label>
+        <label class="switch">
+          <input id="places" type="checkbox" checked>
+          <span class="track" aria-hidden="true"></span>
+          <span>Ortsnamen auf der Karte</span>
+        </label>
+      </section>
+
+      <section class="card" aria-labelledby="h-night">
+        <h2 id="h-night"><span class="num">03</span>Nachts</h2>
+        <label class="switch">
+          <input id="night" type="checkbox" checked>
+          <span class="track" aria-hidden="true"></span>
+          <span>Bildschirm nachts dimmen</span>
+        </label>
+        <div id="night-hours" class="row">
+          <div class="field">
+            <label for="night-from">von</label>
+            <select id="night-from"></select>
+          </div>
+          <div class="field">
+            <label for="night-to">bis</label>
+            <select id="night-to"></select>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="col col-out">
+      <section class="card" aria-labelledby="h-prev">
+        <h2 id="h-prev"><span class="num">04</span>Vorschau</h2>
+        <div id="preview" class="preview">
+          <iframe id="frame" title="Vorschau des Fernsehbilds" tabindex="-1" src="about:blank"></iframe>
+        </div>
+        <p class="note">Live-Daten, wie sie der Fernseher zeigt. Aktualisiert sich nach jeder Änderung.</p>
+      </section>
+
+      <section class="card" aria-labelledby="h-url">
+        <h2 id="h-url"><span class="num">05</span>Adresse für den Fernseher</h2>
+        <p id="url-empty" class="status warn">Wähle zuerst einen Standort.</p>
+        <code id="url" class="url" aria-label="Adresse für den Fernseher"></code>
+        <div class="actions">
+          <button id="copy" class="btn btn-primary" type="button">Kopieren</button>
+          <a id="open" class="btn" href="./" target="_blank" rel="noopener">Öffnen</a>
+        </div>
+        <div class="qr-wrap">
+          <div id="qr" class="qr"></div>
+          <p class="note">Mit dem Handy scannen oder die Adresse im Browser des Fernsehers eingeben und als Lesezeichen speichern.
+            iPad/iPhone: in Safari öffnen, dann <em>Teilen → Zum Home-Bildschirm</em>.</p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="foot">Ortssuche: © OpenStreetMap-Mitwirkende, Nominatim</footer>
+
+  <script src="data/geo-features.js"></script>
+  <script src="js/qr.js"></script>
+  <script src="js/setup.js"></script>
+</body>
+</html>
