@@ -14,7 +14,7 @@
         if (!done) { done = true; reject(new Error('timeout')); }
       }, timeoutMs || 8000);
       fetch(url, opts).then(function (res) {
-        if (!res.ok) throw new Error('HTTP ' + res.status);
+        if (!res.ok) { var e = new Error('HTTP ' + res.status); e.status = res.status; throw e; }
         return res.json();
       }).then(function (json) {
         if (!done) { done = true; clearTimeout(timer); resolve(json); }
@@ -25,8 +25,9 @@
   }
 
   /* Most flight APIs send no CORS headers, so browsers block direct calls.
-     Each request goes through the own proxy (api/proxy.js on Vercel) if configured, then
-     public CORS proxies, then direct. The first route that works is remembered per host. */
+     Each request goes through the own proxy (api/proxy.js on Vercel), then direct. Public
+     CORS proxies (third parties see the request) are used only with ?public=1. The first
+     route that works is remembered per endpoint, in memory only (never in localStorage). */
   var PUBLIC_PROXIES = [
     function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
     function (u) { return 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u); }
@@ -37,8 +38,12 @@
     var own = MA.config.proxy;
     var direct = function (u) { return u; };    // last unless the endpoint is known to send CORS
     if (post) return [direct];                  // no proxy relays POST
-    var list = PUBLIC_PROXIES.slice();
-    if (own) list.unshift(function (u) { return own + (own.indexOf('?') >= 0 ? '&' : '?') + 'url=' + encodeURIComponent(u); });
+    var list = MA.config.public ? PUBLIC_PROXIES.slice() : [];
+    if (own) {
+      var ownRoute = function (u) { return own + (own.indexOf('?') >= 0 ? '&' : '?') + 'url=' + encodeURIComponent(u); };
+      ownRoute.own = true;
+      list.unshift(ownRoute);
+    }
     return directFirst ? [direct].concat(list) : list.concat([direct]);
   }
 
@@ -51,7 +56,7 @@
     var host = url.split('/').slice(2, 5).join('/') + (post ? ' post' : '');
     var list = proxyRoutes(post, directFirst);
     var start = Math.min(preferred[host] || 0, list.length - 1);
-    var n = 0;
+    var n = 0, retried = false;
     function attempt() {
       var i = (start + n) % list.length;
       var via = list[i]('').split('/')[2] || 'direct';
@@ -63,6 +68,12 @@
         preferred[host] = i;
         return json;
       }, function (err) {
+        // own proxy hiccup (429, 5xx, network, timeout): one more try after a short pause
+        if (list[i].own && !retried && (!err.status || err.status === 429 || err.status >= 500)) {
+          retried = true;
+          return new Promise(function (r) { setTimeout(r, 1500); }).then(attempt);
+        }
+        retried = false;
         n++;
         if (n >= list.length) throw err;
         return attempt();
@@ -201,9 +212,11 @@
      retries the preferred one. */
   function Feed(cfg) {
     this.cfg = cfg;
+    // airplanes.live and OpenSky cannot be reached through the own proxy: opt-in only (?public=1)
+    var usable = function (k) { return !!PROVIDERS[k] && (k === 'adsblol' || cfg.public); };
     if (cfg.demo) this.order = ['demo'];
-    else if (PROVIDERS[cfg.provider]) this.order = [cfg.provider];
-    else this.order = ORDER.slice();
+    else if (usable(cfg.provider)) this.order = [cfg.provider];
+    else this.order = cfg.public ? ORDER.slice() : ['adsblol'];
     this.idx = 0;
     this.lastSwitch = 0;
   }

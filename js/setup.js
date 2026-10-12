@@ -217,7 +217,7 @@
 
   async function reverseName(lat, lon) {
     try {
-      const r = await nominatim('reverse', { lat: lat.toFixed(3), lon: lon.toFixed(3), zoom: 12 });
+      const r = await nominatim('reverse', { lat: lat.toFixed(2), lon: lon.toFixed(2), zoom: 10 });
       const a = (r && r.address) || {};
       const name = a.suburb || a.city_district || a.village || a.town || a.city || a.municipality || '';
       if (name && !labelTouched) {
@@ -385,4 +385,21 @@
   scalePreview();
 
   update();
+
+  /* ---------- privacy notices (kept separate from the rest of the page logic) ---------- */
+  (function () {
+    function note(text, after, cls) {
+      const p = document.createElement('p');
+      p.className = cls;
+      p.textContent = text;
+      after.parentNode.insertBefore(p, after.nextSibling);
+      return p;
+    }
+    note('Suchtexte und Standort gehen an Nominatim (OpenStreetMap).', el.searchStatus, 'status');
+    const sw = el.round.closest('label') || el.round;
+    const warn = note('Ohne Rundung steht dein genauer Standort in der Adresse (und in Lesezeichen).', sw, 'status warn');
+    const sync = () => { warn.hidden = el.round.checked; };
+    el.round.addEventListener('change', sync);
+    sync();
+  })();
 })();

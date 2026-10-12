@@ -1,5 +1,5 @@
 /* Configuration from URL parameters. Nothing personal is stored in the code:
-   put your home coordinates into the URL, e.g. ?lat=53.66&lon=10.05&r=20 */
+   put your home coordinates into the URL, e.g. ?lat=53.5511&lon=9.9937&r=20 */
 var MA = window.MA || {};
 window.MA = MA;
 
@@ -28,12 +28,14 @@ window.MA = MA;
     return m ? { from: +m[1], to: +m[2] } : null;
   }
 
-  // Own proxy (api/proxy.js on Vercel), e.g. 'https://<project>.vercel.app/api/proxy';
-  // ?proxy=<url> overrides, ?proxy=off uses public proxies only.
-  var DEFAULT_PROXY = 'https://myairspace-nu.vercel.app/api/proxy';
+  // Own proxy (api/proxy.js on Vercel), DEFAULT_PROXY and the validation rule are in js/pwa.js.
+  // ?proxy=off: no proxy, direct requests only (fails for most APIs because of CORS).
+  // Any ?proxy= value that is not the default, 'off' or the own project's URL is ignored.
+  var DEFAULT_PROXY = MA.DEFAULT_PROXY;
   function proxy() {
     var v = str('proxy', DEFAULT_PROXY);
-    return /^https:\/\//.test(v) ? v : '';
+    if (!MA.proxyOk(v)) v = DEFAULT_PROXY;
+    return v === 'off' ? '' : v;
   }
 
   MA.config = {
@@ -45,6 +47,7 @@ window.MA = MA;
     units: str('units', 'ft') === 'm' ? 'm' : 'ft',
     provider: str('provider', 'auto'),          // auto | adsblol | airplaneslive | opensky
     proxy: proxy(),                             // own CORS proxy, see api/proxy.js
+    public: q.get('public') === '1',            // opt-in: public CORS proxies and the other providers
     demo: bool('demo', false),
     rotateSec: num('rotate', 9, 3, 120),        // LED board rotation
     trailMin: num('trail', 4, 0, 30),           // trail length in minutes
