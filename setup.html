@@ -80,6 +80,16 @@
         </div>
 
         <div class="field">
+          <span class="label" id="theme-lbl">Darstellung</span>
+          <div class="seg" role="radiogroup" aria-labelledby="theme-lbl">
+            <label><input type="radio" name="theme" value="dark" checked><span>Dunkel</span></label>
+            <label><input type="radio" name="theme" value="light"><span>Hell</span></label>
+            <label><input type="radio" name="theme" value="auto"><span>Automatisch</span></label>
+          </div>
+          <p class="note">Automatisch: hell zwischen Sonnenauf- und -untergang am Standort, nachts dunkel.</p>
+        </div>
+
+        <div class="field">
           <span class="label" id="units-lbl">Höhe in</span>
           <div class="seg" role="radiogroup" aria-labelledby="units-lbl">
             <label><input type="radio" name="units" value="ft" checked><span>Fuß (ft)</span></label>

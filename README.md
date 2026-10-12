@@ -33,12 +33,19 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `dim`      | `0.45`          | Helligkeit während der Nachtzeit |
 | `labels`   | `1`             | Beschriftungen an den Flugzeugen (`0` = aus) |
 | `places`   | `1`             | Ortsnamen auf der Karte (`0` = aus) |
+| `theme`    | `dark`          | Darstellung: `dark` (dunkel), `light` (hell, Papier-Optik) oder `auto` (hell von Sonnenauf- bis -untergang am Standort, sonst dunkel) |
 | `proxy`    | –               | Eigener CORS-Proxy, siehe [Proxy](#proxy-cors) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`, `airplaneslive`, `opensky` |
 | `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
 | `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht |
 | `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
 | `boardsec` | `40`            | Sekunden Anzeigetafel, danach wieder Radar (bei `view=auto`) |
+
+## Darstellung und Lesbarkeit
+
+Mit `theme=light` bekommt die App einen hellen Hintergrund (Off-White, fast schwarze Schrift, Wasser in Blaugrau, dunkle Flugzeuge mit tiefem Türkis für Sinkflug und Orange für Steigflug). `theme=auto` rechnet Sonnenaufgang und -untergang für `lat`/`lon` selbst aus (NOAA-Formel, keine Abfrage) und blendet alle paar Minuten sanft zwischen hell und dunkel um. Standard bleibt `dark`. Die Einrichtungsseite hat dafür die Auswahl „Darstellung“.
+
+Für die Lesbarkeit aus drei Metern Abstand sind Schriften größer (nichts Wichtiges unter etwa 1,6 vh), der Buchstabenabstand ist kleiner und alle Texte haben mindestens 4,5:1 Kontrast (LED-Werte 3:1). Die Karte ist deutlicher: Flüsse, Küsten und Elbe in sichtbarem Blaugrau, helleres Land um den Standort, größere Ortsnamen mit Umrandung, kräftige Pisten und Ringe. `node tools/contrast.mjs` prüft die Kontraste beider Themes.
 
 ## Anzeigetafel
 
@@ -49,6 +56,10 @@ Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil ei
 - **Smart-TV (Samsung, LG, Android TV, Fire TV):** Die URL im eingebauten Browser öffnen und als Lesezeichen speichern. Mit Vollbild bzw. ausgeblendeter Adressleiste sieht es am besten aus.
 - **Apple TV:** tvOS hat keinen Webbrowser. Öffne die URL in Safari auf dem Mac, iPad oder iPhone, schalte Safari auf Vollbild und spiegle den Bildschirm per AirPlay auf den Apple TV. Auf dem iPhone/iPad kannst du die Seite auch über *Teilen → Zum Home-Bildschirm* als Vollbild-App speichern.
 - Wo der Browser es kann (Wake Lock API), verhindert die Seite, dass der Bildschirm ausgeht. Gegen Einbrennen auf OLED-Fernsehern verschiebt sich das ganze Bild alle zwei Minuten um ein paar Pixel.
+
+## Vollbild am Computer
+
+Wenn du das Dashboard am Computer im Browser offen hast: Maus bewegen, dann erscheint links der Knopf „Vollbild“. Alternativ schaltet die Taste **F** oder ein Doppelklick um, **Esc** beendet das Vollbild. Auf dem Fernseher und in installierten Apps gibt es den Knopf nicht.
 
 ## Daten
 
@@ -105,12 +116,14 @@ index.html             Layout (Karte, Kopfzeile, LED-Tafel)
 setup.html             Einrichtungsseite (css/setup.css, js/setup.js, js/qr.js)
 manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
-css/style.css          Dark Theme, Dot-Matrix-Optik, TV-Sicherheitsrand
+css/style.css          Farben als CSS-Variablen (dunkel und hell), Dot-Matrix-Optik, TV-Sicherheitsrand
+tools/contrast.mjs     Kontrastprüfung (WCAG) für beide Themes
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function
 js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen
 js/config.js           URL-Parameter
+js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme vor dem ersten Bild
 js/hint.js             Hinweis auf setup.html, wenn kein Standort in der URL steht
 js/data.js             Datenquellen, Fallback, Routen-Cache
 js/demo.js             Simulierter Verkehr für ?demo=1

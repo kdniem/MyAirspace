@@ -4,7 +4,7 @@
   'use strict';
 
   // Must match the defaults in js/config.js: only differing values go into the URL.
-  const DEF = { r: 25, label: 'Hamburg', units: 'ft', trail: 4, night: '23-6', labels: true, places: true };
+  const DEF = { r: 25, label: 'Hamburg', units: 'ft', theme: 'dark', trail: 4, night: '23-6', labels: true, places: true };
   const PASSTHROUGH = ['poll', 'rotate', 'dim', 'provider', 'proxy'];  // advanced, kept if present
   const NOMINATIM = 'https://nominatim.openstreetmap.org/';
   const PREVIEW_W = 1280;
@@ -62,6 +62,8 @@
     el.trail.value = isNaN(t) ? DEF.trail : Math.min(30, Math.max(0, t));
     const units = q.get('units') === 'm' ? 'm' : 'ft';
     document.querySelector('input[name="units"][value="' + units + '"]').checked = true;
+    const theme = /^(light|auto)$/.test(q.get('theme')) ? q.get('theme') : 'dark';
+    document.querySelector('input[name="theme"][value="' + theme + '"]').checked = true;
     el.labels.checked = !isOff(q.get('labels'));
     el.places.checked = !isOff(q.get('places'));
     const night = q.get('night') || DEF.night;
@@ -233,7 +235,7 @@
   });
   [el.radius, el.trail, el.round, el.labels, el.places, el.night, el.nightFrom, el.nightTo]
     .forEach((inp) => inp.addEventListener(inp.type === 'range' ? 'input' : 'change', update));
-  document.querySelectorAll('input[name="units"]').forEach((r) => r.addEventListener('change', update));
+  document.querySelectorAll('input[name="units"], input[name="theme"]').forEach((r) => r.addEventListener('change', update));
 
   /* ---------- URL ---------- */
 
@@ -261,6 +263,8 @@
     if (label && label.toLowerCase() !== DEF.label.toLowerCase()) p.set('label', label);
     const units = document.querySelector('input[name="units"]:checked').value;
     if (units !== DEF.units) p.set('units', units);
+    const theme = document.querySelector('input[name="theme"]:checked').value;
+    if (theme !== DEF.theme) p.set('theme', theme);
     const trail = +el.trail.value;
     if (trail !== DEF.trail) p.set('trail', trail);
     const night = el.night.checked ? el.nightFrom.value + '-' + el.nightTo.value : 'off';

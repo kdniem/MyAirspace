@@ -2,19 +2,65 @@
    Flexbox only (no grid), vh/vw sizing: works on older Tizen/webOS browsers. */
 
 :root {
+  /* colours: dark theme (default); text contrast is checked by tools/contrast.mjs */
   --bg: #050607;
   --panel: #0a0b0d;
   --ink: #e9e4d8;
-  --dim: #6d7176;
+  --dim: #979ba0;    /* labels, secondary text (>= 4.5:1) */
   --faint: #2a2e33;
+  --sub: #b9bdc1;    /* board sub-lines, weather */
+  --attrib: #85898e;
+  --line: #22262b;   /* panel borders and dividers */
+  --pager: #3a3e43;
+  --led-idle: #4a4e53;
   --amber: #ffb547;
   --cyan: #63d3e8;
   --violet: #c78bff; /* special aircraft */
   --red: #ff5d5d;    /* emergency squawks */
+  --ok: #6fdc8c;
+  --glow-amber: 0 0 1.2vh rgba(255, 181, 71, 0.45), 0 0 0.2vh rgba(255, 181, 71, 0.8);
+  --glow-cyan: 0 0 1.2vh rgba(99, 211, 232, 0.45), 0 0 0.2vh rgba(99, 211, 232, 0.8);
+  --glow-ink: 0 0 1.2vh rgba(233, 228, 216, 0.25), 0 0 0.2vh rgba(233, 228, 216, 0.6);
+  --glow-violet: 0 0 1.2vh rgba(199, 139, 255, 0.45);
+  --glow-red: 0 0 1.2vh rgba(255, 93, 93, 0.5);
+  --dots: rgba(0, 0, 0, 0.55);   /* dot-matrix texture on the panels */
+  --dots-opacity: 0.45;
+  --toast-bg: rgba(10, 11, 13, 0.94);
+  --toast-line: rgba(199, 139, 255, 0.45);
+  --toast-glow: 0 0 3vh rgba(199, 139, 255, 0.16);
   --safe-x: 3.6vw;   /* overscan safe area */
   --safe-y: 3.6vh;
   --led: "Doto", "DotGothic16", "IBM Plex Mono", ui-monospace, monospace;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+/* light theme: calm "paper / airport signage" look (theme=light, or theme=auto by day) */
+:root[data-theme="light"] {
+  --bg: #f4f2ec;
+  --panel: #e7e3d9;
+  --ink: #1b1d20;
+  --dim: #55595e;
+  --faint: #cdc8bb;
+  --sub: #33363a;
+  --attrib: #5c6065;
+  --line: #cdc8bb;
+  --pager: #c3beb1;
+  --led-idle: #a9a59b;
+  --amber: #a14f00;   /* climbing: deeper than the dark-mode amber so it reads on paper */
+  --cyan: #00668a;    /* descending */
+  --violet: #7a3fc4;
+  --red: #c41e1e;
+  --ok: #1f8a43;
+  --glow-amber: none;
+  --glow-cyan: none;
+  --glow-ink: none;
+  --glow-violet: none;
+  --glow-red: none;
+  --dots: rgba(70, 60, 40, 0.10);
+  --dots-opacity: 1;
+  --toast-bg: rgba(250, 249, 245, 0.96);
+  --toast-line: rgba(122, 63, 196, 0.55);
+  --toast-glow: 0 0.4vh 2.4vh rgba(40, 30, 10, 0.12);
 }
 
 * { box-sizing: border-box; }
@@ -61,11 +107,11 @@ html, body {
 }
 
 .brand {
-  font-size: 1.55vh;
-  letter-spacing: 0.42em;
+  font-size: 2vh;
+  letter-spacing: 0.24em;
   color: var(--dim);
 }
-.brand-name { color: var(--ink); opacity: 0.85; }
+.brand-name { color: var(--ink); font-weight: 500; }
 .brand-sep { margin: 0 0.6em; }
 
 .meta { text-align: right; }
@@ -77,32 +123,30 @@ html, body {
   line-height: 1;
   color: var(--ink);
   letter-spacing: 0.06em;
-  opacity: 0.9;
 }
 
 .summary {
   margin-top: 1.1vh;
-  font-size: 1.45vh;
-  letter-spacing: 0.22em;
+  font-size: 1.9vh;
+  letter-spacing: 0.1em;
   color: var(--dim);
   text-transform: uppercase;
 }
 
-/* weather & runway in use (js/weather.js): small and dim like .summary */
+/* weather & runway in use (js/weather.js) */
 .wx {
   margin-top: 0.9vh;
-  font-size: 1.2vh;
-  line-height: 1.7;
-  letter-spacing: 0.14em;
-  color: var(--dim);
-  opacity: 0.85;
+  font-size: 1.65vh;
+  line-height: 1.6;
+  letter-spacing: 0.04em;
+  color: var(--sub);
   text-transform: uppercase;
   white-space: nowrap;
   /* keeps the line readable where it overlaps aircraft labels on the map */
   text-shadow: 0 0 0.6vh var(--bg), 0 0 0.6vh var(--bg), 0 0 1.2vh var(--bg);
 }
-.wx b { font-weight: 500; color: var(--ink); opacity: 0.8; }
-.wx-gap { display: inline-block; width: 2em; }
+.wx b { font-weight: 500; color: var(--ink); }
+.wx-gap { display: inline-block; width: 1.6em; }
 
 .dot {
   display: inline-block;
@@ -113,9 +157,9 @@ html, body {
   vertical-align: middle;
   background: var(--dim);
 }
-.dot.ok { background: #6fdc8c; box-shadow: 0 0 0.8vh rgba(111, 220, 140, 0.6); }
-.dot.warn { background: var(--amber); box-shadow: 0 0 0.8vh rgba(255, 181, 71, 0.6); }
-.dot.err { background: #ff5d5d; box-shadow: 0 0 0.8vh rgba(255, 93, 93, 0.6); }
+.dot.ok { background: var(--ok); }
+.dot.warn { background: var(--amber); }
+.dot.err { background: var(--red); }
 
 /* ---------- LED board ---------- */
 
@@ -124,9 +168,9 @@ html, body {
   left: var(--safe-x);
   right: var(--safe-x);
   bottom: calc(var(--safe-y) + 1.6vh);
-  height: 17vh;
+  height: 18vh;
   background: var(--panel);
-  border: 1px solid #16191c;
+  border: 1px solid var(--line);
   border-radius: 1.2vh;
   overflow: hidden;
 }
@@ -137,16 +181,16 @@ html, body {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 56%);
+  background-image: radial-gradient(rgba(0, 0, 0, 0) 55%, var(--dots) 56%);
   background-size: 0.42vh 0.42vh;
-  opacity: 0.55;
+  opacity: var(--dots-opacity);
 }
 
 .board-inner {
   position: relative;
   display: flex;
   height: 100%;
-  padding: 2.2vh 2.4vw;
+  padding: 2vh 2.4vw;
   align-items: stretch;
 }
 
@@ -155,7 +199,7 @@ html, body {
   flex-direction: column;
   justify-content: center;
   padding: 0 1.4vw;
-  border-left: 1px solid #16191c;
+  border-left: 1px solid var(--line);
   min-width: 0;
 }
 .cell:first-child { border-left: 0; padding-left: 0; }
@@ -168,10 +212,10 @@ html, body {
 .cell-dist   { flex: 1.0 1 0; }
 
 .lbl {
-  font-size: 1.25vh;
-  letter-spacing: 0.32em;
+  font-size: 1.6vh;
+  letter-spacing: 0.16em;
   color: var(--dim);
-  margin-bottom: 0.9vh;
+  margin-bottom: 0.8vh;
 }
 
 .val {
@@ -185,17 +229,17 @@ html, body {
   font-family: var(--led);
   font-weight: 900;
   color: var(--amber);
-  text-shadow: 0 0 1.2vh rgba(255, 181, 71, 0.45), 0 0 0.2vh rgba(255, 181, 71, 0.8);
+  text-shadow: var(--glow-amber);
   letter-spacing: 0.04em;
 }
-.led.down { color: var(--cyan); text-shadow: 0 0 1.2vh rgba(99, 211, 232, 0.45), 0 0 0.2vh rgba(99, 211, 232, 0.8); }
-.led.idle { color: #3a3e43; text-shadow: none; }
+.led.down { color: var(--cyan); text-shadow: var(--glow-cyan); }
+.led.idle { color: var(--led-idle); text-shadow: none; }
 
 .sub {
-  margin-top: 1vh;
-  font-size: 1.55vh;
-  letter-spacing: 0.14em;
-  color: #9a9ea3;
+  margin-top: 0.9vh;
+  font-size: 1.9vh;
+  letter-spacing: 0.05em;
+  color: var(--sub);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -209,7 +253,7 @@ html, body {
   border: 1px solid var(--amber);
   border-radius: 0.3em;
   color: var(--amber);
-  letter-spacing: 0.3em;
+  letter-spacing: 0.12em;
 }
 
 /* special aircraft (js/special.js) */
@@ -228,17 +272,17 @@ html, body {
   height: 0.6vh;
   margin-left: 0.6vh;
   border-radius: 50%;
-  background: #2b2f34;
+  background: var(--pager);
 }
 .pager span.on { background: var(--amber); }
 
 #attrib {
   position: absolute;
   right: var(--safe-x);
-  bottom: calc(var(--safe-y) - 1.4vh);
-  font-size: 1.05vh;
-  letter-spacing: 0.18em;
-  color: #3d4146;
+  bottom: calc(var(--safe-y) - 1.6vh);
+  font-size: 1.3vh;
+  letter-spacing: 0.08em;
+  color: var(--attrib);
   text-transform: uppercase;
 }
 
@@ -252,12 +296,12 @@ html, body {
   left: var(--safe-x);
   transform: translateY(-1vh);
   padding: 1.1vh 1.6vw;
-  background: rgba(10, 11, 13, 0.92);
-  border: 1px solid rgba(199, 139, 255, 0.45);
+  background: var(--toast-bg);
+  border: 1px solid var(--toast-line);
   border-radius: 1vh;
-  box-shadow: 0 0 3vh rgba(199, 139, 255, 0.16);
-  font-size: 1.75vh;
-  letter-spacing: 0.16em;
+  box-shadow: var(--toast-glow);
+  font-size: 2vh;
+  letter-spacing: 0.08em;
   color: var(--ink);
   white-space: nowrap;
   text-transform: uppercase;
@@ -270,16 +314,16 @@ html, body {
 .toast-label {
   font-family: var(--led);
   font-weight: 900;
-  font-size: 2.6vh;
+  font-size: 2.8vh;
   color: var(--violet);
-  text-shadow: 0 0 1.2vh rgba(199, 139, 255, 0.45);
+  text-shadow: var(--glow-violet);
   letter-spacing: 0.06em;
   margin-right: 0.7em;
   vertical-align: -0.12em;
 }
-.toast.alert { border-color: rgba(255, 93, 93, 0.6); box-shadow: 0 0 3vh rgba(255, 93, 93, 0.2); }
+.toast.alert { border-color: var(--red); }
 .toast.alert .toast-mark, .toast.alert .toast-label { color: var(--red); }
-.toast.alert .toast-label { text-shadow: 0 0 1.2vh rgba(255, 93, 93, 0.5); }
+.toast.alert .toast-label { text-shadow: var(--glow-red); }
 
 /* message overlay on the board (no data / error) */
 .board-msg .cell { opacity: 0.35; }
@@ -324,8 +368,8 @@ html, body {
 }
 .lv-date {
   margin-top: 1vh;
-  font-size: 1.7vh;
-  letter-spacing: 0.32em;
+  font-size: 2vh;
+  letter-spacing: 0.14em;
   color: var(--dim);
   text-transform: uppercase;
 }
@@ -338,7 +382,7 @@ html, body {
   margin-top: 2.4vh;
   padding: 0.6vh 1.6vw;
   background: var(--panel);
-  border: 1px solid #16191c;
+  border: 1px solid var(--line);
   border-radius: 1.2vh;
   overflow: hidden;
   min-height: 0;
@@ -349,9 +393,9 @@ html, body {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgba(0, 0, 0, 0) 55%, rgba(0, 0, 0, 0.55) 56%);
+  background-image: radial-gradient(rgba(0, 0, 0, 0) 55%, var(--dots) 56%);
   background-size: 0.42vh 0.42vh;
-  opacity: 0.55;
+  opacity: var(--dots-opacity);
 }
 .lv-rows {
   flex: 1 1 auto;
@@ -366,14 +410,14 @@ html, body {
   align-items: center;
   flex: 1 1 0;
   min-height: 0;
-  border-top: 1px solid #16191c;
+  border-top: 1px solid var(--line);
 }
 .lv-head {
   flex: 0 0 auto;
   height: 4.4vh;
   border-top: 0;
-  font-size: 1.3vh;
-  letter-spacing: 0.32em;
+  font-size: 1.65vh;
+  letter-spacing: 0.1em;
   color: var(--dim);
 }
 .lv-row.newest:before {
@@ -408,12 +452,12 @@ html, body {
 .c-status  { flex: 8 1 0; padding-left: 1.8vw; padding-right: 0; }
 
 /* row colour by phase at closest approach: cyan sinking, amber climbing, white level */
-.lv-row.ph-level .led { color: var(--ink); text-shadow: 0 0 1.2vh rgba(233, 228, 216, 0.25), 0 0 0.2vh rgba(233, 228, 216, 0.6); }
-.lv-row.ph-down .led { color: var(--cyan); text-shadow: 0 0 1.2vh rgba(99, 211, 232, 0.45), 0 0 0.2vh rgba(99, 211, 232, 0.8); }
+.lv-row.ph-level .led { color: var(--ink); text-shadow: var(--glow-ink); }
+.lv-row.ph-down .led { color: var(--cyan); text-shadow: var(--glow-cyan); }
 .lv-row.ph-level { color: var(--ink); }
 .lv-row.ph-down { color: var(--cyan); }
 .lv-row.ph-up { color: var(--amber); }
-.lv-rows .c-time, .lv-rows .c-airline { opacity: 0.8; }
+.lv-rows .c-time, .lv-rows .c-airline { opacity: 0.85; }
 
 .lv-stats {
   display: flex;
@@ -428,12 +472,12 @@ html, body {
   flex-direction: column;
   justify-content: center;
   padding: 0 1.4vw;
-  border-left: 1px solid #16191c;
+  border-left: 1px solid var(--line);
 }
 .st:first-child { border-left: 0; padding-left: 0; }
 .st-l {
-  font-size: 1.25vh;
-  letter-spacing: 0.32em;
+  font-size: 1.6vh;
+  letter-spacing: 0.12em;
   color: var(--dim);
   text-transform: uppercase;
   white-space: nowrap;
@@ -447,7 +491,7 @@ html, body {
   font-size: 3.4vh;
   line-height: 1.05;
   color: var(--amber);
-  text-shadow: 0 0 1.2vh rgba(255, 181, 71, 0.45), 0 0 0.2vh rgba(255, 181, 71, 0.8);
+  text-shadow: var(--glow-amber);
   letter-spacing: 0.04em;
   white-space: nowrap;
   overflow: hidden;
@@ -455,11 +499,45 @@ html, body {
 }
 .st-x {
   margin-top: 0.7vh;
-  font-size: 1.5vh;
-  letter-spacing: 0.14em;
-  color: #9a9ea3;
+  font-size: 1.8vh;
+  letter-spacing: 0.05em;
+  color: var(--sub);
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ---------- night dimming (js/main.js) ----------
+   a black veil instead of fading the stage, so the light theme dims too */
+
+#dim {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 10;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 4s ease;
+}
+
+/* ---------- theme switch (js/theme.js adds .theme-fade for ~2 s) ---------- */
+
+.theme-fade,
+.theme-fade body,
+.theme-fade #top *,
+.theme-fade #board,
+.theme-fade #board *,
+.theme-fade .lv-title *,
+.theme-fade .lv-table,
+.theme-fade .lv-table *,
+.theme-fade .lv-stats *,
+.theme-fade #attrib,
+.theme-fade .toast,
+.theme-fade .toast * {
+  transition: color 1.8s ease, background-color 1.8s ease, border-color 1.8s ease, text-shadow 1.8s ease, opacity 1.2s ease;
+}
+.theme-fade #logview {
+  transition-property: opacity, visibility, background-color;
+  transition-duration: 1.6s, 0s, 1.8s;
 }

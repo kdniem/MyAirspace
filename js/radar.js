@@ -1,25 +1,65 @@
-/* Canvas renderer: dark radar map centred on home. */
+/* Canvas renderer: radar map centred on home, palette per colour theme (js/theme.js). */
 (function (MA) {
-  var C = {
-    bg: '#050607',
-    water: '#121c23',
-    ring: 'rgba(255, 255, 255, 0.07)',
-    ringMain: 'rgba(255, 255, 255, 0.13)',
-    ringLabel: 'rgba(255, 255, 255, 0.22)',
-    place: 'rgba(255, 255, 255, 0.20)',
-    placeMajor: 'rgba(255, 255, 255, 0.30)',
-    runway: 'rgba(233, 228, 216, 0.55)',
-    centerline: 'rgba(233, 228, 216, 0.10)',
-    airport: 'rgba(233, 228, 216, 0.45)',
-    home: '#e9e4d8',
-    up: [255, 181, 71],
-    down: [99, 211, 232],
-    level: [233, 228, 216],
-    special: [199, 139, 255],  // special aircraft halo (js/special.js)
-    alert: [255, 93, 93],      // emergency squawks
-    label: 'rgba(233, 228, 216, 0.78)',
-    labelDim: 'rgba(233, 228, 216, 0.45)'
+  // Text colours are checked by tools/contrast.mjs (>= 4.5:1 on the background).
+  var PALETTES = {
+    dark: {
+      bg: '#050607',
+      land: ['rgba(170, 185, 195, 0.11)', 'rgba(170, 185, 195, 0)'],   // lighter land tone around home
+      water: '#2f5468',
+      halo: '#050607',                       // outline behind map labels (readable over water/rings)
+      ring: 'rgba(233, 228, 216, 0.12)',
+      ringMain: 'rgba(233, 228, 216, 0.32)',
+      ringLabel: 'rgba(233, 228, 216, 0.56)',
+      place: 'rgba(233, 228, 216, 0.58)',
+      placeMajor: 'rgba(233, 228, 216, 0.86)',
+      runway: 'rgba(233, 228, 216, 0.92)',
+      centerline: 'rgba(233, 228, 216, 0.24)',
+      airport: 'rgba(233, 228, 216, 0.82)',
+      home: '#e9e4d8',
+      ink: [233, 228, 216],                  // home pulse, active approaches
+      active: [0.6, 0.34],                   // runway in use: observed / wind estimate
+      up: [255, 181, 71],
+      down: [99, 211, 232],
+      level: [233, 228, 216],
+      special: [199, 139, 255],  // special aircraft halo (js/special.js)
+      alert: [255, 93, 93],      // emergency squawks
+      label: 'rgba(233, 228, 216, 0.92)',
+      labelDim: 'rgba(233, 228, 216, 0.64)',
+      detail: 'rgba(233, 228, 216, 0.74)',
+      detailDim: 'rgba(233, 228, 216, 0.56)',
+      high: 0.55,                            // glyph alpha above FL200
+      glow: 0.9                              // featured aircraft shadow
+    },
+    light: {
+      bg: '#f4f2ec',
+      land: ['rgba(255, 255, 255, 0.8)', 'rgba(255, 255, 255, 0)'],
+      water: '#a6bccc',
+      halo: '#f4f2ec',
+      ring: 'rgba(27, 29, 32, 0.14)',
+      ringMain: 'rgba(27, 29, 32, 0.36)',
+      ringLabel: '#5c6065',
+      place: '#5c6065',
+      placeMajor: '#25282c',
+      runway: 'rgba(27, 29, 32, 0.92)',
+      centerline: 'rgba(27, 29, 32, 0.3)',
+      airport: '#25282c',
+      home: '#1b1d20',
+      ink: [27, 29, 32],
+      active: [0.62, 0.36],
+      up: [168, 82, 0],
+      down: [0, 104, 138],
+      level: [27, 29, 32],
+      special: [122, 63, 196],
+      alert: [196, 30, 30],
+      label: '#1b1d20',
+      labelDim: '#4a4e53',
+      detail: '#3b3f44',
+      detailDim: '#5c6065',
+      high: 0.6,
+      glow: 0.35
+    }
   };
+  var C = PALETTES.dark;
   var MONO = '"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace';
 
   function Radar(canvas, cfg) {
@@ -27,8 +67,22 @@
     this.ctx = canvas.getContext('2d');
     this.cfg = cfg;
     this.cosLat = Math.cos(cfg.lat * Math.PI / 180);
+    this.setTheme(MA.theme ? MA.theme.current() : 'dark', false);
     this.resize();
+    var self = this;
+    if (MA.theme) MA.theme.onChange(function (name, fade) { self.setTheme(name, fade); });
   }
+
+  // Switch the palette; with `fade` the old base layer is crossfaded out (see render).
+  Radar.prototype.setTheme = function (name, fade) {
+    if (!PALETTES[name]) name = 'dark';
+    if (name === this.theme) return;
+    this.theme = name;
+    C = PALETTES[name];
+    this._prev = fade && this._base ? this._base : null;
+    this._fadeAt = Date.now();
+    this._base = null;
+  };
 
   Radar.prototype.resize = function () {
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -46,6 +100,7 @@
     this.pxPerKm = this.ringPx / this.cfg.radiusKm;
     this.unit = h / 1080; // base size unit, 1 at Full HD
     this._base = null;
+    this._prev = null;
   };
 
   // km needed to cover the whole screen from home (for data fetch radius)
@@ -67,28 +122,38 @@
     return 100;
   };
 
+  // Map label with an outline in the background colour: stays readable over water and rings.
+  Radar.prototype.label = function (text, x, y) {
+    var ctx = this.ctx;
+    ctx.lineWidth = 4 * this.unit;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = C.halo;
+    ctx.strokeText(text, x, y);
+    ctx.fillText(text, x, y);
+  };
+
   Radar.prototype.drawBase = function () {
     var ctx = this.ctx, u = this.unit, self = this;
     ctx.fillStyle = C.bg;
     ctx.fillRect(0, 0, this.w, this.h);
 
-    // soft centre glow
-    var grd = ctx.createRadialGradient(this.cx, this.cy, 0, this.cx, this.cy, this.ringPx * 1.6);
-    grd.addColorStop(0, 'rgba(255, 255, 255, 0.035)');
-    grd.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    // land: a lighter tone around home, fading out towards the screen edges
+    var grd = ctx.createRadialGradient(this.cx, this.cy, 0, this.cx, this.cy, this.ringPx * 1.9);
+    grd.addColorStop(0, C.land[0]);
+    grd.addColorStop(1, C.land[1]);
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, this.w, this.h);
 
-    // water
+    // water: rivers and coasts at least 2.5 / 2 px at 1080p, the Elbe at its real width
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.strokeStyle = C.water;
     MA.features.water.forEach(function (wtr) {
-      var pts = wtr.pts;
+      var pts = wtr.pts, minW = (wtr.kind === 'coast' ? 2 : 2.5) * u;
       for (var i = 0; i < pts.length - 1 + (wtr.closed ? 1 : 0); i++) {
         var a = pts[i], b = pts[(i + 1) % pts.length];
         var p1 = self.project(a[0], a[1]), p2 = self.project(b[0], b[1]);
-        ctx.lineWidth = Math.max(1.5 * u, (a[2] + b[2]) / 2 * 0.7 * self.pxPerKm);
+        ctx.lineWidth = Math.max(minW, (a[2] + b[2]) / 2 * 0.8 * self.pxPerKm);
         ctx.beginPath();
         ctx.moveTo(p1[0], p1[1]);
         ctx.lineTo(p2[0], p2[1]);
@@ -109,29 +174,31 @@
     // range rings
     var step = this.niceStep();
     var maxKm = this.coverKm();
-    ctx.lineWidth = 1;
-    ctx.font = Math.round(12 * u) + 'px ' + MONO;
+    ctx.font = Math.round(15 * u) + 'px ' + MONO;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     for (var km = step; km <= maxKm; km += step) {
       var r = km * this.pxPerKm;
       var main = Math.abs(km - this.cfg.radiusKm) < 0.01;
       ctx.strokeStyle = main ? C.ringMain : C.ring;
+      ctx.lineWidth = (main ? 1.5 : 1) * u;
       if (ctx.setLineDash) ctx.setLineDash(km > this.cfg.radiusKm ? [2 * u, 8 * u] : []);
       ctx.beginPath();
       ctx.arc(this.cx, this.cy, r, 0, Math.PI * 2);
       ctx.stroke();
       var a = -Math.PI / 4;
-      var lx = this.cx + Math.cos(a) * r + 6 * u, ly = this.cy + Math.sin(a) * r;
-      if (lx < this.w - 60 * u && ly > 0) {
+      var lx = this.cx + Math.cos(a) * r + 8 * u, ly = this.cy + Math.sin(a) * r;
+      if (lx < this.w - 80 * u && ly > 24 * u) {
+        if (ctx.setLineDash) ctx.setLineDash([]);
         ctx.fillStyle = C.ringLabel;
-        ctx.fillText(String(km).replace('.', ',') + ' km', lx, ly);
+        this.label(String(km).replace('.', ',') + ' km', lx, ly);
       }
     }
     if (ctx.setLineDash) ctx.setLineDash([]);
 
     // north tick
     ctx.strokeStyle = C.ringMain;
+    ctx.lineWidth = 1.5 * u;
     ctx.beginPath();
     ctx.moveTo(this.cx, this.cy - this.ringPx - 10 * u);
     ctx.lineTo(this.cx, this.cy - this.ringPx + 6 * u);
@@ -141,16 +208,16 @@
     ctx.textBaseline = 'bottom';
     ctx.fillText('N', this.cx, this.cy - this.ringPx - 14 * u);
 
-    // places
+    // places: major towns larger and brighter
     if (this.cfg.places) {
       ctx.textBaseline = 'middle';
       MA.features.places.forEach(function (p) {
         var q = self.project(p.lat, p.lon);
         if (q[0] < 0 || q[0] > self.w || q[1] < 0 || q[1] > self.h) return;
-        if (Math.abs(q[0] - self.cx) < 60 * u && Math.abs(q[1] - self.cy) < 14 * u) return; // keep home marker clear
+        if (Math.abs(q[0] - self.cx) < 70 * u && Math.abs(q[1] - self.cy) < 16 * u) return; // keep home marker clear
         ctx.fillStyle = p.major ? C.placeMajor : C.place;
-        ctx.font = Math.round((p.major ? 14 : 12) * u) + 'px ' + MONO;
-        ctx.fillText(p.name.toUpperCase().split('').join(String.fromCharCode(8202)), q[0], q[1]);
+        ctx.font = (p.major ? '500 ' : '') + Math.round((p.major ? 18 : 15) * u) + 'px ' + MONO;
+        self.label(p.name.toUpperCase().split('').join(String.fromCharCode(8202)), q[0], q[1]);
       });
     }
 
@@ -163,7 +230,8 @@
         var p1 = self.project(rw.b[0], rw.b[1]), p2 = self.project(rw.a[0], rw.a[1]);
         var q1 = self.project(c1[0], c1[1]), q2 = self.project(c2[0], c2[1]);
         ctx.strokeStyle = C.centerline;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.5 * u;
+        ctx.lineCap = 'butt';
         if (ctx.setLineDash) ctx.setLineDash([6 * u, 6 * u]);
         ctx.beginPath();
         ctx.moveTo(q1[0], q1[1]); ctx.lineTo(p1[0], p1[1]);
@@ -171,24 +239,24 @@
         ctx.stroke();
         if (ctx.setLineDash) ctx.setLineDash([]);
         ctx.strokeStyle = C.runway;
-        ctx.lineWidth = Math.max(2.5 * u, 0.06 * self.pxPerKm);
-        ctx.lineCap = 'butt';
+        ctx.lineWidth = Math.max(4 * u, 0.08 * self.pxPerKm);
         ctx.beginPath();
         ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]);
         ctx.stroke();
       });
       var a = self.project(ap.lat, ap.lon);
       ctx.fillStyle = C.airport;
-      ctx.font = '500 ' + Math.round(13 * u) + 'px ' + MONO;
+      ctx.font = '500 ' + Math.round(16 * u) + 'px ' + MONO;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      ctx.fillText(ap.code, a[0] + 2 * self.pxPerKm, a[1] + 1.2 * self.pxPerKm);
+      self.label(ap.code, a[0] + 2 * self.pxPerKm, a[1] + 1.2 * self.pxPerKm);
     });
   };
 
-  // Cache static layers in an offscreen canvas.
+  // Cache static layers in an offscreen canvas (per size and theme).
   Radar.prototype.base = function () {
-    if (this._baseKey === this.w + 'x' + this.h && this._base) return this._base;
+    var key = this.w + 'x' + this.h + ':' + this.theme;
+    if (this._baseKey === key && this._base) return this._base;
     var off = document.createElement('canvas');
     off.width = this.canvas.width;
     off.height = this.canvas.height;
@@ -198,7 +266,7 @@
     this.drawBase();
     this.ctx = real;
     this._base = off;
-    this._baseKey = this.w + 'x' + this.h;
+    this._baseKey = key;
     return off;
   };
 
@@ -257,10 +325,10 @@
       var r = list[i];
       var p = this.project(r.thr[0], r.thr[1]), q = this.project(r.far[0], r.far[1]);
       var grd = ctx.createLinearGradient(p[0], p[1], q[0], q[1]);
-      grd.addColorStop(0, 'rgba(233, 228, 216,' + (r.est ? 0.22 : 0.4) + ')');
-      grd.addColorStop(1, 'rgba(233, 228, 216, 0.03)');
+      grd.addColorStop(0, rgba(C.ink, C.active[r.est ? 1 : 0]));
+      grd.addColorStop(1, rgba(C.ink, 0.04));
       ctx.strokeStyle = grd;
-      ctx.lineWidth = 1.5 * u;
+      ctx.lineWidth = 2.5 * u;
       ctx.lineCap = 'butt';
       if (ctx.setLineDash) ctx.setLineDash([6 * u, 6 * u]);
       ctx.beginPath();
@@ -275,18 +343,32 @@
   Radar.prototype.render = function (list, featuredHex, now, active) {
     var ctx = this.ctx, u = this.unit, self = this;
     ctx.drawImage(this.base(), 0, 0, this.w, this.h);
+    if (this._prev) {
+      // theme switch: crossfade the old base layer out
+      var fade = 1 - (now - this._fadeAt) / (MA.theme ? MA.theme.fadeMs : 1500);
+      if (fade > 0) {
+        ctx.globalAlpha = fade;
+        ctx.drawImage(this._prev, 0, 0, this.w, this.h);
+        ctx.globalAlpha = 1;
+      } else this._prev = null;
+    }
     if (active && active.length) this.drawActive(active);
 
     // home marker with slow pulse
     var pulse = (now % 4000) / 4000;
-    ctx.strokeStyle = 'rgba(233, 228, 216,' + (0.35 * (1 - pulse)).toFixed(3) + ')';
+    ctx.strokeStyle = rgba(C.ink, 0.6 * (1 - pulse));
+    ctx.lineWidth = 2 * u;
+    ctx.beginPath();
+    ctx.arc(this.cx, this.cy, 6 * u + pulse * 28 * u, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = C.home;
     ctx.lineWidth = 1.5 * u;
     ctx.beginPath();
-    ctx.arc(this.cx, this.cy, 5 * u + pulse * 26 * u, 0, Math.PI * 2);
+    ctx.arc(this.cx, this.cy, 9 * u, 0, Math.PI * 2);
     ctx.stroke();
     ctx.fillStyle = C.home;
     ctx.beginPath();
-    ctx.arc(this.cx, this.cy, 4 * u, 0, Math.PI * 2);
+    ctx.arc(this.cx, this.cy, 4.5 * u, 0, Math.PI * 2);
     ctx.fill();
 
     // special aircraft halo pulse, computed once per frame (alerts pulse twice as fast)
@@ -300,7 +382,7 @@
       var phase = MA.fmt.phase(ac);
       var col = C[phase];
       var high = (ac.alt || 0) > 20000;
-      var baseA = high ? 0.5 : 1;
+      var baseA = high ? C.high : 1;
       var featured = ac.hex === featuredHex;
       var sp = ac.special, spCol = sp ? (sp.alert ? C.alert : C.special) : null;
       if (featured || sp) baseA = 1;
@@ -343,7 +425,7 @@
         ctx.beginPath();
         ctx.arc(p[0], p[1], size * 2.1, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.shadowColor = rgba(col, 0.9);
+        ctx.shadowColor = rgba(col, C.glow);
         ctx.shadowBlur = 14 * u;
       }
       if (sp) {
@@ -366,16 +448,17 @@
         var lx = p[0] + size * 1.6, ly = p[1] - size * 0.4;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
-        ctx.font = '500 ' + Math.round((featured ? 16 : 13) * u) + 'px ' + MONO;
+        ctx.font = '500 ' + Math.round((featured ? 19 : 16) * u) + 'px ' + MONO;
         ctx.fillStyle = sp ? rgba(spCol, 1) : (featured ? rgba(col, 1) : (high ? C.labelDim : C.label));
         ctx.fillText(ac.callsign || ac.reg || ac.hex.toUpperCase(), lx, ly);
-        ctx.font = Math.round((featured ? 13 : 11) * u) + 'px ' + MONO;
-        ctx.fillStyle = high && !featured ? 'rgba(233,228,216,0.3)' : 'rgba(233,228,216,0.55)';
+        ctx.font = Math.round((featured ? 15 : 13) * u) + 'px ' + MONO;
+        ctx.fillStyle = high && !featured ? C.detailDim : C.detail;
         var arrow = phase === 'up' ? ' ↑' : (phase === 'down' ? ' ↓' : '');
-        ctx.fillText(MA.fmt.altShort(ac.alt) + arrow + (ac.type ? '  ' + ac.type : ''), lx, ly + 15 * u * (featured ? 1.15 : 1));
+        ctx.fillText(MA.fmt.altShort(ac.alt) + arrow + (ac.type ? '  ' + ac.type : ''), lx, ly + 18 * u * (featured ? 1.15 : 1));
       }
     });
   };
 
+  Radar.palettes = PALETTES; // for tools/contrast.mjs
   MA.Radar = Radar;
 })(window.MA);
