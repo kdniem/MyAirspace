@@ -283,7 +283,7 @@
     }
     // diagnostics (js/diag.js, local only): one result per poll, nothing else changes
     return attempt().then(function (list) {
-      if (MA.diag) MA.diag.data(true, { name: name, ms: Date.now() - t0 });
+      if (MA.diag) MA.diag.data(true, { name: name, ms: Date.now() - t0, fallback: self.idx > 0 });
       return list;
     }, function (err) {
       if (MA.diag) MA.diag.data(false, { name: name, ms: Date.now() - t0, err: err });

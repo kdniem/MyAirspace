@@ -211,6 +211,26 @@ t('stall: frame gap over 2 s is logged once per 10 s, gap in ms; hidden tab does
   assert.strictEqual(D.summary(T + 20000).stalls, 2);
 });
 
+t('fallback source: fb when an answer comes from a fallback, pri on return; time on fallback is summarised', () => {
+  const ctx = fresh(); const { D, setNow } = started(ctx, T);
+  D.clear();
+  const at = (s, fn) => { setNow(T + s * 1000); fn(T + s * 1000); };
+  at(0, () => D.data(true, { name: 'adsb.lol', ms: 100, fallback: false }));            // primary: no event (first answer)
+  at(10, () => D.data(true, { name: 'airplanes.live', ms: 100, fallback: true }));      // fb
+  at(20, () => D.data(true, { name: 'airplanes.live', ms: 100, fallback: true }));      // same source: no new event
+  at(50, () => D.data(true, { name: 'adsb.lol', ms: 100, fallback: false }));           // pri after 40 s
+  at(60, () => D.data(true, { name: 'opensky', ms: 100, fallback: true }));             // fb again
+  const ev = D.events().filter((e) => e.k === 'data' && (e.c === 'fb' || e.c === 'pri'));
+  assert.deepEqual(ev.map((e) => e.c), ['fb', 'pri', 'fb'], 'codes: ' + ev.map((e) => e.c).join(','));
+  assert.strictEqual(ev[0].m, 'airplanes.live · Ausweichquelle');
+  const s = D.summary(T + 70 * 1000);
+  assert.strictEqual(s.fallbacks, 2);
+  assert.strictEqual(s.fallbackS, 40 + 10, 'first fallback 40 s, second still open for 10 s');
+  assert.strictEqual(s.fails, 0, 'fallback entries are not failures');
+  assert.strictEqual(s.recoveries, 1, 'only the first answer of the page load counts as a recovery');
+  assert.ok(D.lines(s).join('\n').indexOf('Ausweichquelle: 2× · davon 50 s') >= 0, D.lines(s).join('\n'));
+});
+
 // ---------- app integration ----------
 t('version matches sw.js', () => {
   const sw = fs.readFileSync(ROOT + '/sw.js', 'utf8');
@@ -227,6 +247,7 @@ t('index.html loads js/diag.js before the feed; hooks are present and guarded', 
   const main = fs.readFileSync(ROOT + '/js/main.js', 'utf8');
   const pwa = fs.readFileSync(ROOT + '/js/pwa.js', 'utf8');
   assert.ok(/if \(MA\.diag\) MA\.diag\.data\(/.test(data));
+  assert.ok(/fallback: self\.idx > 0/.test(data), 'answer source is passed to the log');
   assert.ok(/if \(MA\.diag\) MA\.diag\.status\(/.test(main) && /if \(MA\.diag\) MA\.diag\.frame\(/.test(main));
   assert.ok(/MA\.diag\.log\('wake'/.test(main));
   assert.ok(/MA\.diag\.log\('sw'/.test(pwa));
