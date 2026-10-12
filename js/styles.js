@@ -15,12 +15,13 @@ window.MA = MA;
   var MONO = '"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
   var SANS = '"Helvetica Neue", Helvetica, Arial, "Segoe UI", Roboto, "Liberation Sans", sans-serif';
 
-  /* symbol: chevron | diamond | triangle | arrow | square     trail: dots | line
-     lw: line weight factor   css: extra CSS custom properties for this look */
+  /* plane: size factor of the aircraft glyph (js/glyphs.js)   trail: always a fading line, trailW its width factor
+     lw: line weight factor   br: corner radius of badges in px at 1080p (matches --radius)   badge: brand | mono
+     css: extra CSS custom properties for this look */
   var STYLES = {
     atc: {
       name: 'ATC', info: 'Tower-Radarschirm', font: 'mono', theme: 'dark',
-      symbol: 'chevron', trail: 'dots', lw: 1, weight: 500,
+      plane: 1, trail: 'line', trailW: 1.15, lw: 1, br: 3, weight: 500,
       css: { '--radius': '0.3vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       dark: { bg: '#040706', panel: '#09110d', ink: '#e6eee8', quiet: '#8fa597', line: '#1c2a22', accent: '#7fd99a',
         target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a60', special: '#e57ad8', ok: '#7fd99a',
@@ -31,7 +32,7 @@ window.MA = MA;
     },
     terminal: {
       name: 'Terminal', info: 'Anzeigetafel (FIDS)', font: 'sans', theme: 'dark',
-      symbol: 'diamond', trail: 'line', lw: 1, weight: 600,
+      plane: 1.05, trail: 'line', trailW: 1, lw: 1, br: 0, weight: 600,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)', '--call-color': 'var(--accent)' },
       dark: { bg: '#071426', panel: '#0c1d38', ink: '#f4f6fa', quiet: '#9db0cc', line: '#1d3358', accent: '#ffd23f',
         target: '#6fd3ff', caution: '#ffb03a', warning: '#ff6b5e', special: '#f08be0', ok: '#5fdc8a',
@@ -42,7 +43,7 @@ window.MA = MA;
     },
     chart: {
       name: 'Karte', info: 'Luftfahrtkarte', font: 'mono', theme: 'light',
-      symbol: 'triangle', trail: 'dots', lw: 1, weight: 500, airportSpecial: true,
+      plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 0, weight: 500, airportSpecial: true,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       light: { bg: '#f1ede0', panel: '#e6e0cf', ink: '#1a2433', quiet: '#55606f', line: '#cfc7b2', accent: '#1a4f9a',
         target: '#0b6e99', caution: '#8a5200', warning: '#b3261e', special: '#9c1c6b', ok: '#1f6b3f',
@@ -53,7 +54,7 @@ window.MA = MA;
     },
     airbus: {
       name: 'Airbus', info: 'ND + ECAM', font: 'sans', theme: 'dark',
-      symbol: 'diamond', trail: 'line', lw: 0.85, weight: 500,
+      plane: 0.95, trail: 'line', trailW: 0.9, lw: 0.85, br: 0, weight: 500,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
       dark: { bg: '#000000', panel: '#07090c', ink: '#f2f4f5', quiet: '#9aa4ad', line: '#1c2228', accent: '#4be37f',
         target: '#3fd8ff', caution: '#ffb100', warning: '#ff4d42', special: '#ee64e0', ok: '#4be37f',
@@ -64,7 +65,7 @@ window.MA = MA;
     },
     boeing: {
       name: 'Boeing', info: 'ND + EICAS', font: 'sans', theme: 'dark',
-      symbol: 'arrow', trail: 'line', lw: 1.2, weight: 600,
+      plane: 1.05, trail: 'line', trailW: 1.15, lw: 1.2, br: 5, weight: 600,
       css: { '--radius': '0.5vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
       dark: { bg: '#0b1118', panel: '#121b26', ink: '#eef2f6', quiet: '#93a1b2', line: '#223042', accent: '#5be08a',
         target: '#4cc9f0', caution: '#ffb52e', warning: '#ff5348', special: '#e46ad9', ok: '#5be08a',
@@ -75,7 +76,7 @@ window.MA = MA;
     },
     night: {
       name: 'Nacht', info: 'Rot und Dunkelgrün, blendfrei', font: 'mono', theme: 'dark', fixedAccent: true,
-      symbol: 'chevron', trail: 'dots', lw: 1, weight: 500,
+      plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 3, weight: 500, badge: 'mono',
       css: { '--radius': '0.3vh', '--val-color': 'var(--ink)', '--unit-color': 'var(--sub)' },
       dark: { bg: '#000000', panel: '#080303', ink: '#e0604b', quiet: '#d0563f', line: '#2a0f0b', accent: '#4aa862',
         target: '#4aa862', caution: '#e0604b', warning: '#ff8a76', special: '#ff8a76', ok: '#4aa862',
@@ -83,7 +84,7 @@ window.MA = MA;
     },
     military: {
       name: 'Militär', info: 'Taktische Anzeige, Oliv', font: 'mono', theme: 'dark',
-      symbol: 'square', trail: 'dots', lw: 1, weight: 500,
+      plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 0, weight: 500,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       dark: { bg: '#0a0e08', panel: '#10160c', ink: '#d3dbb4', quiet: '#8e9973', line: '#232c1a', accent: '#a7c957',
         target: '#8fd6c8', caution: '#e0b040', warning: '#ff6e50', special: '#e48cd8', ok: '#a7c957',
@@ -154,6 +155,9 @@ window.MA = MA;
     var surf = [P.bg, P.panel];
     function txt(t, on) { return ensure(mix(P.bg, P.ink, t), on || [P.bg], 4.5); }
     function a(base, v) { return rgba(base, v * br > 0.95 ? 0.95 : v * br); }
+    // airline badges (js/airlines.js): neutral tile for unknown operators and types, thin edge against the surface
+    var badgeBg = mix(P.panel, P.ink, 0.2), badgeFg = ensure(P.ink, [badgeBg], 4.5);
+    var badgeEdge = ensure(mix(P.panel, P.ink, 0.5), [P.panel, P.bg], 3);
     var font = opts.font === 'sans' || opts.font === 'mono' ? opts.font : st.font;
     var fam = font === 'sans' ? SANS : MONO;
 
@@ -165,6 +169,7 @@ window.MA = MA;
       '--idle': mix(P.panel, P.ink, 0.3),
       '--accent': acc, '--target': P.target, '--caution': P.caution, '--warning': P.warning,
       '--special': P.special, '--ok': P.ok,
+      '--badge-bg': badgeBg, '--badge-fg': badgeFg, '--badge-edge': badgeEdge,
       '--toast-bg': rgba(P.panel, 0.96), '--toast-line': rgba(P.special, 0.7),
       '--zebra': rgba(P.ink, light ? 0.04 : 0.035), '--head': mix(P.panel, P.ink, light ? 0.025 : 0.07),
       '--font': fam, '--weight': String(st.weight || 500)
@@ -187,7 +192,8 @@ window.MA = MA;
       label: P.ink, labelDim: txt(0.72), detail: txt(0.8), detailDim: txt(0.62),
       quiet: P.quiet,
       high: light ? 0.6 : 0.55,
-      symbol: st.symbol, trail: st.trail, lw: st.lw || 1, weight: st.weight || 500, font: fam,
+      plane: st.plane || 1, trail: 'line', trailW: st.trailW || 1, lw: st.lw || 1, badgeR: st.br || 0, badgeMono: st.badge === 'mono',
+      badgeBg: badgeBg, badgeFg: badgeFg, badgeEdge: badgeEdge, weight: st.weight || 500, font: fam,
       bgHex: P.bg, panelHex: P.panel, accentHex: acc, targetHex: P.target, specialHex: P.special, warningHex: P.warning
     };
     return { css: css, c: c, style: style, theme: light ? 'light' : 'dark', font: font, fam: fam };

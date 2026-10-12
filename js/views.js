@@ -30,6 +30,16 @@
       d.className = 'c c-' + c + ' led';
       row.appendChild(d);
       cells[c] = d;
+      if (c === 'airline') {   // badge in front of the airline name: the flap text lives in its own span
+        d.className = 'c c-airline';
+        var b = document.createElement('span'), t = document.createElement('span');
+        b.className = 'logo';
+        t.className = 'lv-airline';
+        d.appendChild(b);
+        d.appendChild(t);
+        cells.logo = b;
+        cells[c] = t;
+      }
     });
     el.rows.appendChild(row);
     rows.push({ el: row, cells: cells });
@@ -41,6 +51,7 @@
     var f = MA.fmt, d = new Date(e.tmin);
     var alt = f.alt(e.altC, cfg.units);
     return {
+      logo: MA.badge.html(MA.badge.info({ callsign: e.cs, type: e.t }), MA.STYLES[cfg.style].badge === 'mono'),
       time: pad(d.getHours()) + ':' + pad(d.getMinutes()),
       flight: (e.cs || e.reg || e.hex).toUpperCase(),
       airline: (e.al || '—').toUpperCase(),
@@ -66,6 +77,8 @@
       var apply = function () {
         r.el.className = cls;
         COLS.forEach(function (c) { MA.flap(r.cells[c], texts ? texts[c] : '', anim); });
+        var lg = texts ? texts.logo : '';
+        if (r.cells.logo._html !== lg) { r.cells.logo._html = lg; r.cells.logo.innerHTML = lg; }
       };
       if (animate) later(apply, 350 + i * 110); else apply();
     });
@@ -104,6 +117,8 @@
     rows.forEach(function (r) {
       r.id = null;
       COLS.forEach(function (c) { MA.flap(r.cells[c], '', false); });
+      r.cells.logo._html = '';
+      r.cells.logo.innerHTML = '';
     });
     MA.flap(el.heading, '', false);
   }

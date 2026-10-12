@@ -53,7 +53,7 @@ window.MA = MA;
   else if (/^[0-9a-f]{3,6}$/.test(accent) && !(MA.ACCENTS && MA.ACCENTS.hasOwnProperty(accent))) accent = '#' + accent;
 
   // element toggles: show=a,b (only these) / hide=a,b / single flags (rings=0 …); datablock is the old "labels"
-  var KEYS = ['weather', 'labels', 'trails', 'rings', 'places', 'board', 'clock', 'ground', 'compass'];
+  var KEYS = ['weather', 'labels', 'trails', 'rings', 'places', 'board', 'clock', 'ground', 'compass', 'logos'];
   var ALIAS = { datablock: 'labels', datablocks: 'labels', label: 'labels', trail: 'trails', wx: 'weather', ring: 'rings', place: 'places' };
   function list(name) {
     return (q.get(name) || '').toLowerCase().split(',').map(function (x) { return ALIAS[x.trim()] || x.trim(); });
@@ -94,7 +94,7 @@ window.MA = MA;
     proxy: proxy(),                             // own CORS proxy, see api/proxy.js
     public: q.get('public') === '1',            // opt-in: public CORS proxies and the other providers
     demo: bool('demo', false),
-    rotateSec: num('rotate', 9, 3, 120),        // LED board rotation
+    rotateSec: num('rotate', 20, 3, 120),       // seconds per aircraft on the board
     trailMin: show.trails ? num('trail', 4, 0, 30) : 0, // trail length in minutes
     night: hours('night', '23-6'),              // dim the screen at night
     nightLevel: num('dim', 0.45, 0.1, 1),

@@ -46,6 +46,10 @@ subject to the following conditions:
   Software.
 ```
 
+## Airline-Abzeichen und Flugzeug-Silhouetten
+
+Es sind **keine** Logos oder Markenzeichen von Fluggesellschaften enthalten und es werden keine Logo-Bilder von Dritten geladen. Die Abzeichen in `js/airlines.js` sind selbst erstellte, flache Farbkacheln mit dem IATA- bzw. ICAO-Code (Codes sind sachliche Kennungen). Die Farben nähern lediglich die Lackierung an, ohne Schriftzug, Bildmarke oder Gestaltung der Marken nachzubilden. Alle Markennamen gehören ihren Inhabern; die Nennung dient nur der Identifikation. Die Flugzeug-Silhouetten in `js/glyphs.js` sind eigene, vereinfachte Vektorformen.
+
 ## Schriften
 
 - **IBM Plex Mono** (© IBM Corp.) steht unter der SIL Open Font License 1.1 (<https://openfontlicense.org>). Die Schriften werden vom eigenen Server ausgeliefert; die jeweiligen Copyright-Hinweise und die OFL-Lizenztexte gehören zu den Schriftdateien und müssen bei der Weitergabe mitgeliefert werden.
