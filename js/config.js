@@ -93,7 +93,8 @@ window.MA = MA;
     provider: str('provider', 'auto'),          // auto | adsblol | airplaneslive | opensky
     proxy: proxy(),                             // own CORS proxy, see api/proxy.js
     public: q.get('public') === '1',            // opt-in: public CORS proxies and the other providers
-    demo: bool('demo', false),
+    // no location in the address = the empty state: simulated traffic behind the welcome overlay (js/hint.js)
+    demo: bool('demo', !(q.has('lat') && q.has('lon'))),
     rotateSec: num('rotate', 20, 3, 120),       // seconds per aircraft on the board
     trailMin: show.trails ? num('trail', 4, 0, 30) : 0, // trail length in minutes
     night: hours('night', '23-6'),              // dim the screen at night

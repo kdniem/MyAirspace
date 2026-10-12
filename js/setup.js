@@ -1,5 +1,6 @@
-/* MyAirspace setup page: builds the TV URL, live preview and QR code.
-   Plain modern JS, no build step, no framework. Nothing is stored. */
+/* MyAirspace setup page engine: builds the TV URL, live preview and QR code from the form controls.
+   Plain modern JS, no build step, no framework. Nothing is stored here (the wizard in js/onboarding.js keeps
+   its progress in sessionStorage only). All wording comes from MA.COPY (js/onboarding.js). */
 (function () {
   'use strict';
 
@@ -11,21 +12,11 @@
   const cfg0 = MAc.config || {};          // js/config.js parsed this page's own query: validated options
   const defTheme = (s) => (STY[s] && STY[s].theme) || 'dark';
   const defFont = (s) => (STY[s] && STY[s].font) || 'mono';
-  const ELEMENTS = [
-    ['weather', 'Wetter', 'Kompakter METAR, QNH und Betriebsrichtung'],
-    ['labels', 'Datenblöcke', 'Rufzeichen, Höhe und Speed an jedem Flugzeug'],
-    ['trails', 'Flugspuren', 'Verlauf hinter den Flugzeugen'],
-    ['rings', 'Entfernungsringe', 'Ringe mit km-Beschriftung'],
-    ['compass', 'Kompassrose', 'Gradskala und Nordpfeil am Außenring'],
-    ['places', 'Ortsnamen', 'Städte und Orte auf der Karte'],
-    ['ground', 'Flugzeuge am Boden', 'Kleine Quadrate an den Flughäfen'],
-    ['logos', 'Airline-Abzeichen', 'Kleine Kennzeichen-Kacheln an Flug und Überflügen'],
-    ['board', 'Tafel unten', 'Das nächste Flugzeug als Anzeigetafel'],
-    ['clock', 'Uhr', 'Lokalzeit und UTC']
-  ];
-  const FIELDS = [['callsign', 'Rufzeichen'], ['fl', 'Höhe'], ['gs', 'Speed'], ['type', 'Muster'], ['route', 'Route'], ['reg', 'Kennz.']];
+  const COPY = MAc.COPY;
+  const ELEMENTS = COPY.elements;
+  const FIELDS = COPY.fields;
   const DEF_FIELDS = ['callsign', 'fl', 'gs', 'type'];
-  const ACCENT_NAMES = [['', 'Stil'], ['amber', 'Bernstein'], ['green', 'Grün'], ['cyan', 'Cyan'], ['white', 'Weiß'], ['red', 'Rot']];
+  const ACCENT_NAMES = [['', COPY.accentAuto], ['amber', 'Bernstein'], ['green', 'Grün'], ['cyan', 'Cyan'], ['white', 'Weiß'], ['red', 'Rot']];
   const NOMINATIM = 'https://nominatim.openstreetmap.org/';
   const PREVIEW_W = 1280;
 
@@ -37,11 +28,26 @@
     label: $('label'), radius: $('radius'), radiusOut: $('radius-out'),
     trail: $('trail'), trailOut: $('trail-out'),
     title: $('title'), brightness: $('brightness'), brightnessOut: $('brightness-out'),
-    styles: $('styles'), accents: $('accents'), accentOut: $('accent-out'), fields: $('fields'), elements: $('elements'),
+    styles: $('styles'), accents: $('accents'), accentOut: $('accent-out'), fields: $('fields'), elements: $('elements'), elementsMain: $('elements-main'),
+    placeCard: $('place-card'), placeName: $('place-name'), placeCoords: $('place-coords'), radiusHint: $('radius-hint'),
+    copyStatus: $('copy-status'), previewNote: $('preview-note'),
     night: $('night'), nightHours: $('night-hours'), nightFrom: $('night-from'), nightTo: $('night-to'),
     preview: $('preview'), frame: $('frame'),
     url: $('url'), urlEmpty: $('url-empty'), copy: $('copy'), open: $('open'), qr: $('qr')
   };
+
+  // sentences that live in the HTML but are edited in MA.COPY
+  $('geo-text').textContent = COPY.location.geo;
+  $('round-title').textContent = COPY.location.roundTitle;
+  $('round-hint').textContent = COPY.location.roundHint;
+  $('round-warn').textContent = COPY.location.roundWarn;
+  $('privacy-note').textContent = COPY.location.privacy;
+  $('theme-hint').textContent = COPY.themeHint;
+  $('units-hint').textContent = COPY.unitsHint;
+  $('qr-note').textContent = COPY.result.qr;
+  $('copy').textContent = COPY.result.copy;
+  $('share').textContent = COPY.result.shareBtn;
+  $('open').textContent = COPY.result.test;
 
   let labelTouched = false;   // user typed a label: don't overwrite it on location picks
   const extra = {};           // passthrough params from setup.html?…
@@ -84,16 +90,10 @@
 
   Object.keys(STY).forEach((key) => {
     const l = radio('style', key, key === (cfg0.style || DEF.style), 'stylecard');
-    let sw = '';
-    if (MAc.style) {
-      const c = MAc.style.resolve(key, defTheme(key)).css;
-      sw = '<span class="sw" style="background:' + c['--bg'] + ';border-color:' + c['--line'] + '">' +
-        '<i style="background:' + c['--ink'] + '"></i><i style="background:' + c['--accent'] + '"></i>' +
-        '<i style="background:' + c['--target'] + '"></i><i style="background:' + c['--special'] + '"></i></span>';
-    }
-    l.insertAdjacentHTML('beforeend', sw + '<b></b><small></small>');
+    l.insertAdjacentHTML('beforeend', '<canvas class="mini" width="480" height="270" aria-hidden="true"></canvas><b></b><small></small>');
     l.querySelector('b').textContent = STY[key].name;
-    l.querySelector('small').textContent = STY[key].info;
+    l.querySelector('small').textContent = COPY.styles[key] || STY[key].info;
+    l.dataset.style = key;
     el.styles.appendChild(l);
   });
 
@@ -144,7 +144,7 @@
     l.querySelector('small').textContent = e[2];
     inp.addEventListener('change', update);
     toggles[e[0]] = inp;
-    el.elements.appendChild(l);
+    (e[3] ? el.elementsMain : el.elements).appendChild(l);
   });
 
   function pick(name, val) {
@@ -203,28 +203,28 @@
 
   el.geo.addEventListener('click', () => {
     if (!navigator.geolocation) {
-      geoMsg('Dieser Browser kann den Standort nicht bestimmen.', 'err');
+      geoMsg(COPY.location.noApi, 'err');
       return;
     }
     if (window.isSecureContext === false) {
-      geoMsg('Standort geht nur über https. Bitte unten eingeben.', 'err');
+      geoMsg(COPY.location.insecure, 'err');
       return;
     }
     el.geo.classList.add('busy');
-    geoMsg('Bestimme Standort…');
+    geoMsg(COPY.location.busy);
     navigator.geolocation.getCurrentPosition((pos) => {
       el.geo.classList.remove('busy');
       const { latitude, longitude, accuracy } = pos.coords;
-      setLocation(latitude, longitude, labelTouched ? '' : 'Zuhause');
-      geoMsg('Standort übernommen' + (accuracy ? ' (± ' + Math.round(accuracy) + ' m).' : '.'));
+      setLocation(latitude, longitude, labelTouched ? '' : COPY.location.placeHome);
+      geoMsg(COPY.location.ok(accuracy ? Math.round(accuracy) : 0));
       if (!labelTouched) reverseName(latitude, longitude);
     }, (err) => {
       el.geo.classList.remove('busy');
       const msg = {
-        1: 'Zugriff auf den Standort verweigert. Erlaube ihn in den Browser-Einstellungen oder gib ihn unten ein.',
-        2: 'Standort nicht verfügbar. Bitte suchen oder unten eingeben.',
-        3: 'Zeitüberschreitung beim Bestimmen des Standorts.'
-      }[err && err.code] || 'Standort konnte nicht bestimmt werden.';
+        1: COPY.location.denied,
+        2: COPY.location.unavailable,
+        3: COPY.location.timeout
+      }[err && err.code] || COPY.location.failed;
       geoMsg(msg, 'err');
     }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
   });
@@ -280,17 +280,17 @@
     if (searchCtrl) searchCtrl.abort();
     searchCtrl = new AbortController();
     const seq = ++searchSeq;
-    searchMsg('Suche…');
+    searchMsg(COPY.location.searching);
     try {
       const list = await nominatim('search', { q: text, limit: 5 }, searchCtrl.signal);
       if (seq !== searchSeq) return;
       showResults(Array.isArray(list) ? list : []);
-      searchMsg(list.length ? '' : 'Nichts gefunden.');
+      searchMsg(list.length ? '' : COPY.location.nothing);
     } catch (err) {
       if (err && err.name === 'AbortError') return;
       if (seq !== searchSeq) return;
       showResults([]);
-      searchMsg('Suche gerade nicht erreichbar. Nutze den Standort-Knopf oder gib die Koordinaten ein.', 'warn');
+      searchMsg(COPY.location.searchDown, 'warn');
     }
   }
 
@@ -425,6 +425,8 @@
   }
 
   let currentUrl = '';
+  let lastLoc = false;
+  let lastParams = new URLSearchParams();
 
   function update() {
     el.radiusOut.textContent = el.radius.value + ' km';
@@ -437,7 +439,7 @@
 
     const loc = readLocation();
     const params = buildParams(loc);
-    document.querySelectorAll('.chip').forEach((c) => {
+    document.querySelectorAll('#airports .chip').forEach((c) => {
       c.classList.toggle('on', !!loc && Math.abs(loc.lat - c.dataset.lat) < 1e-4 && Math.abs(loc.lon - c.dataset.lon) < 1e-4);
     });
 
@@ -457,8 +459,21 @@
       el.open.classList.add('disabled');
       renderQr('');
     }
-    el.copy.textContent = 'Kopieren';
-    schedulePreview(params);
+    el.copy.textContent = COPY.result.copy;
+    el.copyStatus.textContent = '';
+    el.radiusHint.textContent = COPY.radiusHint(+el.radius.value);
+    el.placeCard.classList.toggle('empty', !loc);
+    if (!loc) {
+      el.placeName.textContent = COPY.location.placeNone;
+      el.placeCoords.textContent = '';
+    } else {
+      el.placeName.textContent = el.label.value.trim() || COPY.location.placeFallback;
+      el.placeCoords.textContent = params.get('lat') + '° N, ' + params.get('lon') + '° O';
+    }
+    lastLoc = !!loc;
+    lastParams = params;
+    paintMinis();
+    schedulePreview();
     document.dispatchEvent(new CustomEvent('ma:update', { detail: { loc: !!loc, url: currentUrl } }));
   }
 
@@ -500,7 +515,9 @@
       try { ok = document.execCommand('copy'); } catch (e2) { ok = false; }
       ta.remove();
     }
-    el.copy.textContent = ok ? 'Kopiert ✓' : 'Bitte markieren';
+    el.copy.textContent = ok ? COPY.result.copied : COPY.result.copyFail;
+    el.copyStatus.textContent = ok ? COPY.result.copiedSay : COPY.result.copyFailSay;
+    el.copyStatus.className = 'status' + (ok ? '' : ' warn');
     if (!ok) window.getSelection().selectAllChildren(el.url);
   });
 
@@ -509,12 +526,22 @@
   let pvUrl = '';
   let pvLast = 0;
   let pvTimer = 0;
+  let pvOn = false;          // the wizard switches the preview on for the steps that show it (no reload cost elsewhere)
+  let pvDemo = false;        // welcome step: always the demo traffic, never the user's place
 
-  function schedulePreview(params) {
-    const p = new URLSearchParams(params);
-    p.set('demo', new URLSearchParams(location.search).get('demo') === '1' ? '1' : '0');
-    const url = 'index.html?' + p.toString();
+  function schedulePreview() {
     clearTimeout(pvTimer);
+    if (!pvOn) {
+      if (pvUrl) { pvUrl = ''; el.frame.src = 'about:blank'; }
+      return;
+    }
+    const p = new URLSearchParams(lastParams);
+    const setupDemo = new URLSearchParams(location.search).get('demo') === '1';
+    const demo = setupDemo || pvDemo || !lastLoc;
+    if (pvDemo) ['lat', 'lon', 'label', 'title', 'r'].forEach((k) => p.delete(k));   // the demo traffic flies over Hamburg
+    p.set('demo', demo ? '1' : '0');
+    el.previewNote.textContent = demo ? (pvDemo ? COPY.preview.demo : COPY.preview.demoSetup) : COPY.preview.live;
+    const url = 'index.html?' + p.toString();
     if (url === pvUrl) return;
     const wait = Math.max(400, pvLast + 1500 - Date.now());
     pvTimer = setTimeout(() => {
@@ -532,22 +559,120 @@
   else window.addEventListener('resize', scalePreview);
   scalePreview();
 
-  update();
+  /* ---------- mini previews on the style cards (drawn from the same palettes the TV page uses) ---------- */
 
-  /* ---------- privacy notices (kept separate from the rest of the page logic) ---------- */
-  (function () {
-    function note(text, after, cls) {
-      const p = document.createElement('p');
-      p.className = cls;
-      p.textContent = text;
-      after.parentNode.insertBefore(p, after.nextSibling);
-      return p;
+  let miniKey = '';
+  let themeTouched = false;
+  document.querySelectorAll('input[name="theme"]').forEach((r) => r.addEventListener('change', () => { themeTouched = true; paintMinis(); }));
+  function paintMinis() {
+    // every card shows its own default look until the person picks a theme by hand
+    const theme = themeTouched ? (checked('theme') === 'light' ? 'light' : 'dark') : '';
+    const acc = accentValue();
+    const key = theme + '|' + acc;
+    if (key === miniKey || !MAc.style) return;
+    miniKey = key;
+    el.styles.querySelectorAll('.stylecard').forEach((card) => {
+      try { drawMini(card.querySelector('canvas'), card.dataset.style, theme || defTheme(card.dataset.style), acc); } catch (e) { /* decorative only */ }
+    });
+  }
+
+  function drawMini(cv, key, theme, accent) {
+    const r = MAc.style.resolve(key, theme, { accent: accent });
+    const c = r.c, css = r.css, W = cv.width, H = cv.height, g = cv.getContext('2d');
+    const rgbs = (a) => 'rgb(' + a[0] + ',' + a[1] + ',' + a[2] + ')';
+    const cx = W * 0.5, cy = H * 0.52, R = H * 0.4;
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = c.bg;
+    g.fillRect(0, 0, W, H);
+    // river
+    g.strokeStyle = c.water;
+    g.lineWidth = H * 0.07;
+    g.lineCap = 'round';
+    g.beginPath(); g.moveTo(-10, H * 0.82); g.bezierCurveTo(W * 0.25, H * 0.55, W * 0.4, H * 0.95, W * 0.62, H * 0.78); g.bezierCurveTo(W * 0.78, H * 0.66, W * 0.9, H * 0.8, W + 10, H * 0.7); g.stroke();
+    // rings and compass ticks
+    g.lineWidth = 2;
+    [0.33, 0.66].forEach((f) => { g.strokeStyle = c.ring; g.beginPath(); g.arc(cx, cy, R * f, 0, Math.PI * 2); g.stroke(); });
+    g.strokeStyle = c.ringMain; g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
+    for (let d = 0; d < 360; d += 10) {
+      const a = d * Math.PI / 180, big = d % 30 === 0, r0 = R + 4, r1 = R + (big ? 16 : 9);
+      g.strokeStyle = big ? c.tickMajor : c.tick;
+      g.lineWidth = big ? 3 : 2;
+      g.beginPath(); g.moveTo(cx + Math.sin(a) * r0, cy - Math.cos(a) * r0); g.lineTo(cx + Math.sin(a) * r1, cy - Math.cos(a) * r1); g.stroke();
     }
-    note('Suchtexte und Standort gehen an Nominatim (OpenStreetMap).', el.searchStatus, 'status');
-    const sw = el.round.closest('label') || el.round;
-    const warn = note('Ohne Rundung steht dein genauer Standort in der Adresse (und in Lesezeichen).', sw, 'status warn');
-    const sync = () => { warn.hidden = el.round.checked; };
-    el.round.addEventListener('change', sync);
-    sync();
-  })();
+    // runway with approach line
+    g.strokeStyle = c.centerline; g.lineWidth = 2; g.setLineDash([8, 8]);
+    g.beginPath(); g.moveTo(cx - R * 0.12, cy + R * 0.38); g.lineTo(cx - R * 0.62, cy + R * 0.9); g.stroke();
+    g.setLineDash([]);
+    g.strokeStyle = c.runway; g.lineWidth = 5; g.lineCap = 'butt';
+    g.beginPath(); g.moveTo(cx - R * 0.12, cy + R * 0.38); g.lineTo(cx + R * 0.2, cy + R * 0.03); g.stroke();
+    g.strokeStyle = css['--accent']; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(cx - R * 0.12, cy + R * 0.38); g.lineTo(cx - R * 0.3, cy + R * 0.58); g.stroke();
+    // aircraft
+    const sym = c.symbol || 'chevron';
+    const unit = H / 270;
+    const plane = (x, y, hdg, color, fill, trailN) => {
+      const a = (hdg + 180) * Math.PI / 180;
+      for (let i = 1; i <= trailN; i++) {
+        const tx = x + Math.sin(a) * i * 17 * unit * 1.6, ty = y - Math.cos(a) * i * 17 * unit * 1.6;
+        g.globalAlpha = 1 - i / (trailN + 1.5);
+        g.fillStyle = color; g.strokeStyle = color;
+        if (c.trail === 'line') { if (i === 1) { g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(a) * trailN * 27 * unit, y - Math.cos(a) * trailN * 27 * unit); g.stroke(); } }
+        else { g.beginPath(); g.arc(tx, ty, 3 * unit * 1.6, 0, Math.PI * 2); g.fill(); }
+      }
+      g.globalAlpha = 1;
+      g.save(); g.translate(x, y); g.rotate(hdg * Math.PI / 180);
+      const s = 12 * unit * 1.6;
+      g.fillStyle = color; g.strokeStyle = color; g.lineWidth = 3.2 * c.lw; g.lineJoin = 'round'; g.lineCap = 'round';
+      g.beginPath();
+      if (sym === 'diamond') { g.moveTo(0, -s); g.lineTo(s * 0.75, 0); g.lineTo(0, s); g.lineTo(-s * 0.75, 0); g.closePath(); fill ? g.fill() : g.stroke(); }
+      else if (sym === 'triangle') { g.moveTo(0, -s); g.lineTo(s * 0.8, s * 0.8); g.lineTo(-s * 0.8, s * 0.8); g.closePath(); fill ? g.fill() : g.stroke(); }
+      else if (sym === 'arrow') { g.moveTo(0, -s * 1.1); g.lineTo(s * 0.75, s * 0.9); g.lineTo(0, s * 0.4); g.lineTo(-s * 0.75, s * 0.9); g.closePath(); g.fill(); }
+      else if (sym === 'square') { g.rect(-s * 0.7, -s * 0.7, s * 1.4, s * 1.4); fill ? g.fill() : g.stroke(); }
+      else { g.lineWidth = 4 * c.lw; g.moveTo(-s * 0.85, s * 0.8); g.lineTo(0, -s * 0.85); g.lineTo(s * 0.85, s * 0.8); g.stroke(); g.beginPath(); g.arc(0, s * 0.1, 2.5, 0, Math.PI * 2); g.fill(); }
+      g.restore();
+    };
+    plane(cx - R * 0.7, cy - R * 0.45, 95, rgbs(c.level), false, 4);
+    plane(cx + R * 0.62, cy + R * 0.3, 305, rgbs(c.level), false, 3);
+    plane(cx + R * 0.42, cy - R * 0.5, 215, rgbs(c.target), true, 4);
+    plane(cx - R * 0.15, cy - R * 0.72, 140, rgbs(c.special), false, 0);
+    // data block of the target
+    const fs = Math.round(H * 0.085);
+    g.font = c.weight + ' ' + fs + 'px ' + c.font;
+    g.textBaseline = 'alphabetic';
+    g.fillStyle = rgbs(c.target);
+    g.fillText('DLH8NA', cx + R * 0.42 + 26, cy - R * 0.5 - 12);
+    g.fillStyle = c.detail;
+    g.fillText('FL070 160', cx + R * 0.42 + 26, cy - R * 0.5 - 12 + fs * 1.1);
+    // header and board strip
+    g.fillStyle = c.label;
+    g.font = c.weight + ' ' + Math.round(H * 0.09) + 'px ' + c.font;
+    g.fillText('HAMBURG', 16, H * 0.12);
+    g.fillStyle = css['--panel'];
+    g.fillRect(0, H * 0.86, W, H * 0.14);
+    g.fillStyle = css['--ink'];
+    g.font = c.weight + ' ' + Math.round(H * 0.075) + 'px ' + c.font;
+    g.fillText('DLH8NA', 16, H * 0.955);
+    g.fillStyle = css['--accent'];
+    g.fillText('MUC > HAM', W * 0.4, H * 0.955);
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { miniKey = ''; paintMinis(); });
+
+  /* ---------- API for the wizard (js/onboarding.js) ---------- */
+
+  MA.setup = {
+    state() {
+      const st = STY[checked('style')] || {};
+      return { loc: lastLoc, url: currentUrl, label: el.label.value.trim(), styleName: st.name || '', radius: +el.radius.value, query: lastParams.toString() };
+    },
+    preview(o) {
+      pvOn = !!o.on;
+      pvDemo = !!o.demo;
+      schedulePreview();
+    }
+  };
+
+  const syncWarn = () => { $('round-warn').hidden = el.round.checked; };
+  el.round.addEventListener('change', syncWarn);
+  syncWarn();
+  update();
 })();

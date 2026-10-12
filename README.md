@@ -6,9 +6,9 @@ Die App ist nur zum Anschauen gedacht: URL öffnen, fertig. Es gibt keine Bedien
 
 ## Einrichten
 
-Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace/setup.html)** öffnen. Dort wählst du deinen Standort (per GPS, Ortssuche oder einen der Flughäfen mit Karte), stellst Radius, Einheiten, Spuren und Nachtdimmen ein und siehst sofort eine Vorschau. Am Ende bekommst du die fertige Adresse für den Fernseher zum Kopieren, Öffnen oder als QR-Code. Der Standort wird standardmäßig auf etwa 1 km gerundet. Beim ersten Besuch führt ein Assistent in fünf Schritten durch Standort, Stil, Feinschliff und die Adresse für den Fernseher (`setup.html?wizard=1` startet ihn erneut, `wizard=0` blendet ihn aus). Die Seite speichert nur den Merker, dass du fertig bist, nichts weiter; die Ortssuche nutzt Nominatim von OpenStreetMap.
+Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace/setup.html)** öffnen. Die Einrichtung führt in fünf Schritten durch alles, mehr dazu unten im Abschnitt [Einrichtungs-Assistent](#einrichtungs-assistent). Am Ende bekommst du die fertige Adresse für den Fernseher zum Kopieren, Öffnen oder als QR-Code. Der Standort wird standardmäßig auf etwa 1 km gerundet. Die Seite speichert nichts dauerhaft; die Ortssuche nutzt Nominatim von OpenStreetMap.
 
-Öffnest du die TV-Seite ohne Standort, zeigt sie 45 Sekunden ein Willkommensfeld mit QR-Code zur Einrichtungsseite. Mit Standort erscheint einmalig pro Gerät kurz ein „Alles bereit“-Hinweis.
+Öffnest du die TV-Seite ohne Standort, zeigt sie ein ruhiges Willkommensbild mit QR-Code zur Einrichtungsseite, darunter laufen die Beispielflugzeuge weiter. Das Bild bleibt, bis ein Standort in der Adresse steht. Mit Standort erscheint einmalig pro Gerät kurz ein „Alles bereit“-Hinweis.
 
 **Als App:** Die Seite hat ein Web-App-Manifest. Auf iPad/iPhone in Safari *Teilen → Zum Home-Bildschirm*, auf Android *Zum Startbildschirm hinzufügen*. Die App startet im Vollbild mit deinen zuletzt geöffneten Einstellungen. Ein kleiner Service Worker (`sw.js`) hält nur die App-Dateien offline vor, nie Flugdaten.
 
@@ -79,6 +79,18 @@ Für die Lesbarkeit aus drei Metern Abstand sind Schriften größer (nichts Wich
 ## Anzeigetafel
 
 Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil einer Abflugtafel ein: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
+
+## Einrichtungs-Assistent
+
+`setup.html` ist ein geführter Ablauf mit fünf Schritten, gedacht für Menschen, die den Link nur bekommen haben:
+
+1. **Willkommen**: was MyAirspace ist, mit einer Live-Vorschau (Demo-Verkehr).
+2. **Standort**: „Meinen Standort verwenden“, Ortssuche, Flughäfen mit Karte oder Koordinaten. Der Ort wird angezeigt, bevor es weitergeht.
+3. **Look**: Stil (Karte mit Mini-Vorschau), Hell/Dunkel/Automatisch, Akzentfarbe.
+4. **Inhalt**: welche Elemente zu sehen sind, Einheiten, Radius, Nachtdimmen.
+5. **Fernseher**: Adresse, QR-Code, „Testen“, dazu Schritte für Smart-TV, Apple TV (AirPlay), Computer und Handy oder iPad, „Link teilen“, wenn der Browser es kann.
+
+Am Ende stehen drei Tipps (Nachtdimmen, `style=` ändern, später wieder hier öffnen). Zurück behält alle Eingaben. Der Fortschritt steht nur in `sessionStorage` (dieser Tab, nach dem Schließen weg) und nichts davon geht an einen Server. Wer alles auf einmal sehen will, nutzt **Alle Einstellungen** (`setup.html?wizard=0` oder `#alle`), die Schritte springen direkt an: `#standort`, `#look`, `#inhalt`, `#fernseher`, `#fertig`. `?wizard=1` beginnt von vorn. Alle Texte stehen zentral im Objekt `MA.COPY` in `js/onboarding.js`.
 
 ## Auf dem Fernseher
 
@@ -190,7 +202,7 @@ Die Tests brauchen keine Abhängigkeiten, nur die Browser-Suite braucht Playwrig
 
 ```
 index.html             Layout (Karte, Kopfzeile, Tafel)
-setup.html             Einrichtungsseite (css/setup.css, js/setup.js, js/qr.js)
+setup.html             Einrichtungsseite als geführter Assistent (css/setup.css, js/onboarding.js, js/setup.js, js/qr.js)
 manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
@@ -203,7 +215,7 @@ js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstelle
 js/styles.js           STYLES-Tabelle: Rollenfarben je Stil und Theme, Symbole, Schrift (Daten, keine Logik pro Stil)
 js/config.js           URL-Parameter
 js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme und die Stil-Variablen vor dem ersten Bild
-js/hint.js             Hinweis auf setup.html, wenn kein Standort in der URL steht
+js/hint.js             Willkommensbild auf der TV-Seite, wenn kein Standort in der URL steht
 js/data.js             Datenquellen, Fallback, Routen-Cache
 js/demo.js             Simulierter Verkehr für ?demo=1
 js/airlines.js         Tabelle MA.airlines und Abzeichen (Kacheln) für Tafel und Karte
