@@ -2,7 +2,7 @@
 
 Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als Flugzeug-Silhouetten mit auslaufender Flugspur und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (ATC, Terminal, Karte, Airbus, Boeing, Nacht, Militär) und viele Optionen machen die Anzeige persönlich.
 
-Die App ist nur zum Anschauen gedacht: URL öffnen, fertig. Es gibt keine Bedienung, keinen API-Key und keinen Build-Schritt.
+Die App ist zum Anschauen gedacht: URL öffnen, fertig. Am Computer und Tablet gibt es unten links ein Zahnrad für die häufigsten Einstellungen (siehe „Einstellungen im Dashboard“). Kein API-Key, kein Build-Schritt.
 
 ## Einrichten
 
@@ -139,6 +139,14 @@ Am Ende stehen drei Tipps (Nachtdimmen, `style=` ändern, später wieder hier ö
 ## Flugzeuge am Boden
 
 Flugzeuge am Boden werden an den Flughäfen der Karte (bis 4 km um den Flughafen) als kleine Quadrate mit Kursstrich angezeigt (`ground=0` blendet sie aus), die Kopfzeile nennt die Zahl („3 am Boden“). Sie erscheinen nie auf der Tafel.
+
+## Einstellungen im Dashboard
+
+Am Computer und auf dem Tablet sitzt unten links ein blasses Zahnrad (**Einstellungen**). Beim Laden ist es einige Sekunden deutlich zu sehen, danach wird es bei Mausbewegung oder Berührung kurz hell. Ein Klick oder Tipp öffnet den Dialog, die Taste **S** öffnet und schließt ihn, **Esc** schließt ihn. Solange er offen ist, bleibt die Tastatur darin, und beim Schließen geht der Fokus zurück aufs Zahnrad.
+
+Zur Wahl stehen **Stil**, **Thema**, **Helligkeit**, **Ansicht** (Wechselnd, Radar, Tafel, Flughafen), **Karte** (Luftfahrtkarte als Hintergrund) und **Ebenen** (Datenblöcke, Spuren, Ortsnamen, Wetter). Die meisten Änderungen wirken sofort. Die Ansicht **Flughafen** und jeder Wechsel dazu oder davon wirkt erst nach **Neu laden**; der Dialog zeigt dann „wirkt nach Neuladen“ und den Knopf.
+
+Die Werte stehen im Browser dieses Geräts (localStorage, ein Schlüssel `ma.settings`). Gespeichert wird nur, was in diesem Dialog gewählt wurde, nie ein Standort. **Werte in der Adresse haben Vorrang**: Steht etwa `style=` oder `show=` in der URL, gilt sie, und der Dialog zeigt „von der Adresse festgelegt“. Mit „Gespeicherte löschen“ werden die Werte entfernt. Das Zahnrad fehlt auf dem Fernseher ohne Zeiger oder Touch (Willkommensbild), in der Vorschau der Einrichtungsseite und wenn die Anzeigetafel oder die Uhr per `show=` oder `hide=` ausgeblendet sind.
 
 ## Vollbild am Computer
 
@@ -281,6 +289,8 @@ api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)
 js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen; DEFAULT_PROXY
 js/diag.js             Diagnoseprotokoll (lokal im Browser, siehe oben): Ringpuffer, Zusammenfassung, Panel ?diag=1, Download auf der Einrichtungsseite
 js/styles.js           STYLES-Tabelle: Rollenfarben je Stil und Theme, Symbole, Schrift (Daten, keine Logik pro Stil)
+js/prefs.js            Gespeicherte Dashboard-Einstellungen (localStorage ma.settings), vor config.js geladen; die Adresse hat Vorrang
+js/settings.js         Einstellungs-Dialog am Zahnrad (unten links): Stil, Thema, Helligkeit, Ansicht, Karte, Ebenen
 js/config.js           URL-Parameter
 js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme und die Stil-Variablen vor dem ersten Bild
 js/hint.js             Willkommensbild auf der TV-Seite, wenn kein Standort in der URL steht

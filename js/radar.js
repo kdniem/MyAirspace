@@ -45,6 +45,13 @@
     this._base = null;
   };
 
+  // settings overlay (js/settings.js): style or brightness changed, so the palette and the cached base are rebuilt
+  Radar.prototype.refresh = function () {
+    C = null;
+    this.setTheme(MA.theme ? MA.theme.current() : (this.theme || 'dark'), false);
+    this.resize();
+  };
+
   Radar.prototype.font = function (px, weight) {
     return (weight || '') + ' ' + Math.round(px * this.unit) + 'px ' + C.font;
   };

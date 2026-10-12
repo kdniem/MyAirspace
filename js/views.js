@@ -152,10 +152,14 @@
 
   // Called once a second by js/main.js. The schedule decides; the board overlay follows it.
   function tick(now) {
-    sched.tick(now, MA.log.count() > 0);
-    var cur = sched.name();
-    if (cur === 'board' && !state.shown) show(now);
-    else if (cur !== 'board' && state.shown) hide();
+    if (cfg.view === 'auto') {
+      sched.tick(now, MA.log.count() > 0);
+      var cur = sched.name();
+      if (cur === 'board' && !state.shown) show(now);
+      else if (cur !== 'board' && state.shown) hide();
+    } else if (cfg.view === 'board') {            // a fixed view, possibly switched live in the settings overlay
+      if (!state.shown) show(now);
+    } else if (state.shown) hide();
     if (state.shown && now - state.rendered >= REFRESH_MS) {
       state.rendered = now;
       renderTitle(now);
