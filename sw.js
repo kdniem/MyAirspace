@@ -1,7 +1,7 @@
 /* MyAirspace service worker: keeps the app shell available offline.
    Network-first for the shell only; flight APIs, proxies, search and fonts are never touched.
    Bump VERSION when the shell file list changes; every deploy is picked up anyway (network-first). */
-var VERSION = 'v8';
+var VERSION = 'v9';
 var CACHE = 'myairspace-shell-' + VERSION;
 var SHELL = [
   './', 'index.html', 'setup.html', 'datenschutz.html', 'manifest.webmanifest',
@@ -11,7 +11,7 @@ var SHELL = [
   'js/pwa.js', 'js/styles.js', 'js/config.js', 'js/theme.js', 'js/hint.js', 'js/geo.js', 'js/format.js', 'js/airlines.js', 'js/special.js', 'js/pick.js', 'js/demo.js',
   'js/data.js', 'js/weather.js', 'js/glyphs.js', 'js/radar.js', 'js/board.js', 'js/log.js', 'js/views.js', 'js/main.js', 'js/fullscreen.js',
   'js/qr.js', 'js/setup.js', 'js/onboarding.js',
-  'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg'
+  'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/icon.svg', 'icons/apple-touch-icon.png', 'icons/favicon.svg'
 ];
 var SHELL_URLS = SHELL.map(function (p) { return new URL(p, self.registration.scope).href; });
 

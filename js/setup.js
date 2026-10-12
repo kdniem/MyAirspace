@@ -6,7 +6,7 @@
 
   // Must match the defaults in js/config.js: only differing values go into the URL.
   const DEF = { r: 25, label: 'Hamburg', units: 'ft', trail: 4, night: '23-6', speed: 'kt', pressure: 'hpa', time: 'both', style: 'atc' };
-  const PASSTHROUGH = ['poll', 'rotate', 'dim', 'provider', 'proxy', 'orient'];  // advanced, kept if present
+  const PASSTHROUGH = ['poll', 'rotate', 'dim', 'provider', 'orient'];  // advanced, kept if present
   const MAc = window.MA || {};
   const STY = MAc.STYLES || { atc: { name: 'ATC', info: '', font: 'mono', theme: 'dark' } };
   const cfg0 = MAc.config || {};          // js/config.js parsed this page's own query: validated options

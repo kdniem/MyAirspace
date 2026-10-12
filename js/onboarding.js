@@ -67,7 +67,7 @@
 
     promises: [
       'Kostenlos und ohne Konto',
-      'Nichts wird gespeichert: alles steckt in einer Adresse',
+      'Nichts wird auf einem Server gespeichert: alles steckt in einer Adresse',
       'Läuft im Browser deines Fernsehers'
     ],
 
@@ -97,7 +97,7 @@
       roundTitle: 'Auf etwa 1 km runden',
       roundHint: 'Deine genaue Adresse landet so nicht im Link.',
       roundWarn: 'Ohne Rundung steht dein genauer Standort im Link und in Lesezeichen.',
-      privacy: 'Dein Standort bleibt in der Adresse. Nur die Ortssuche fragt Nominatim von OpenStreetMap, dorthin geht der Suchtext.'
+      privacy: 'Dein Standort bleibt in der Adresse. Ortssuche und Ortsname fragen Nominatim von OpenStreetMap an: dorthin gehen der Suchtext bzw. deine auf etwa 1 km gerundete Position.'
     },
 
     // style names come from js/styles.js; here the sentence for a first-time user
@@ -182,7 +182,7 @@
     tips: [
       { title: 'Nachts wird es dunkler', text: 'Von 23 bis 6 Uhr dimmt der Bildschirm von selbst. Die Zeiten änderst du unter „Alle Einstellungen“.' },
       { title: 'Look schnell wechseln', text: 'Hänge an die Adresse &style=night an, oder ändere den Wert nach style=. Möglich sind atc, terminal, chart, airbus, boeing, night und military.' },
-      { title: 'Später ändern', text: 'Der Fernseher merkt sich nichts. Alles steckt in der Adresse, speichere sie als Lesezeichen. Zum Ändern öffnest du diese Seite einfach noch einmal.' }
+      { title: 'Später ändern', text: 'Der Fernseher merkt sich nur die letzte Adresse. Alles Wichtige steckt in der Adresse, speichere sie als Lesezeichen. Zum Ändern öffnest du diese Seite einfach noch einmal.' }
     ]
   };
 
