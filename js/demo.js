@@ -32,7 +32,10 @@
     { hex: '4b1814', cs: 'SWR1057', r: 'HB-JCS', t: 'BCS3', kt: 250, off: 0.85, route: ['HAM', 'ZRH'],
       path: [from(HAM, 233, 1.6, 0), from(HAM, 233, 9, 3500), from(HAM, 200, 30, 11000), from(HAM, 180, 70, 26000)] },
     { hex: '4d2273', cs: 'WZZ1BQ', r: '9H-WDC', t: 'A21N', kt: 470, off: 0.3, route: ['GDN', 'LTN'],
-      path: [from(HAM, 95, 90, 35000), from(HAM, 265, 90, 35000)] }
+      path: [from(HAM, 95, 90, 35000), from(HAM, 265, 90, 35000)] },
+    // emergency (squawk 7700) returning to HAM: shows the red special-aircraft highlight
+    { hex: '3c66b3', cs: 'DLH4CK', r: 'D-AIZR', t: 'A320', sq: '7700', kt: 190, off: 0.15, route: null,
+      path: [from(HAM, 100, 40, 9000), from(HAM, 53, 18, 3500), from(HAM, 53, 1.6, 50)] }
   ];
 
   function prep(f) {
@@ -64,6 +67,7 @@
           alt_baro: alt < 30 ? 'ground' : Math.round(alt),
           gs: f.kt, track: s.brg,
           baro_rate: Math.round((s.b.alt - s.a.alt) / minutes),
+          squawk: f.sq || '',
           seen_pos: 0.4
         };
       }

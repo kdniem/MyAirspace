@@ -15,6 +15,8 @@
     up: [255, 181, 71],
     down: [99, 211, 232],
     level: [233, 228, 216],
+    special: [199, 139, 255],  // special aircraft halo (js/special.js)
+    alert: [255, 93, 93],      // emergency squawks
     label: 'rgba(233, 228, 216, 0.78)',
     labelDim: 'rgba(233, 228, 216, 0.45)'
   };
@@ -287,6 +289,10 @@
     ctx.arc(this.cx, this.cy, 4 * u, 0, Math.PI * 2);
     ctx.fill();
 
+    // special aircraft halo pulse, computed once per frame (alerts pulse twice as fast)
+    var glow = 0.5 + 0.5 * Math.sin(now * Math.PI / 900);
+    var glowFast = 0.5 + 0.5 * Math.sin(now * Math.PI / 450);
+
     // high traffic first so low (interesting) traffic draws on top
     var sorted = list.slice().sort(function (a, b) { return (b.alt || 0) - (a.alt || 0); });
 
@@ -296,7 +302,8 @@
       var high = (ac.alt || 0) > 20000;
       var baseA = high ? 0.5 : 1;
       var featured = ac.hex === featuredHex;
-      if (featured) baseA = 1;
+      var sp = ac.special, spCol = sp ? (sp.alert ? C.alert : C.special) : null;
+      if (featured || sp) baseA = 1;
 
       // trail: fades out with age, tapers towards the tail, ends at the glyph
       var tr = ac.trail;
@@ -339,6 +346,19 @@
         ctx.shadowColor = rgba(col, 0.9);
         ctx.shadowBlur = 14 * u;
       }
+      if (sp) {
+        // special aircraft: soft pulsing disc + expanding ring (no shadowBlur/gradients: cheap on TVs)
+        var g = sp.alert ? glowFast : glow;
+        ctx.fillStyle = rgba(spCol, 0.1 + 0.1 * g);
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], size * (1.5 + 0.35 * g), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = rgba(spCol, 0.6 * (1 - g));
+        ctx.lineWidth = 1.5 * u;
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], size * (1.6 + 1.2 * g), 0, Math.PI * 2);
+        ctx.stroke();
+      }
       self.drawPlane(p[0], p[1], ac.track, size, rgba(col, baseA), MA.fmt.isRotorcraft(ac));
       ctx.shadowBlur = 0;
 
@@ -347,7 +367,7 @@
         ctx.textAlign = 'left';
         ctx.textBaseline = 'alphabetic';
         ctx.font = '500 ' + Math.round((featured ? 16 : 13) * u) + 'px ' + MONO;
-        ctx.fillStyle = featured ? rgba(col, 1) : (high ? C.labelDim : C.label);
+        ctx.fillStyle = sp ? rgba(spCol, 1) : (featured ? rgba(col, 1) : (high ? C.labelDim : C.label));
         ctx.fillText(ac.callsign || ac.reg || ac.hex.toUpperCase(), lx, ly);
         ctx.font = Math.round((featured ? 13 : 11) * u) + 'px ' + MONO;
         ctx.fillStyle = high && !featured ? 'rgba(233,228,216,0.3)' : 'rgba(233,228,216,0.55)';
