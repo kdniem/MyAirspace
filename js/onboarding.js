@@ -127,6 +127,12 @@
     ],
     fields: [['callsign', 'Rufzeichen'], ['fl', 'Höhe'], ['gs', 'Tempo'], ['type', 'Muster'], ['route', 'Route'], ['reg', 'Kennz.']],
     unitsHint: 'Piloten rechnen in Fuß und Knoten. 1 Knoten sind etwa 1,85 km/h.',
+    viewHint: {
+      auto: 'Radar und Tafel wechseln sich ab, wie bisher.',
+      radar: 'Nur der Radar, ohne Tafel.',
+      board: 'Nur die Tafel mit den letzten Überflügen.',
+      airport: 'Der Flughafen in der Mitte: Vorfeld, kurze Anflug- und Abflugschneisen und die Flugzeuge im Umkreis von 12 km. Der Standort wird dafür nicht gebraucht.'
+    },
     radiusHint: (km) => 'So weit schaut der Radar. ' + (km <= 15 ? 'Nah dran: vor allem Flugzeuge direkt über dir.' : (km <= 40 ? 'Gut für Stadt und Flughafen.' : 'Weiter Blick: viele Flugzeuge, dafür kleiner.')),
 
     result: {

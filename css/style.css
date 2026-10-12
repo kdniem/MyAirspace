@@ -524,6 +524,17 @@ html, body {
   text-overflow: ellipsis;
 }
 
+/* ---------- focus view (view=airport, js/airport.js): no board; METAR and runway in use bottom left ---------- */
+.view-airport #wx {
+  position: fixed;
+  top: auto;
+  right: auto;
+  bottom: calc(var(--safe-y) - 1.2vh);
+  left: var(--safe-x);
+  margin: 0;
+  text-align: left;
+}
+
 /* ---------- night dimming (js/main.js) ----------
    a black veil instead of fading the stage, so the light theme dims too */
 

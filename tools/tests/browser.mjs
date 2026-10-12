@@ -220,6 +220,13 @@ async function setupCase(browser, vp) {
     else if (!info.loaded) problems.push('preview iframe did not load the radar');
     if (!/style=boeing/.test(info.url)) problems.push('generated URL lacks style=boeing: ' + info.url);
     if (!/accent=amber/.test(info.url)) problems.push('generated URL lacks accent=amber: ' + info.url);
+    // focus view choice: the address gets view=airport and the airport, the airport row shows up
+    await page.check('input[name=view][value=airport]', { force: true });
+    await page.check('input[name=airport][value=FRA]', { force: true });
+    await page.waitForTimeout(300);
+    const u2 = await page.textContent('#url');
+    if (!/view=airport/.test(u2) || !/airport=FRA/.test(u2)) problems.push('generated URL lacks the focus view: ' + u2);
+    if (!(await page.locator('#airport-field').isVisible())) problems.push('airport choice hidden in the focus view');
     if (!/lat=53\.5/.test(info.url) || !/lon=9\.9/.test(info.url)) problems.push('generated URL lacks the location: ' + info.url);
     checked.pages++;
     if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
@@ -354,6 +361,52 @@ async function journeyCase(browser, vp) {
   } finally { await ctx.close(); }
 }
 
+// ---------- focus view (view=airport): one airport, apron, corridors, aircraft and the header ----------
+async function airportCase(browser, code, vp) {
+  const id = 'airport_' + code + '_' + vp.width + 'x' + vp.height;
+  const { ctx, page, st } = await newPage(browser, { width: vp.width, height: vp.height }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&view=airport&airport=' + code + '&style=atc', { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+    const r = await page.evaluate(PROBE);
+    collect(st, problems);
+    r.overlap.forEach((m) => problems.push('header overlap: ' + m));
+    r.offscreen.forEach((m) => problems.push('outside viewport: ' + m));
+    if (!r.canvas) problems.push('canvas missing or hidden');
+    else if (r.canvas.std < 1.5 || r.canvas.colors < 6) problems.push('canvas looks blank (std ' + r.canvas.std + ', colors ' + r.canvas.colors + ')');
+    const s = await page.evaluate(() => {
+      const hdr = ['#place', '#title', '#clock', '#clock-tz', '#utc', '#summary-text', '#wx-metar', '#wx-rwy'];
+      const bad = [];
+      hdr.forEach((sel) => {
+        const e = document.querySelector(sel);
+        if (!e || !e.textContent.trim() || getComputedStyle(e).display === 'none') return;
+        const b = e.getBoundingClientRect();
+        if (b.left < 0 || b.right > innerWidth || b.top < 0 || b.bottom > innerHeight) bad.push(sel + ' outside the screen');
+        if (e.scrollWidth > e.clientWidth + 1 && getComputedStyle(e).overflow !== 'visible') bad.push(sel + ' clipped');
+      });
+      return {
+        view: document.body.classList.contains('view-airport'),
+        sum: document.getElementById('summary-text').textContent,
+        place: document.getElementById('place').textContent,
+        board: getComputedStyle(document.getElementById('board')).display,
+        overlay: document.body.classList.contains('view-board'),
+        bad: bad
+      };
+    });
+    if (!s.view) problems.push('focus view class missing');
+    if (s.overlay) problems.push('Anzeigetafel overlay in the focus view');
+    if (s.board !== 'none') problems.push('board still visible in the focus view');
+    if (!/^\d+ im Anflug · \d+ am Boden$/.test(s.sum)) problems.push('summary lacks the counts: ' + s.sum);
+    if (!s.place) problems.push('airport name missing');
+    s.bad.forEach((m) => problems.push('header: ' + m));
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
 // ---------- TV first-run welcome overlay ----------
 async function hintCase(browser) {
   const id = 'tv_welcome';
@@ -440,6 +493,8 @@ const jobs = [];
 const VPS = QUICK ? [{ w: 1920, h: 1080 }] : [{ w: 1920, h: 1080 }, { w: 1280, h: 720 }, { w: 3840, h: 2160 }];
 for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 'light'] : ['dark'])
   for (const vp of VPS) for (const view of ['radar', 'board']) jobs.push({ n: [style, theme, vp.w, view].join('_'), run: () => matrixCase(browser, { style, theme, vp, view }) });
+for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }])
+  jobs.push({ n: 'airport_' + code + '_' + vp.width, run: () => airportCase(browser, code, vp) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;

@@ -1,6 +1,8 @@
 /* App loop: polling, smoothing, featured-aircraft rotation, ambient housekeeping. */
 (function (MA) {
   var cfg = MA.config;
+  var AIRPORT = cfg.view === 'airport' && !!MA.airport;   // focus view: js/airport.js (the airport is the centre)
+  if (AIRPORT) { MA.airport.configure(cfg); document.body.className += ' view-airport'; }
   var STALE_MS = 60 * 1000;      // drop aircraft not updated for a minute
   var MAX_EXTRAP_MS = 20 * 1000; // stop dead-reckoning after 20 s without data, then fade out until STALE_MS
   var WARN_AGE_S = 30;           // data older than this: amber "Daten N s alt"
@@ -103,7 +105,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       if (window.console) console.warn('[MyAirspace] no data:', err && err.message);
     }).then(function () {
       var p = feed.provider();
-      document.getElementById('attrib').textContent = p.attrib + ' · Karte: Natural Earth, OurAirports' + (cfg.public ? ' · öffentliche Proxys (public=1)' : '');
+      document.getElementById('attrib').textContent = p.attrib + ' · Karte: Natural Earth, OurAirports' + (AIRPORT ? ' · © OpenStreetMap-Mitwirkende (ODbL)' : '') + (cfg.public ? ' · öffentliche Proxys (public=1)' : '');
       var interval = Math.max(cfg.pollSec, p.minPollSec) * 1000;
       if (!cfg.demo && !cfg.proxy) interval = Math.max(interval, 8000); // be gentle with shared public proxies
       // back off on failures (respecting Retry-After), come back to the normal rate gradually
@@ -194,12 +196,20 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     var now = Date.now();
     advance(now, now - lastFrame);
     lastFrame = now;
-    var feat = pickFeatured(now);
-    radar.render(visible, feat && feat.hex, now, MA.weather.active(), groundList());
+    var feat, air = null;
+    if (AIRPORT) {
+      air = MA.airport.frame(visible, groundList(), now, featured);
+      feat = air.feat;
+      radar.render(air.air, feat && feat.hex, now, MA.weather.active(), air.ground);
+    } else {
+      feat = pickFeatured(now);
+      radar.render(visible, feat && feat.hex, now, MA.weather.active(), groundList());
+    }
 
     if (now - lastBoard > 1000) {
       lastBoard = now;
-      if (feat) board.show(feat, featured.idx, featured.count);
+      if (AIRPORT) { /* no Tafel in the focus view */ }
+      else if (feat) board.show(feat, featured.idx, featured.count);
       else if (!status.lastOk && !status.failures) board.empty('------', 'Verbinde…');
       else if (status.lastOk ? (now - status.dataAt) / 1000 >= WARN_AGE_S : status.failures) {
         board.empty('OFFLINE', status.lastOk ? 'Daten veraltet' : 'Keine Verbindung');
@@ -250,6 +260,11 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     }
     dot.className = 'dot ok';
     sum.className = 'summary';
+    if (AIRPORT) {   // focus view: counts of this airport, attention first
+      var k = MA.airport.counts();
+      txt.textContent = k.anflug + ' im Anflug · ' + k.boden + ' am Boden';
+      return;
+    }
     var g = cfg.show.ground === false ? 0 : groundList().filter(function (a) {
       return MA.geo.distKm(cfg.lat, cfg.lon, a.lat, a.lon) <= cfg.radiusKm * 1.15;
     }).length;

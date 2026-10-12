@@ -41,7 +41,7 @@
     return d;
   }
 
-  if (!(q.has('lat') && q.has('lon'))) {
+  if (!(q.has('lat') && q.has('lon')) && q.get('view') !== 'airport') {   // the focus view needs no home location
     if (q.has('demo')) return;   // asked for the plain demo on purpose
 
     // veil over the moving demo traffic, content on a solid panel so text contrast does not depend on what flies by
@@ -83,6 +83,7 @@
     return;
   }
 
+  if (q.get('view') === 'airport') return;   // the focus view keeps its bottom line for the METAR
   var seen = false;
   try { seen = localStorage.getItem('ma.tvSeen') === '1'; localStorage.setItem('ma.tvSeen', '1'); } catch (e) { seen = true; }
   if (seen) return;

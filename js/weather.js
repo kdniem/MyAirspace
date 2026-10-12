@@ -137,7 +137,7 @@
           if (r.land.indexOf(rw.ids[i]) < 0) return;
           var thr = i ? rw.b : rw.a;
           var far = g.dest(thr[0], thr[1], rw.hdg + (i ? 0 : 180), APPROACH_KM);
-          active.push({ thr: thr, far: far, rev: !!i, est: r.est, end: rw.ids[i] });
+          active.push({ thr: thr, far: far, rev: !!i, est: r.est, end: rw.ids[i], ap: n.ap.code });
         });
       });
     });
@@ -235,10 +235,11 @@
 
   // QNH and runway line as [text, bold] pieces; null marks a gap.
   function rwyPieces() {
-    var out = [];
+    var out = [], focus = cfg && cfg.view === 'airport' ? cfg.airportCode : null;   // focus view: the chosen airport only
     var qm = airports.length && metars[airports[0].ap.icao];
     if (qm && typeof qm.altim === 'number') out.push(['QNH ', false], [MA.fmt.qnh(qm.altim, cfg.pressure), true, true]);
-    results.forEach(function (r, i) {
+    results.forEach(function (r) {
+      if (focus && r.code !== focus) return;
       if (out.length) out.push(null);
       out.push([r.code + ' \u25B8 RWY ', false]);
       if (r.est) { out.push([r.land.join('/'), true], [' laut Wind', false]); return; }
