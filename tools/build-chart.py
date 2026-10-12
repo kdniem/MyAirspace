@@ -48,6 +48,14 @@ NAV_TYPES = {'VOR': 'VOR', 'VOR-DME': 'VOR', 'VORTAC': 'VOR', 'TACAN': 'VOR', 'D
              'DVORTAC': 'VOR', 'NDB': 'NDB', 'NDB-DME': 'NDB', 'DME': 'DME'}
 
 
+def fix_mojibake(text):
+    """OpenAIP sometimes ships UTF-8 bytes that were read as Latin-1 (e.g. 'ÃNGELHOLM' for 'ÄNGELHOLM')."""
+    try:
+        return text.encode('latin-1').decode('utf-8')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return text
+
+
 def fetch(url, cache):
     path = os.path.join(cache, url.rsplit('/', 1)[1])
     if not os.path.exists(path):
@@ -196,7 +204,7 @@ def main():
             pts = simplify(ring, SIMPLIFY_KM)
             if len(pts) < 4:
                 continue
-            name = (pr.get('name') or '').strip()
+            name = fix_mojibake((pr.get('name') or '').strip())
             name = name[:28] if name else cls[1]
             air.append({'n': name, 't': cls[0], 'c': cls[1], 'hi': limit_text(pr.get('upperLimit')),
                         'lo': limit_text(pr.get('lowerLimit')),
