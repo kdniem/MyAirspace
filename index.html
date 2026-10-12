@@ -28,6 +28,11 @@
           <span id="status-dot" class="dot"></span>
           <span id="summary-text">Verbinde…</span>
         </div>
+        <!-- weather & runway in use, filled by js/weather.js (hidden without a local airport) -->
+        <div id="wx" class="wx" style="display:none">
+          <div id="wx-metar"></div>
+          <div id="wx-rwy"></div>
+        </div>
       </div>
     </header>
 
@@ -76,6 +81,7 @@
   <script src="js/format.js"></script>
   <script src="js/demo.js"></script>
   <script src="js/data.js"></script>
+  <script src="js/weather.js"></script>
   <script src="js/radar.js"></script>
   <script src="js/board.js"></script>
   <script src="js/main.js"></script>

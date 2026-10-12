@@ -86,6 +86,20 @@ html, body {
   text-transform: uppercase;
 }
 
+/* weather & runway in use (js/weather.js): small and dim like .summary */
+.wx {
+  margin-top: 0.9vh;
+  font-size: 1.2vh;
+  line-height: 1.7;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  opacity: 0.85;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.wx b { font-weight: 500; color: var(--ink); opacity: 0.8; }
+.wx-gap { display: inline-block; width: 2em; }
+
 .dot {
   display: inline-block;
   width: 0.8vh;

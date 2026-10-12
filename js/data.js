@@ -308,6 +308,7 @@
   MA.data = {
     Feed: Feed,
     providers: PROVIDERS,
+    getJson: getJson,           // also used by js/weather.js
     lookupRoutes: lookupRoutes,
     route: function (callsign) {
       var c = routes[callsign];

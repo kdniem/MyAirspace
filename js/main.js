@@ -16,6 +16,7 @@
   var status = { ok: false, lastOk: 0, failures: 0 };
 
   document.getElementById('place').textContent = cfg.label;
+  MA.weather.start(cfg);         // METAR + runway in use, see js/weather.js
 
   /* ---------- data ---------- */
 
@@ -36,6 +37,7 @@
       for (var k in n) if (k !== 'trail') ac[k] = n[k];
       ac.seen = now;
     });
+    MA.weather.observe(list, now); // runway-in-use votes from low traffic
     for (var hex in aircraft) {
       if (now - aircraft[hex].seen > STALE_MS) delete aircraft[hex];
     }
@@ -124,7 +126,7 @@
     advance(now, now - lastFrame);
     lastFrame = now;
     var feat = pickFeatured(now);
-    radar.render(visible, feat && feat.hex, now);
+    radar.render(visible, feat && feat.hex, now, MA.weather.active());
 
     if (now - lastBoard > 1000) {
       lastBoard = now;
