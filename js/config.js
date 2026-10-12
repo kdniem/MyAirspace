@@ -88,7 +88,7 @@ window.MA = MA;
     lon: num('lon', 9.9937, -180, 180),
     radiusKm: num('r', 25, 3, 200),             // radius of the main ring
     pollSec: num('poll', 5, 2, 120),
-    label: str('label', 'Hamburg').toUpperCase(),
+    label: str('label', 'Hamburg').slice(0, 32).toUpperCase(),
     units: str('units', 'ft') === 'm' ? 'm' : 'ft',
     provider: str('provider', 'auto'),          // auto | adsblol | airplaneslive | opensky
     proxy: proxy(),                             // own CORS proxy, see api/proxy.js
