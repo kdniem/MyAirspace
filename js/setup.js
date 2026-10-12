@@ -158,6 +158,10 @@
     const lat = parseFloat(q.get('lat')), lon = parseFloat(q.get('lon'));
     if (validLat(lat) && validLon(lon)) { el.lat.value = lat; el.lon.value = lon; }
     if (q.get('label')) { el.label.value = q.get('label'); labelTouched = true; }
+    const view = q.get('view');
+    pick('view', ['auto', 'radar', 'board', 'airport'].indexOf(view) >= 0 ? view : 'auto');
+    const ap = (q.get('airport') || 'HAM').toUpperCase();
+    pick('airport', ['HAM', 'XFW', 'FRA', 'FMO', 'CPH'].indexOf(ap) >= 0 ? ap : 'HAM');
     const r = parseFloat(q.get('r'));
     el.radius.value = isNaN(r) ? DEF.r : Math.min(80, Math.max(5, r));
     const t = parseFloat(q.get('trail'));
@@ -345,7 +349,7 @@
   [el.radius, el.trail, el.round, el.night, el.nightFrom, el.nightTo, el.brightness]
     .forEach((inp) => inp.addEventListener(inp.type === 'range' ? 'input' : 'change', update));
   el.title.addEventListener('input', update);
-  document.querySelectorAll('input[name="units"], input[name="theme"], input[name="font"], input[name="speed"], input[name="pressure"], input[name="time"], input[name="accent"]')
+  document.querySelectorAll('input[name="view"], input[name="airport"], input[name="units"], input[name="theme"], input[name="font"], input[name="speed"], input[name="pressure"], input[name="time"], input[name="accent"]')
     .forEach((r) => r.addEventListener('change', update));
   // a style brings its own default look: switch theme and font along (theme unless set to automatic)
   document.querySelectorAll('input[name="style"]').forEach((r) => r.addEventListener('change', () => {
@@ -412,6 +416,9 @@
     if (fieldsSel.join() !== DEF_FIELDS.join()) p.set('datablock', fieldsSel.join(','));
     const trail = +el.trail.value;
     if (trail !== DEF.trail) p.set('trail', trail);
+    const view = checked('view');
+    if (view !== 'auto') p.set('view', view);
+    if (view === 'airport' && checked('airport') !== 'HAM') p.set('airport', checked('airport'));
     const night = el.night.checked ? el.nightFrom.value + '-' + el.nightTo.value : 'off';
     if (night !== DEF.night) p.set('night', night);
     Object.keys(extra).forEach((k) => p.set(k, extra[k]));
@@ -429,6 +436,9 @@
   let lastParams = new URLSearchParams();
 
   function update() {
+    const view = checked('view');
+    document.getElementById('airport-field').style.display = view === 'airport' ? '' : 'none';
+    document.getElementById('view-hint').textContent = COPY.viewHint[view] || '';
     el.radiusOut.textContent = el.radius.value + ' km';
     el.trailOut.textContent = +el.trail.value === 0 ? 'aus' : el.trail.value + ' min';
     el.nightHours.classList.toggle('off', !el.night.checked);

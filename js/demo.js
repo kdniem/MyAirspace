@@ -11,7 +11,7 @@
   }
 
   // Each flight follows a polyline of {lat, lon, alt} at `kt`, looping.
-  var FLIGHTS = [
+  function flights(HAM, XFW) { return [
     { hex: '3c4b26', cs: 'DLH8NA', r: 'D-AINR', t: 'A20N', kt: 160, off: 0.05, route: ['MUC', 'HAM'],
       path: [from(HAM, 53, 46, 7000), from(HAM, 53, 20, 3500), from(HAM, 53, 9, 2200), from(HAM, 53, 1.6, 50)] },
     { hex: '3c6587', cs: 'EWG7LK', r: 'D-AEWS', t: 'A320', kt: 230, off: 0.55, route: ['HAM', 'PMI'],
@@ -36,7 +36,8 @@
     // emergency (squawk 7700) returning to HAM: shows the red special-aircraft highlight
     { hex: '3c66b3', cs: 'DLH4CK', r: 'D-AIZR', t: 'A320', sq: '7700', kt: 190, off: 0.15, route: null,
       path: [from(HAM, 100, 40, 9000), from(HAM, 53, 18, 3500), from(HAM, 53, 1.6, 50)] }
-  ];
+  ]; }
+  var anchorPt = HAM, FLIGHTS = flights(HAM, XFW);
 
   function prep(f) {
     var len = 0;
@@ -51,6 +52,13 @@
     f.durMs = len / (f.kt * 1.852) * 3600 * 1000;
   }
   FLIGHTS.forEach(prep);
+
+  // focus view (view=airport): the same traffic, moved to the chosen airport (ground traffic keeps its offsets)
+  function anchor(a) {
+    anchorPt = { lat: a.lat, lon: a.lon };
+    FLIGHTS = flights(anchorPt, anchorPt);
+    FLIGHTS.forEach(prep);
+  }
 
   function state(f, now) {
     var t = ((now / f.durMs + f.off) % 1) * f.len;
@@ -76,14 +84,16 @@
   }
 
   MA.demo = {
+    anchor: function (a) { anchor(a); },
     snapshot: function () {
       var now = Date.now();
+      var dl = anchorPt.lat - HAM.lat, dn = anchorPt.lon - HAM.lon;
       var list = FLIGHTS.map(function (f) { return state(f, now); });
       // parked / taxiing aircraft at HAM and XFW
       [['3C6444', 'DLH7K', 'A320', 53.6340, 9.9960, 40], ['3C65A1', 'EWG2B', 'A319', 53.6330, 9.9915, 0],
        ['4B1814', 'SWR93', 'A321', 53.6285, 9.9840, 0], ['3C4DD2', 'CFG5T', 'B738', 53.6262, 9.9795, 220],
        ['3C66B7', 'AIB02', 'A320', 53.5357, 9.8408, 0]].forEach(function (g) {
-        list.push({ hex: g[0], flight: g[1] + '  ', t: g[2], category: 'A3', lat: g[3], lon: g[4], alt_baro: 'ground',
+        list.push({ hex: g[0], flight: g[1] + '  ', t: g[2], category: 'A3', lat: g[3] + dl, lon: g[4] + dn, alt_baro: 'ground',
           gs: g[5] ? 8 : 0, track: g[5] || 0, squawk: '', seen_pos: 0.4 });
       });
       return { ac: list, now: now };
@@ -101,7 +111,17 @@
           rawOb: 'METAR EDDH 120820Z 23012G22KT 9999 FEW025 BKN042 14/08 Q1013 NOSIG' },
         { icaoId: 'EDHI', obsTime: t, wdir: 230, wspd: 11, visib: '6+', temp: 14, dewp: 8, altim: 1013,
           clouds: [{ cover: 'FEW', base: 2500 }], fltCat: 'VFR',
-          rawOb: 'METAR EDHI 120820Z 23011KT 9999 FEW025 14/08 Q1013' }
+          rawOb: 'METAR EDHI 120820Z 23011KT 9999 FEW025 14/08 Q1013' },
+        // focus view airports (simulated, same wind as the 23 arrivals)
+        { icaoId: 'EDDF', obsTime: t, wdir: 250, wspd: 9, visib: '6+', temp: 13, dewp: 7, altim: 1012,
+          clouds: [{ cover: 'SCT', base: 3000 }], fltCat: 'VFR',
+          rawOb: 'METAR EDDF 120820Z 25009KT 9999 SCT030 13/07 Q1012' },
+        { icaoId: 'EDDG', obsTime: t, wdir: 230, wspd: 10, visib: '6+', temp: 14, dewp: 8, altim: 1013,
+          clouds: [{ cover: 'FEW', base: 2500 }], fltCat: 'VFR',
+          rawOb: 'METAR EDDG 120820Z 23010KT 9999 FEW025 14/08 Q1013' },
+        { icaoId: 'EKCH', obsTime: t, wdir: 230, wspd: 12, visib: '6+', temp: 15, dewp: 9, altim: 1014,
+          clouds: [{ cover: 'SCT', base: 2000 }], fltCat: 'VFR',
+          rawOb: 'METAR EKCH 120820Z 23012KT 9999 SCT020 15/09 Q1014' }
       ];
     }
   };

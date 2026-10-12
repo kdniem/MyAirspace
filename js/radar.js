@@ -12,7 +12,10 @@
     this.ctx = canvas.getContext('2d');
     this.cfg = cfg;
     this.show = cfg.show || { rings: true, compass: true, places: true, ground: true, labels: true, trails: true };
+    this.org = { lat: cfg.lat, lon: cfg.lon };   // projection origin (the airport focus view moves it to the bbox centre)
     this.cosLat = Math.cos(cfg.lat * PI / 180);
+    // focus view (view=airport, js/airport.js): layout and base layer come from there; set before the first resize
+    this.airport = cfg.view === 'airport' && MA.airport ? MA.airport.target(cfg) : null;
     this.setTheme(MA.theme ? MA.theme.current() : 'dark', false);
     this.resize();
     var self = this;
@@ -24,6 +27,7 @@
     if (name === this.theme && C) return;
     this.theme = name;
     C = MA.style.resolve(this.cfg.style, name, { accent: this.cfg.accent, font: this.cfg.font, brightness: this.cfg.brightness }).c;
+    this.pal = C;
     this._prev = fade && this._base ? this._base : null;
     this._fadeAt = Date.now();
     this._base = null;
@@ -41,6 +45,7 @@
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.w = w;
     this.h = h;
+    if (this.airport) return this.layoutAirport();
     // radar area: everything above the board (bottom ~22% of the screen); full height without a board
     var areaBottom = this.show.board === false ? h * 0.93 : h * 0.765;
     this.areaBottom = areaBottom;
@@ -57,12 +62,13 @@
   // km needed to cover the whole screen from home (for data fetch radius)
   Radar.prototype.coverKm = function () {
     var dx = Math.max(this.cx, this.w - this.cx), dy = Math.max(this.cy, this.h - this.cy);
-    return Math.sqrt(dx * dx + dy * dy) / this.pxPerKm;
+    var km = Math.sqrt(dx * dx + dy * dy) / this.pxPerKm;
+    return this.airport ? Math.max(km, this.airport.radiusKm) : km;
   };
 
   Radar.prototype.project = function (lat, lon) {
-    var xKm = (lon - this.cfg.lon) * 111.32 * this.cosLat;
-    var yKm = (lat - this.cfg.lat) * 110.574;
+    var xKm = (lon - this.org.lon) * 111.32 * this.cosLat;
+    var yKm = (lat - this.org.lat) * 110.574;
     return [this.cx + xKm * this.pxPerKm, this.cy - yKm * this.pxPerKm];
   };
 
@@ -81,6 +87,7 @@
 
   Radar.prototype.headerRects = function () {
     var w = this.w, h = this.h;
+    if (this.airport) return [[0, 0, w * 0.3, h * 0.14], [w * 0.55, 0, w * 0.45, h * 0.19]];
     return [[0, 0, w * 0.3, h * 0.13], [w * 0.55, 0, w * 0.45, h * 0.255]];
   };
 
@@ -322,7 +329,7 @@
 
   // Cache static layers in an offscreen canvas (per size and theme).
   Radar.prototype.base = function () {
-    var key = this.w + 'x' + this.h + ':' + this.theme;
+    var key = this.w + 'x' + this.h + ':' + this.theme + (this.airport ? ':' + this.airport.code : '');
     if (this._baseKey === key && this._base) return this._base;
     var off = document.createElement('canvas');
     off.width = this.canvas.width;
@@ -330,7 +337,7 @@
     var real = this.ctx;
     this.ctx = off.getContext('2d');
     this.ctx.setTransform(this.canvas.width / this.w, 0, 0, this.canvas.height / this.h, 0, 0);
-    this.drawBase();
+    if (this.airport) this.drawAirportBase(); else this.drawBase();
     this.ctx = real;
     this._base = off;
     this._baseKey = key;
@@ -402,6 +409,61 @@
     if (ctx.setLineDash) ctx.setLineDash([]);
   };
 
+  // history: one smooth line that tapers and fades to nothing at its tail, ends at the symbol
+  Radar.prototype.drawTrail = function (ac, col, baseA, now) {
+    var self = this, ctx = this.ctx, u = this.unit, lw = C.lw;
+    var tr = ac.trail;
+    if (tr.length && this.show.trails !== false) {
+      var maxAge = self.cfg.trailMin * 60000 || 1, i;
+      var cur = self.project(ac.dlat, ac.dlon), head = 2 * u * lw * C.trailW;
+      ctx.lineCap = 'butt';
+      var pp = [];
+      for (i = 0; i < tr.length; i++) pp.push(self.project(tr[i][0], tr[i][1]));
+      pp.push(cur);
+      var last = pp.length - 1;
+      for (i = 0; i < last; i++) {
+        var fr = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
+        if (fr < 0.02) continue;
+        var a = i === 0 ? pp[0] : [(pp[i - 1][0] + pp[i][0]) / 2, (pp[i - 1][1] + pp[i][1]) / 2];
+        var b = i === last - 1 ? pp[last] : [(pp[i][0] + pp[i + 1][0]) / 2, (pp[i][1] + pp[i + 1][1]) / 2];
+        ctx.lineWidth = Math.max(0.5 * u, head * (0.12 + 0.88 * fr));
+        ctx.strokeStyle = rgba(col, 0.85 * Math.pow(fr, 1.35) * baseA);
+        ctx.beginPath();
+        ctx.moveTo(a[0], a[1]);
+        ctx.quadraticCurveTo(pp[i][0], pp[i][1], b[0], b[1]);
+        ctx.stroke();
+      }
+    }
+  };
+
+  /* Operator badges (js/airlines.js): one small self-made tile beside the symbol of every aircraft with a
+     known airline, on the side opposite its data block; logos=0 hides them. Height scales with the screen. */
+  Radar.prototype.badgeFor = function (ac) {
+    if (this.show.logos === false || !MA.badge) return null;
+    var bi = MA.badge.info(ac);
+    return bi.kind === 'airline' ? bi : null;
+  };
+  Radar.prototype.badgeH = function () { return Math.max(17, 22 * this.unit); };
+  // boxes of the badges (set b.box); called before the data blocks are placed so they keep clear of them
+  Radar.prototype.badgeRects = function (badges) {
+    var h = this.badgeH(), self = this;
+    badges.forEach(function (b) {
+      var q = b.ac._q || 0, sx = -QUADS[q][0], sy = -QUADS[q][1];
+      var off = b.reach + h * 0.3, w = MA.badge.width(self.ctx, b.bi, h, self.badgeOpts(b.dim));
+      var x = b.p[0] + sx * off - (sx > 0 ? 0 : w), y = b.p[1] + sy * off - (sy > 0 ? 0 : h);
+      b.box = [x, y, w, h];
+    });
+    return badges.map(function (b) { return b.box; });
+  };
+  Radar.prototype.drawBadges = function (badges) {
+    var ctx = this.ctx, h = this.badgeH();
+    badges.forEach(function (b) {
+      ctx.globalAlpha = typeof b.fade === 'number' ? b.fade : 1;
+      MA.badge.draw(ctx, b.bi, b.box[0], b.box[1], h, this.badgeOpts(b.dim));
+    }, this);
+    ctx.globalAlpha = 1;
+  };
+
   // Aircraft on the ground at airports: small hollow squares with a heading tick.
   Radar.prototype.drawGround = function (list) {
     var ctx = this.ctx, u = this.unit;
@@ -433,11 +495,7 @@
     cfg.fields.forEach(function (k) {
       var seg = null, merge = false;
       if (k === 'callsign') {
-        seg = [[ac.callsign || ac.reg || ac.hex.toUpperCase(), 'main']];
-        if (self.show.logos !== false) {          // operator badge in front of the callsign (known airlines only)
-          var bi = MA.badge.info(ac);
-          if (bi.kind === 'airline') seg.unshift(['', 'badge', bi]);
-        }
+        seg = [[ac.callsign || ac.reg || ac.hex.toUpperCase(), 'main']];   // operator badge: beside the symbol, see badgeRects
       }
       else if (k === 'fl') {
         var a = f.altShort(ac.alt, cfg.units);
@@ -593,6 +651,7 @@
   /* list: aircraft with display position (dlat/dlon), trail, dist; featured: hex;
      active: runways in use from MA.weather.active() (optional) */
   Radar.prototype.render = function (list, featuredHex, now, active, ground) {
+    if (this.airport) return this.renderAirport(list, featuredHex, now, active, ground);
     var ctx = this.ctx, u = this.unit, self = this, show = this.show, lw = C.lw;
     ctx.drawImage(this.base(), 0, 0, this.w, this.h);
     if (this._prev) {
@@ -623,7 +682,7 @@
     ctx.fill();
 
     var blink = 0.6 + 0.4 * Math.sin(now * PI / 500);      // emergency squawk: slow blink
-    var items = [], pts = [];
+    var items = [], pts = [], badges = [];
 
     // high traffic first so low (interesting) traffic draws on top
     var sorted = list.slice().sort(function (a, b) { return (b.alt || 0) - (a.alt || 0); });
@@ -636,30 +695,7 @@
       var baseA = ((featured || sp) ? 1 : (high ? C.high : 1)) * (typeof ac.fade === 'number' ? ac.fade : 1);   // fade: stale data, see main.js
       var col = featured ? C.target : C.level;
 
-      // history: one smooth line that tapers and fades to nothing at its tail, ends at the symbol
-      var tr = ac.trail;
-      if (tr.length && show.trails !== false) {
-        var maxAge = self.cfg.trailMin * 60000 || 1, i;
-        var cur = self.project(ac.dlat, ac.dlon), head = 2 * u * lw * C.trailW;
-        ctx.lineCap = 'butt';
-        // samples are joined by quadratic curves through segment midpoints: no visible corners
-        var pp = [];
-        for (i = 0; i < tr.length; i++) pp.push(self.project(tr[i][0], tr[i][1]));
-        pp.push(cur);
-        var last = pp.length - 1;
-        for (i = 0; i < last; i++) {
-          var fr = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
-          if (fr < 0.02) continue;
-          var a = i === 0 ? pp[0] : [(pp[i - 1][0] + pp[i][0]) / 2, (pp[i - 1][1] + pp[i][1]) / 2];
-          var b = i === last - 1 ? pp[last] : [(pp[i][0] + pp[i + 1][0]) / 2, (pp[i][1] + pp[i + 1][1]) / 2];
-          ctx.lineWidth = Math.max(0.5 * u, head * (0.12 + 0.88 * fr));
-          ctx.strokeStyle = rgba(col, 0.85 * Math.pow(fr, 1.35) * baseA);
-          ctx.beginPath();
-          ctx.moveTo(a[0], a[1]);
-          ctx.quadraticCurveTo(pp[i][0], pp[i][1], b[0], b[1]);
-          ctx.stroke();
-        }
-      }
+      self.drawTrail(ac, col, baseA, now);
 
       var p = self.project(ac.dlat, ac.dlon);
       var gk = MA.glyphs.kind(ac);
@@ -699,6 +735,8 @@
         if (lines.length) items.push({ ac: ac, p: p, size: reach, high: high, featured: featured, sp: sp, spCol: spCol, lines: lines });
       }
       pts.push(p);
+      var bi = self.badgeFor(ac);
+      if (bi) badges.push({ ac: ac, p: p, bi: bi, reach: reach, dim: high && !featured, fade: baseA });
     });
 
     // data blocks: the selected aircraft claims its spot first, then nearest first
@@ -706,7 +744,8 @@
       if (a.featured !== b.featured) return a.featured ? -1 : 1;
       return (a.ac.dist || 0) - (b.ac.dist || 0);
     });
-    var placed = [];
+    var bRects = this.badgeRects(badges);
+    var placed = bRects.slice();
     order.forEach(function (it) {
       var m = self.measureBlock(it.lines, it.featured);
       var r = self.placeBlock(it, m, placed, pts);
@@ -714,6 +753,7 @@
       placed.push(r.rect);
       it.m = m; it.r = r;
     });
+    this.drawBadges(badges);
     items.forEach(function (it) {
       if (it.skip) return;
       ctx.globalAlpha = typeof it.ac.fade === 'number' ? it.ac.fade : 1;
@@ -742,5 +782,7 @@
     });
   };
 
+  Radar.fadeLine = fadeLine;   // shared with js/airport.js (focus view)
+  Radar.rgba = rgba;
   MA.Radar = Radar;
 })(window.MA);

@@ -48,7 +48,8 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `public`   | `0`             | `1` erlaubt öffentliche CORS-Proxys und die Quellen airplanes.live/OpenSky (Datenschutz beachten) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`; `airplaneslive`, `opensky` nur mit `public=1` |
 | `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
-| `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht |
+| `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht, `airport` zeigt die Flughafen-Ansicht (ohne Standort nutzbar) |
+| `airport` | `HAM`         | Flughafen der Flughafen-Ansicht (`view=airport`): `HAM`, `XFW`, `FRA`, `FMO` oder `CPH`; alles andere ergibt `HAM`, siehe [Flughafen-Ansicht](#flughafen-ansicht) |
 | `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
 | `boardsec` | `40`            | Sekunden Anzeigetafel, danach wieder Radar (bei `view=auto`) |
 
@@ -87,7 +88,7 @@ Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil ei
 1. **Willkommen**: was MyAirspace ist, mit einer Live-Vorschau (Demo-Verkehr).
 2. **Standort**: „Meinen Standort verwenden“, Ortssuche, Flughäfen mit Karte oder Koordinaten. Der Ort wird angezeigt, bevor es weitergeht.
 3. **Look**: Stil (Karte mit Mini-Vorschau), Hell/Dunkel/Automatisch, Akzentfarbe.
-4. **Inhalt**: welche Elemente zu sehen sind, Einheiten, Radius, Nachtdimmen.
+4. **Inhalt**: Ansicht (Wechselnd, Radar, Tafel, Flughafen; für Flughafen die Wahl des Flughafens), welche Elemente zu sehen sind, Einheiten, Radius, Nachtdimmen.
 5. **Fernseher**: Adresse, QR-Code, „Testen“, dazu Schritte für Smart-TV, Apple TV (AirPlay), Computer und Handy oder iPad, „Link teilen“, wenn der Browser es kann.
 
 Am Ende stehen drei Tipps (Nachtdimmen, `style=` ändern, später wieder hier öffnen). Zurück behält alle Eingaben. Der Fortschritt steht nur in `sessionStorage` (dieser Tab, nach dem Schließen weg) und nichts davon geht an einen Server. Wer alles auf einmal sehen will, nutzt **Alle Einstellungen** (`setup.html?wizard=0` oder `#alle`), die Schritte springen direkt an: `#standort`, `#look`, `#inhalt`, `#fernseher`, `#fertig`. `?wizard=1` beginnt von vorn. Alle Texte stehen zentral im Objekt `MA.COPY` in `js/onboarding.js`.
@@ -157,6 +158,12 @@ Fertige Karten gibt es für Hamburg (HAM, XFW), Frankfurt (FRA), Münster/Osnabr
 
 Die Pisten stammen aus [OurAirports](https://ourairports.com), Flüsse und Küsten außerhalb Hamburgs aus [Natural Earth](https://www.naturalearthdata.com) (beide gemeinfrei). Elbe, Alster und die Orte sind von Hand eingetragen. `data/geo-features.js` wird mit `python3 tools/build-geo.py` erzeugt; weitere Flughäfen ergänzt man dort in `AIRPORTS`, `AREAS` und `AREA_PLACES`. Die Karte ist absichtlich vereinfacht und taugt nicht zur Navigation.
 
+### Flughafen-Ansicht
+
+`view=airport&airport=FRA` zeigt einen Flughafen als Fokus: das Vorfeld ist in die Mitte gezoomt (Vorfeld, Rollwege, Terminals, Hangars, Gates und Positionen mit Bezeichnung, wo sie kartiert sind), die Pisten mit Bezeichnern, die letzten 10 km der verlängerten Pistenachsen als kurze Anflug- und Abflugschneisen (die Piste in Betrieb in Grün). Flugzeuge im Umkreis von 12 km: in der Luft mit Flugzeugsymbol und Datenblock, wenn sie anfliegen oder abfliegen; am Boden an ihrer echten Position auf dem Vorfeld, nur das gewählte mit Rufzeichen. Oben stehen Flughafen, Ortszeit und UTC, „x im Anflug · y am Boden“, unten METAR und Piste in Betrieb. Die Anzeigetafel entfällt; wie bei jeder Ansicht folgen Stil und Theme. Der Standort wird dafür nicht gebraucht, die Daten kommen vom Flughafen aus. Ohne Standort und ohne `demo=1` läuft die Ansicht mit Live-Daten.
+
+Der Maßstab passt das Vorfeld (Box aus Vorfeld, Terminals und Gates, plus 0,6 km Rand) in den Bildschirm, nicht die ganze Pistenlänge: bei HAM sind das gut acht Kilometer, dann blieben Gates und Positionen unlesbar. Piste-Enden außerhalb des Bildes sieht man nicht, ihre Schneisen laufen aber vom Rand her hinein. Die Vorfeld-Daten stammen von OpenStreetMap (Abschnitt unten). Der Rest des Radars bleibt unverändert.
+
 ### Flughafen-Detaildaten
 
 `data/airport-detail.js` enthält für HAM, XFW, FRA, FMO und CPH Vorfelder, Rollwege, Terminals, Hangars, Gates, Abstellpositionen, Hubschrauberlandeplätze und Pisten für eine vergrößerte Flughafenansicht (`MA.airportDetail`, Koordinaten als `[lat, lon]` mit 5 Nachkommastellen, auf etwa 2 m vereinfacht). Quelle ist OpenStreetMap, Daten © OpenStreetMap-Mitwirkende, [ODbL](https://www.openstreetmap.org/copyright). Neu erzeugen mit `python3 -I tools/build-airport-detail.py [cache_dir]`; das Skript lädt die Rohdaten kachelweise von der OSM-API (mit Pausen und User-Agent) und legt sie in `cache_dir` ab, weitere Läufe arbeiten offline. Größe: siehe Commit-Nachricht bzw. `ls -l data/airport-detail.js` (Ziel höchstens 120 KB je Flughafen). Wie vollständig ein Flughafen ist, hängt von den Mappern ab; nicht jeder hat Gates oder Rollwegnamen. Nicht zur Navigation geeignet.
@@ -167,7 +174,7 @@ Die Route (z. B. `NCE → HAM`) kommt aus der Routendatenbank von adsb.lol. Bei 
 
 ### Airline-Abzeichen statt Logos
 
-Echte Airline-Logos sind absichtlich **nicht** enthalten: Sie sind Marken mit eigenen Nutzungsbedingungen, und die App lädt auch keine Bilder von Dritten nach. Stattdessen gibt es selbst gebaute Abzeichen (`js/airlines.js`): eine flache Kachel in einer an die Lackierung angelehnten Farbe mit dem IATA-Code (`LH`, `EK`, `FR`), wo kein IATA-Code bekannt ist mit dem ICAO-Kürzel (`CHX`, `AIB`). Die Schriftfarbe (schwarz oder weiß) wird automatisch so gewählt, dass mindestens 4,5 : 1 Kontrast erreicht wird. Die Ecken folgen dem Stil (eckig bei Terminal/Airbus/Karte/Militär, leicht gerundet bei ATC/Nacht, rund bei Boeing); der Stil `night` zeigt nur eine Umrisskachel ohne Farbe (blendfrei). Der Betreiber ergibt sich aus den ersten drei Buchstaben des Rufzeichens (`DLH8NA` → `DLH`). Unbekannter Betreiber: neutrale graue Kachel mit dem ICAO-Kürzel; Privat- und Sportflug (Rufzeichen wie ein Kennzeichen): Kachel mit dem Flugzeugtyp. Zu sehen sind die Abzeichen links vom Rufzeichen auf der Tafel, im Datenblock der Karte (nur bekannte Betreiber) und in der Spalte AIRLINE der Überflugliste. Mit `logos=0` (oder in der Einrichtung unter Elemente) verschwinden sie.
+Echte Airline-Logos sind absichtlich **nicht** enthalten: Sie sind Marken mit eigenen Nutzungsbedingungen, und die App lädt auch keine Bilder von Dritten nach. Stattdessen gibt es selbst gebaute Abzeichen (`js/airlines.js`): eine flache Kachel in einer an die Lackierung angelehnten Farbe mit dem IATA-Code (`LH`, `EK`, `FR`), wo kein IATA-Code bekannt ist mit dem ICAO-Kürzel (`CHX`, `AIB`). Die Schriftfarbe (schwarz oder weiß) wird automatisch so gewählt, dass mindestens 4,5 : 1 Kontrast erreicht wird. Die Ecken folgen dem Stil (eckig bei Terminal/Airbus/Karte/Militär, leicht gerundet bei ATC/Nacht, rund bei Boeing); der Stil `night` zeigt nur eine Umrisskachel ohne Farbe (blendfrei). Der Betreiber ergibt sich aus den ersten drei Buchstaben des Rufzeichens (`DLH8NA` → `DLH`). Unbekannter Betreiber: neutrale graue Kachel mit dem ICAO-Kürzel; Privat- und Sportflug (Rufzeichen wie ein Kennzeichen): Kachel mit dem Flugzeugtyp. Zu sehen sind die Abzeichen links vom Rufzeichen auf der Tafel, auf dem Radar und in der Flughafen-Ansicht direkt neben dem Flugzeugsymbol (nur bekannte Betreiber; auf der Seite gegenüber dem Datenblock, Höhe skaliert mit dem Bildschirm, bei `logos=0` aus) und in der Spalte AIRLINE der Überflugliste. Mit `logos=0` (oder in der Einrichtung unter Elemente) verschwinden sie.
 
 **Neue Airline ergänzen:** in `js/airlines.js` in der Tabelle `T` eine Zeile hinzufügen, Schlüssel ist der ICAO-Code des Betreibers:
 
@@ -213,6 +220,7 @@ css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheits
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
 tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), proxy-test.mjs, motion-sim.js
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
+data/airport-detail.js Vorfeld, Rollwege, Terminals, Gates der fünf Flughäfen (erzeugt von tools/build-airport-detail.py, OpenStreetMap)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)
 js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen; DEFAULT_PROXY
@@ -226,6 +234,7 @@ js/airlines.js         Tabelle MA.airlines und Abzeichen (Kacheln) für Tafel un
 js/glyphs.js           Flugzeug-Silhouetten nach ICAO-Typ (Canvas-Pfade)
 js/pick.js             Auswahl des Flugzeugs auf der Tafel (reine Logik, getestet)
 js/radar.js            Canvas-Karte: Kompassrose, Pisten, Flugzeuge, Flugspuren, Datenblöcke
+js/airport.js          Flughafen-Ansicht (view=airport): Anpassung der Box, statische Vorfeldschicht, Korridore, Flugzeuge am Boden und in der Luft
 js/board.js            Tafel mit Split-Flap-Effekt
 js/main.js             Abfrage-Schleife, Glättung, Rotation, Dimmen, Wake Lock
 ```

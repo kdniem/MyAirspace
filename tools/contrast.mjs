@@ -86,7 +86,12 @@ const ROWS = [
   ['Active runway (accent)', 'c.accent', 'c.bg', 4.5],
   ['Badge neutral tile text', 'c.badgeFg', 'c.badgeBg', 4.5],
   ['Badge outline vs board', 'c.badgeEdge', '--panel', 3],
-  ['Badge outline vs map', 'c.badgeEdge', 'c.bg', 3]
+  ['Badge outline vs map', 'c.badgeEdge', 'c.bg', 3],
+  ['Focus view taxiway line', 'c.taxi', 'c.bg', 3],
+  ['Focus view apron edge', 'c.apronEdge', 'c.bg', 3],
+  ['Focus view stand dot', 'c.stand', 'c.bg', 3],
+  ['Focus view gate label', 'c.gateLabel', 'c.bg', 4.5],
+  ['Focus view terminal label', 'c.placeMajor', 'c.bg', 4.5]
 ];
 
 function table(style, theme, opts) {

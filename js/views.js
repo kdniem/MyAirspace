@@ -143,7 +143,7 @@
   function tick(now) {
     if (!state.since) state.since = now;
     var mode = cfg.view;
-    if (mode === 'radar') return;
+    if (mode === 'radar' || mode === 'airport') return;   // the focus view has no overlay
     if (mode === 'board') {
       if (!state.shown) show(now);
     } else if (state.shown) {

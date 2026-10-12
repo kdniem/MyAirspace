@@ -50,6 +50,11 @@ ok(cfg('?datablock=callsign,type,reg').config.fields.join() === 'callsign,type,r
 ok(cfg('?datablock=reg,reg,foo,speed').config.fields.join() === 'reg,gs', 'datablock validation and aliases');
 ok(cfg('?datablock=foo').config.fields.join() === 'callsign,fl,gs,type', 'datablock all invalid');
 ok(cfg('?title=Zuhause').config.title === 'Zuhause', 'title');
+// focus view: view=airport and airport= (checked, silent fallback to HAM; no demo traffic unless asked)
+ok(cfg('?view=airport').config.view === 'airport' && cfg('?view=nonsense').config.view === 'auto', 'view=airport and invalid view');
+ok(cfg('').config.airport === 'HAM' && cfg('?airport=fra').config.airport === 'FRA', 'airport default and case');
+ok(cfg('?airport=XYZW').config.airport === 'HAM' && cfg('?airport=__proto__').config.airport === 'HAM', 'airport invalid falls back to HAM');
+ok(cfg('?view=airport').config.demo === false && cfg('?view=airport&demo=1').config.demo === true, 'focus view has no demo traffic by default');
 ok(cfg('?orient=track').config.orient === 'north', 'track-up is not built: north');
 
 // style table: every style resolves for both themes with all tokens, and unknown names fall back
@@ -62,7 +67,7 @@ MA.style.names().forEach((n) => ['dark', 'light'].forEach((t) => {
 ok(MA.style.resolve('zzz', 'dark').style === 'atc', 'resolve fallback');
 
 // ES2017 only on the TV page: no optional chaining, nullish coalescing, class fields, modules
-const TV = ['pwa', 'styles', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'radar', 'board', 'log', 'views', 'main', 'fullscreen', 'qr'];
+const TV = ['pwa', 'styles', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'radar', 'airport', 'board', 'log', 'views', 'main', 'fullscreen', 'qr'];
 TV.forEach((n) => {
   const src = fs.readFileSync(ROOT + '/js/' + n + '.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''").replace(/\/\/.*$/gm, '');

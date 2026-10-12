@@ -186,6 +186,11 @@ window.MA = MA;
       ringLabel: txt(0.62), tickLabel: txt(0.7),
       place: txt(0.6, [P.bg, P.water]), placeMajor: txt(0.86, [P.bg, P.water]), placeDot: a(P.ink, 0.5),
       runway: a(P.ink, 0.92), centerline: a(P.ink, light ? 0.3 : 0.26),
+      // focus view (js/airport.js): apron and taxiways muted; lines 3:1, labels 4.5:1 against the background
+      apron: a(P.ink, light ? 0.075 : 0.06), apronEdge: ensure(mix(P.bg, P.ink, 0.45), [P.bg], 3),
+      taxi: ensure(mix(P.bg, P.ink, 0.5), [P.bg], 3), terminal: a(P.ink, light ? 0.13 : 0.1),
+      terminalEdge: ensure(mix(P.bg, P.ink, 0.55), [P.bg], 3), stand: ensure(mix(P.bg, P.ink, 0.6), [P.bg], 3),
+      gateLabel: txt(0.74),
       airport: st.airportSpecial ? P.special : txt(0.86),
       home: P.ink, ink: rgb(P.ink), accent: rgb(acc), active: [0.8, 0.45],
       level: rgb(P.ink), target: rgb(P.target), special: rgb(P.special), alert: rgb(P.warning), caution: rgb(P.caution),
