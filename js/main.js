@@ -14,6 +14,9 @@
 
   var aircraft = {};             // hex -> state
   var visible = [];              // aircraft in view, nearest first
+  var ground = {};               // hex -> aircraft on the ground at a mapped airport (static, not extrapolated)
+  var GROUND_KM = 4;             // within this distance of an airport reference point counts as "at the airport"
+  var GROUND_STALE_MS = 90 * 1000;
   var featured = { hex: null, idx: 0, since: 0, jumpAt: -1 };
   var jumped = {}, announced = {}; // special aircraft: hex -> time of board jump / toast
   var status = { ok: false, lastOk: 0, failures: 0 };
@@ -26,7 +29,8 @@
   function ingest(list) {
     var now = Date.now();
     list.forEach(function (n) {
-      if (n.onGround) return;
+      if (n.onGround) { noteGround(n, now); return; }
+      delete ground[n.hex];
       var ac = aircraft[n.hex];
       if (!ac) {
         ac = aircraft[n.hex] = { hex: n.hex, trail: [], dlat: n.lat, dlon: n.lon,
@@ -44,12 +48,32 @@
       ac.seen = now;
     });
     MA.weather.observe(list, now); // runway-in-use votes from low traffic
+    for (var gh in ground) if (now - ground[gh].seen > GROUND_STALE_MS) delete ground[gh];
     for (var hex in aircraft) {
       if (now - aircraft[hex].seen > STALE_MS) delete aircraft[hex];
     }
     forget(jumped, now);
     forget(announced, now);
     MA.data.lookupRoutes(nearest(), cfg.demo);
+  }
+
+  // Aircraft on the ground are kept only at mapped airports; they are shown dimmed, never featured.
+  function noteGround(n, now) {
+    var aps = MA.features.airports;
+    for (var i = 0; i < aps.length; i++) {
+      if (MA.geo.distKm(aps[i].lat, aps[i].lon, n.lat, n.lon) <= GROUND_KM) {
+        ground[n.hex] = { hex: n.hex, callsign: n.callsign, type: n.type, lat: n.lat, lon: n.lon,
+          track: n.track, gs: n.gs, ap: aps[i].code, seen: now };
+        return;
+      }
+    }
+    delete ground[n.hex];
+  }
+
+  function groundList() {
+    var out = [];
+    for (var h in ground) out.push(ground[h]);
+    return out;
   }
 
   function poll() {
@@ -184,7 +208,7 @@
     advance(now, now - lastFrame);
     lastFrame = now;
     var feat = pickFeatured(now);
-    radar.render(visible, feat && feat.hex, now, MA.weather.active());
+    radar.render(visible, feat && feat.hex, now, MA.weather.active(), groundList());
 
     if (now - lastBoard > 1000) {
       lastBoard = now;
@@ -217,7 +241,11 @@
     }
     var age = (now - status.lastOk) / 1000;
     dot.className = 'dot ' + (age < 30 ? 'ok' : (age < 120 ? 'warn' : 'err'));
-    txt.textContent = (n === 1 ? '1 Flugzeug' : n + ' Flugzeuge') + ' · ' + cfg.radiusKm + ' km';
+    var g = groundList().filter(function (a) {
+      return MA.geo.distKm(cfg.lat, cfg.lon, a.lat, a.lon) <= cfg.radiusKm * 1.15;
+    }).length;
+    txt.textContent = (n === 1 ? '1 Flugzeug' : n + ' Flugzeuge') + ' · ' + cfg.radiusKm + ' km' +
+      (g ? ' · ' + g + ' am Boden' : '');
   }
 
   // OLED burn-in protection: drift the whole stage a few pixels; dim at night.
