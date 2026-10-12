@@ -105,7 +105,7 @@ Flugzeuge am Boden werden an den Flughäfen der Karte (bis 4 km um den Flughafen
 
 ## Vollbild am Computer
 
-Wenn du das Dashboard am Computer im Browser offen hast: Maus bewegen, dann erscheint links der Knopf „Vollbild“. Alternativ schaltet die Taste **F** oder ein Doppelklick um, **Esc** beendet das Vollbild. Auf dem Fernseher und in installierten Apps gibt es den Knopf nicht.
+Wenn du das Dashboard am Computer im Browser offen hast, sitzt der Knopf „Vollbild“ unten rechts. Beim Laden ist er zwölf Sekunden deutlich zu sehen, danach bleibt er dezent sichtbar und wird beim Überfahren hell. Alternativ schaltet die Taste **F** oder ein Doppelklick um, **Esc** beendet das Vollbild. Den Knopf gibt es nur, wo der Browser Vollbild unterstützt, und nicht in installierten Apps.
 
 ## Daten
 

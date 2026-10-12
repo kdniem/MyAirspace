@@ -12,16 +12,17 @@
   if (window.matchMedia && window.matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches) return;
 
   var HIDE_MS = 3000;
+  var SHOW_FIRST_MS = 12000; // on load the button is shown for longer, so it is easy to find
   var ICON_ENTER = '<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   var ICON_EXIT = '<svg viewBox="0 0 24 24" width="100%" height="100%" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
   var style = document.createElement('style');
   style.textContent =
-    '#fs-btn{position:fixed;left:2vw;top:50%;transform:translateY(-50%);z-index:60;display:flex;align-items:center;' +
+    '#fs-btn{position:fixed;right:2vw;bottom:6.5vh;z-index:60;display:flex;align-items:center;' +
     'padding:1.1vh 1.4vw 1.1vh 1.1vw;border:1px solid var(--faint,#2a2e33);border-radius:5vh;' +
     'background:var(--panel,#0a0b0d);color:var(--ink,#e9e4d8);font:500 1.7vh var(--mono,"IBM Plex Mono",monospace);' +
-    'letter-spacing:.14em;text-transform:uppercase;cursor:pointer;opacity:0;pointer-events:none;transition:opacity .3s ease}' +
-    '#fs-btn.on{opacity:.95;pointer-events:auto}' +
+    'letter-spacing:.14em;text-transform:uppercase;cursor:pointer;opacity:.4;transition:opacity .3s ease}' +
+    '#fs-btn.on,#fs-btn:focus-visible{opacity:.95}' +
     '#fs-btn:hover,#fs-btn:focus{border-color:var(--amber,#ffb547);outline:none}' +
     '#fs-btn i{display:block;width:2.6vh;height:2.6vh;margin-right:.9vw}' +
     'body.fs-ui,body.fs-ui *{cursor:default !important}';
@@ -74,5 +75,8 @@
   document.addEventListener('fullscreenchange', function () { paint(); show(); });
   document.addEventListener('webkitfullscreenchange', function () { paint(); show(); });
 
+  // visible on load for a while, then a faint permanent corner button (hover/focus brings it up)
   paint();
+  setTimeout(function () { show(); }, 500);
+  timer = setTimeout(hide, SHOW_FIRST_MS);
 })();
