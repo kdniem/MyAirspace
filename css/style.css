@@ -201,7 +201,7 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 0 1.4vw;
+  padding: 0 1.1vw;
   border-left: 1px solid var(--line);
   min-width: 0;
 }
@@ -209,9 +209,9 @@ html, body {
 
 .cell-flight { flex: 1.8 1 0; }
 .cell-route  { flex: 1.9 1 0; }
-.cell-type   { flex: 1.1 1 0; }
+.cell-type   { flex: 1.45 1 0; }
 .cell-alt    { flex: 1.25 1 0; }
-.cell-spd    { flex: 0.9 1 0; }
+.cell-spd    { flex: 1.05 1 0; }
 .cell-dist   { flex: 1.0 1 0; }
 
 .lbl {
@@ -237,8 +237,8 @@ html, body {
 
 .sub {
   margin-top: 1vh;
-  font-size: 1.8vh;
-  letter-spacing: 0.05em;
+  font-size: 1.7vh;
+  letter-spacing: 0.02em;
   color: var(--sub);
   white-space: nowrap;
   overflow: hidden;
@@ -432,14 +432,14 @@ html, body {
   color: var(--ink);
 }
 /* column widths follow the character counts of their content */
-.c-time    { flex: 5 1 0; }
+.c-time    { flex: 4.6 1 0; }
 .c-flight  { flex: 8 1 0; text-overflow: ellipsis; }
-.c-airline { flex: 12 1 0; text-overflow: ellipsis; }
+.c-airline { flex: 15 1 0; text-overflow: ellipsis; }
 .c-type    { flex: 4.4 1 0; }
 .c-route   { flex: 9 1 0; }
 .c-alt     { flex: 5.4 1 0; text-align: right; }
 .c-dist    { flex: 4.6 1 0; text-align: right; }
-.c-status  { flex: 8 1 0; padding-left: 1.8vw; padding-right: 0; }
+.c-status  { flex: 7 1 0; padding-left: 1.8vw; padding-right: 0; }
 
 /* white rows; the flight is the key column, the status carries the phase */
 .lv-rows .c-flight { color: var(--val-color); }

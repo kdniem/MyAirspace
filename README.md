@@ -161,6 +161,15 @@ python3 -m http.server 8000
 # http://localhost:8000/?demo=1
 ```
 
+## Tests
+
+```
+node tools/tests/run-all.mjs        # alles (oder: npm test), ca. 2 Minuten
+node tools/tests/run-all.mjs --quick --no-browser   # nur schnelle Prüfungen
+```
+
+Die Tests brauchen keine Abhängigkeiten, nur die Browser-Suite braucht Playwright mit Chromium (`PLAYWRIGHT_PATH` zeigt auf das Paket, falls es nicht normal auffindbar ist). Reihenfolge: Syntax (`node --check`), URL-Optionen und ES2017-Prüfung (`options.cjs`), Alt-Browser-Wächter (`compat.mjs`: keine neuere Syntax, keine neueren APIs und kein neueres CSS auf der TV-Seite), Kontrast, Proxy, Browser-Suite. Die Browser-Suite (`browser.mjs`) lädt jeden Stil, jedes Theme, drei Auflösungen und beide Ansichten im Demo-Modus, blockiert alle Fremdzugriffe und prüft Konsolenfehler, Überlappungen in der Kopfzeile, abgeschnittenen Text, leere Karte, Kontrast, die Einrichtungsseite samt Vorschau sowie feindliche URL-Parameter. Bilder fehlgeschlagener Prüfungen und der Bericht liegen in `tools/tests/out/`. Bekannte, noch nicht behobene Befunde stehen in `tools/tests/known-issues.json` (werden gemeldet, brechen den Lauf aber nicht ab). Auf GitHub läuft alles bei jedem Pull Request und jedem Push außerhalb von `main` (`.github/workflows/ci.yml`).
+
 ## Aufbau
 
 ```
@@ -170,7 +179,7 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           options.cjs (URL-Optionen, ES2017-Prüfung), poll-test.cjs (Abfragetakt), proxy-test.mjs, motion-sim.js
+tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), proxy-test.mjs, motion-sim.js
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)
