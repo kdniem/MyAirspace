@@ -36,6 +36,10 @@
   var step = 0;
 
   document.addEventListener('ma:update', function (e) { hasLoc = !!(e.detail && e.detail.loc); refresh(); });
+  // setup.js may have announced its first state before this listener existed (lat/lon in the URL)
+  var latIn = document.getElementById('lat'), lonIn = document.getElementById('lon');
+  if (latIn && lonIn && latIn.value && lonIn.value) hasLoc = true;
+  refresh();
 
   function refresh() {
     var s = STEPS[step];

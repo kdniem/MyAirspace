@@ -80,7 +80,7 @@
       return { kind: 'unknown', icao: m[1], code: m[1], name: '', bg: null, fg: null };
     }
     var t = String((ac && ac.type) || '').toUpperCase();
-    return { kind: 'type', icao: '', code: t || 'GA', name: '', bg: null, fg: null };
+    return { kind: 'type', icao: '', code: t.slice(0, 4) || 'GA', name: '', bg: null, fg: null };
   }
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
