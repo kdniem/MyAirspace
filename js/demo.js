@@ -78,7 +78,15 @@
   MA.demo = {
     snapshot: function () {
       var now = Date.now();
-      return { ac: FLIGHTS.map(function (f) { return state(f, now); }), now: now };
+      var list = FLIGHTS.map(function (f) { return state(f, now); });
+      // parked / taxiing aircraft at HAM and XFW
+      [['3C6444', 'DLH7K', 'A320', 53.6340, 9.9960, 40], ['3C65A1', 'EWG2B', 'A319', 53.6330, 9.9915, 0],
+       ['4B1814', 'SWR93', 'A321', 53.6285, 9.9840, 0], ['3C4DD2', 'CFG5T', 'B738', 53.6262, 9.9795, 220],
+       ['3C66B7', 'AIB02', 'A320', 53.5357, 9.8408, 0]].forEach(function (g) {
+        list.push({ hex: g[0], flight: g[1] + '  ', t: g[2], category: 'A3', lat: g[3], lon: g[4], alt_baro: 'ground',
+          gs: g[5] ? 8 : 0, track: g[5] || 0, squawk: '', seen_pos: 0.4 });
+      });
+      return { ac: list, now: now };
     },
     route: function (callsign) {
       for (var i = 0; i < FLIGHTS.length; i++) if (FLIGHTS[i].cs === callsign) return FLIGHTS[i].route;

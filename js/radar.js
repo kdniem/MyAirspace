@@ -340,7 +340,30 @@
 
   /* list: aircraft with display position (dlat/dlon), trail, dist; featured: hex;
      active: runways in use from MA.weather.active() (optional) */
-  Radar.prototype.render = function (list, featuredHex, now, active) {
+  // Aircraft on the ground at airports: small dim squares with a heading tick and, if room, a callsign.
+  Radar.prototype.drawGround = function (list) {
+    var ctx = this.ctx, u = this.unit;
+    ctx.save();
+    for (var i = 0; i < list.length; i++) {
+      var g = list[i], p = this.project(g.lat, g.lon);
+      if (p[0] < 0 || p[1] < 0 || p[0] > this.w || p[1] > this.h) continue;
+      var s = 4.5 * u;
+      ctx.fillStyle = rgba(C.ink, 0.7);
+      ctx.fillRect(p[0] - s, p[1] - s, s * 2, s * 2);
+      if (typeof g.track === 'number' && g.gs > 3) {
+        var r = g.track * Math.PI / 180;
+        ctx.strokeStyle = rgba(C.ink, 0.7);
+        ctx.lineWidth = 1.5 * u;
+        ctx.beginPath();
+        ctx.moveTo(p[0], p[1]);
+        ctx.lineTo(p[0] + Math.sin(r) * s * 3, p[1] - Math.cos(r) * s * 3);
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  };
+
+  Radar.prototype.render = function (list, featuredHex, now, active, ground) {
     var ctx = this.ctx, u = this.unit, self = this;
     ctx.drawImage(this.base(), 0, 0, this.w, this.h);
     if (this._prev) {
@@ -353,6 +376,7 @@
       } else this._prev = null;
     }
     if (active && active.length) this.drawActive(active);
+    if (ground && ground.length) this.drawGround(ground);
 
     // home marker with slow pulse
     var pulse = (now % 4000) / 4000;
