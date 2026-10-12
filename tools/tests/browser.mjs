@@ -67,8 +67,8 @@ const ALLOW = {
   setup: [/^https:\/\/nominatim\.openstreetmap\.org\//, /^https:\/\/myairspace-nu\.vercel\.app\/api\/proxy\?/],   // the preview runs live (mocked)
   live: [/^https:\/\/myairspace-nu\.vercel\.app\/api\/proxy\?/, /^https:\/\/api\.adsb\.lol\/api\/0\/route\//]
 };
-async function newPage(browser, vp, mode, geo) {
-  const ctx = await browser.newContext(Object.assign({ viewport: vp, serviceWorkers: 'block', deviceScaleFactor: 1 }, geo ? { permissions: ['geolocation'], geolocation: { latitude: 53.5511, longitude: 9.9937 } } : {}));
+async function newPage(browser, vp, mode, geo, extra) {
+  const ctx = await browser.newContext(Object.assign({ viewport: vp, serviceWorkers: 'block', deviceScaleFactor: 1 }, extra || {}, geo ? { permissions: ['geolocation'], geolocation: { latitude: 53.5511, longitude: 9.9937 } } : {}));
   const page = await ctx.newPage();
   const st = { errors: [], blocked: [], dialogs: 0, local404: [], reqs: [], nom: '[]' };
   page.on('pageerror', (e) => st.errors.push('pageerror: ' + e.message));
@@ -595,6 +595,119 @@ async function diagSetupCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- settings overlay (js/settings.js): gear, keyboard, focus, persistence, reload note ----------
+const SETTINGS_RECT = () => {
+  const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+  return { gear: r('#set-btn'), board: r('#board'), fs: r('#fs-btn'), attrib: r('#attrib'), top: r('#top'), panel: r('#set-layer .set-panel') };
+};
+const overlaps = (a, b) => !!a && !!b && a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1;
+
+async function settingsCase(browser) {
+  const id = 'settings_1280';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(1200);
+    const geo = await page.evaluate(SETTINGS_RECT);
+    ['gear', 'board', 'fs', 'attrib', 'top'].forEach((k) => { if (!geo[k]) problems.push('missing element for overlap check: ' + k); });
+    if (overlaps(geo.gear, geo.board)) problems.push('gear overlaps the flight board');
+    if (overlaps(geo.gear, geo.fs)) problems.push('gear overlaps the fullscreen button');
+    if (overlaps(geo.gear, geo.attrib)) problems.push('gear overlaps the attribution footer');
+    if (overlaps(geo.gear, geo.top)) problems.push('gear overlaps the header');
+    // mouse: click opens, focus moves into the dialog, Tab stays inside
+    await page.click('#set-btn');
+    await page.waitForTimeout(400);
+    if (!(await page.evaluate(() => document.getElementById('set-layer').classList.contains('open')))) problems.push('click on the gear did not open the overlay');
+    for (let i = 0; i < 12; i++) await page.keyboard.press('Tab');
+    const inside = await page.evaluate(() => document.getElementById('set-layer').contains(document.activeElement));
+    if (!inside) problems.push('focus left the overlay while it was open (Tab)');
+    // change Stil: applies live and is saved
+    await page.selectOption('#set-style', 'boeing');
+    await page.waitForTimeout(300);
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'boeing') problems.push('Stil did not apply live');
+    const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('ma.settings')); } catch (e) { return null; } });
+    if (!saved || saved.style !== 'boeing') problems.push('Stil was not saved in localStorage ma.settings');
+    if (saved && ('lat' in saved || 'lon' in saved)) problems.push('localStorage ma.settings holds a location');
+    // Ansicht = Flughafen waits for a reload and says so
+    await page.selectOption('#set-view', 'airport');
+    await page.waitForTimeout(150);
+    const reloadShown = await page.evaluate(() => !document.getElementById('set-reload').hidden && /Neuladen/.test(document.getElementById('note-view').textContent));
+    if (!reloadShown) problems.push('Ansicht Flughafen did not show "wirkt nach Neuladen" and the Neu laden button');
+    await page.selectOption('#set-view', 'auto');
+    await page.waitForTimeout(150);
+    if (await page.evaluate(() => !document.getElementById('set-reload').hidden)) problems.push('Neu laden stayed visible after the view was set back');
+    // Escape closes and returns focus to the gear
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    if (await page.evaluate(() => document.getElementById('set-layer').classList.contains('open'))) problems.push('Escape did not close the overlay');
+    if (!(await page.evaluate(() => document.activeElement && document.activeElement.id === 'set-btn'))) problems.push('focus did not return to the gear after closing');
+    // keyboard: S opens and closes
+    await page.evaluate(() => document.body.focus());
+    await page.keyboard.press('s');
+    await page.waitForTimeout(300);
+    if (!(await page.evaluate(() => document.getElementById('set-layer').classList.contains('open')))) problems.push('key S did not open the overlay');
+    await page.keyboard.press('S');
+    await page.waitForTimeout(300);
+    if (await page.evaluate(() => document.getElementById('set-layer').classList.contains('open'))) problems.push('key S did not close the overlay');
+    // persistence: after reload the saved Stil applies, and an address parameter still wins
+    await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'boeing') problems.push('saved Stil did not survive a reload');
+    await page.goto(BASE + '/index.html?demo=1&style=atc', { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'atc') problems.push('address parameter style=atc did not win over the saved style');
+    // show= hides the board: no gear
+    await page.goto(BASE + '/index.html?demo=1&hide=board', { waitUntil: 'load' });
+    await page.waitForTimeout(600);
+    if (await page.evaluate(() => !!document.getElementById('set-btn'))) problems.push('gear shown although hide=board removes the board');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
+async function settingsTouchCase(browser) {
+  const id = 'settings_touch_390';
+  const { ctx, page, st } = await newPage(browser, { width: 390, height: 844 }, 'demo', false, { hasTouch: true, isMobile: true });
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(1000);
+    await page.tap('#set-btn');
+    await page.waitForTimeout(400);
+    const panel = await page.evaluate(() => {
+      const e = document.querySelector('#set-layer .set-panel');
+      const open = document.getElementById('set-layer').classList.contains('open');
+      if (!e) return { open, none: true };
+      const b = e.getBoundingClientRect();
+      return { open, left: b.left, right: b.right, innerWidth, overflowX: document.documentElement.scrollWidth - innerWidth };
+    });
+    if (!panel.open) problems.push('tap on the gear did not open the overlay');
+    if (panel.none) problems.push('overlay panel missing');
+    if (!panel.none && (panel.left < 15 || panel.right > panel.innerWidth - 15)) problems.push('overlay panel does not keep the 16px gutter at 390 px (' + Math.round(panel.left) + '..' + Math.round(panel.right) + ')');
+    await page.tap('#set-chartbg');
+    await page.waitForTimeout(200);
+    await page.tap('#set-close');
+    await page.waitForTimeout(400);
+    if (await page.evaluate(() => document.getElementById('set-layer').classList.contains('open'))) problems.push('tap on the close button did not close the overlay');
+    const geo = await page.evaluate(SETTINGS_RECT);
+    if (overlaps(geo.gear, geo.board)) problems.push('gear overlaps the flight board at 390 px');
+    if (overlaps(geo.gear, geo.fs)) problems.push('gear overlaps the fullscreen button at 390 px');
+    // the tapped Karte switch is kept and applies after a reload
+    await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    if ((await page.evaluate(() => MA.config.chartbg)) !== true) problems.push('tapped Karte switch did not persist');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -608,6 +721,7 @@ jobs.push({ n: 'rotation_airport_1280', run: () => rotationCase(browser) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });
+jobs.push({ n: 'settings_1280', run: () => settingsCase(browser) }, { n: 'settings_touch_390', run: () => settingsTouchCase(browser) });
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;
 await Promise.all(Array.from({ length: CONC }, async () => { while (next < filtered.length) await filtered[next++].run(); }));

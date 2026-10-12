@@ -39,6 +39,7 @@ cmd('URL options + ES2017 scan (options.cjs)', ['tools/tests/options.cjs', '.'])
 cmd('board selection (pick-test.cjs)', ['tools/tests/pick-test.cjs', '.']);
 cmd('view rotation (rotation-test.cjs)', ['tools/tests/rotation-test.cjs', '.']);
 cmd('diagnostics log (diag-test.cjs)', ['tools/tests/diag-test.cjs', '.']);
+cmd('saved settings (prefs-test.cjs)', ['tools/tests/prefs-test.cjs', '.']);
 cmd('old-browser guard (compat.mjs)', ['tools/tests/compat.mjs']);
 cmd('contrast', ['tools/contrast.mjs']);
 cmd('chart background (chart-test.cjs)', ['tools/tests/chart-test.cjs', '.']);

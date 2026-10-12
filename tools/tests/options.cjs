@@ -92,7 +92,7 @@ MA.style.names().forEach((n) => ['dark', 'light'].forEach((t) => {
 ok(MA.style.resolve('zzz', 'dark').style === 'atc', 'resolve fallback');
 
 // ES2017 only on the TV page: no optional chaining, nullish coalescing, class fields, modules
-const TV = ['pwa', 'styles', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'chart', 'radar', 'airport', 'board', 'log', 'rotation', 'views', 'main', 'fullscreen', 'qr'];
+const TV = ['pwa', 'styles', 'prefs', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'chart', 'radar', 'airport', 'board', 'log', 'rotation', 'views', 'settings', 'main', 'fullscreen', 'qr'];
 TV.forEach((n) => {
   const src = fs.readFileSync(ROOT + '/js/' + n + '.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''").replace(/\/\/.*$/gm, '');
