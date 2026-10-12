@@ -119,9 +119,13 @@
 
   // a new trail draws on: its points slide from the aircraft back to where they are, over trailGrowMs.
   // pp (the projected points, the last one is the aircraft) is changed in place
+  // share of the grown trail at `now` (1 when done, off, or no start time)
+  function trailGrowth(now, t0) {
+    if (!P || t0 === undefined) return 1;
+    return trailGrow(now - t0, P.trailGrowMs);
+  }
   function growTrail(pp, cur, now, t0) {
-    if (!P || t0 === undefined) return;
-    var g = trailGrow(now - t0, P.trailGrowMs), i;
+    var g = trailGrowth(now, t0), i;
     if (g >= 1) return;
     for (i = 0; i < pp.length - 1; i++) {
       pp[i][0] = cur[0] + (pp[i][0] - cur[0]) * g;
@@ -170,6 +174,7 @@
     sweep: sweep,
     drawArrival: drawArrival,
     arrivalFade: arrivalFade,
+    trailGrowth: trailGrowth,
     growTrail: growTrail,
     runwayAlpha: runwayAlpha,
     alertAlpha: alertAlpha,

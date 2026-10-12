@@ -78,7 +78,7 @@ function runBase(qs) {
   const DP = 'https://myairspace-nu.vercel.app/api/proxy';
   ctx.MA.DEFAULT_PROXY = DP; ctx.MA.proxyOk = (v) => v === DP || v === 'off';
   vm.createContext(ctx);
-  ['js/styles.js', 'js/config.js', 'js/geo.js', 'data/geo-features.js', 'data/chart-features.js', 'js/chart.js', 'js/radar.js'].forEach((f) => {
+  ['js/styles.js', 'js/config.js', 'js/geo.js', 'data/geo-features.js', 'data/chart-features.js', 'js/chart.js', 'js/render-scale.js', 'js/radar.js'].forEach((f) => {
     vm.runInContext(fs.readFileSync(ROOT + '/' + f, 'utf8'), ctx, { filename: f });
   });
   const calls = { under: 0, over: 0 };

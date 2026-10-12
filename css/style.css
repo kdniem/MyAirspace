@@ -56,10 +56,12 @@ html, body {
   user-select: none;
 }
 
+/* the burn-in shift (js/main.js ambient) moves in whole CSS px and jumps: an animated transform would
+   resample the text and the canvas at fractional offsets for several seconds (blur) */
 #stage {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  transition: transform 6s ease-in-out, opacity 4s ease;
+  transition: opacity 4s ease;
 }
 
 #radar {
@@ -374,6 +376,7 @@ html, body {
   transition: opacity 1.2s ease, transform 1.2s ease;
 }
 .toast.on { opacity: 1; transform: translateY(0); }
+@media (max-width: 700px) { .toast { white-space: normal; } }   /* phones: the banner wraps instead of cutting its text */
 .toast-mark { display: none; }
 .toast-label {
   font-weight: 600;
@@ -521,6 +524,7 @@ html, body {
   align-items: stretch;
   margin-top: 2.2vh;
   min-height: 8.6vh;
+  padding-right: 17vw;   /* the fullscreen button sits in this corner (js/fullscreen.js), also with its longer label */
 }
 .st {
   flex: 1 1 auto;
@@ -876,7 +880,8 @@ body.view-airport #set-btn { bottom: calc(var(--safe-y) + 5.5vh); }   /* focus v
 .set-primary { border-color: var(--accent); }
 
 @media (max-width: 520px) {
-  #set-btn { left: 16px; }
+  /* phones: 6 px above the default, so the gear keeps clear of the board at the largest burn-in drift (js/main.js ambient) */
+  #set-btn { left: 16px; bottom: calc(var(--safe-y) + 21vh + 6px); }
   .set-lbl { flex: 0 0 100%; margin: 0 0 4px; }
   .set-ctl { flex: 1 1 100%; }
   .set-panel { padding: 16px; }
