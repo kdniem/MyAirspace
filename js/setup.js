@@ -19,6 +19,7 @@
     ['compass', 'Kompassrose', 'Gradskala und Nordpfeil am Außenring'],
     ['places', 'Ortsnamen', 'Städte und Orte auf der Karte'],
     ['ground', 'Flugzeuge am Boden', 'Kleine Quadrate an den Flughäfen'],
+    ['logos', 'Airline-Abzeichen', 'Kleine Kennzeichen-Kacheln an Flug und Überflügen'],
     ['board', 'Tafel unten', 'Das nächste Flugzeug als Anzeigetafel'],
     ['clock', 'Uhr', 'Lokalzeit und UTC']
   ];

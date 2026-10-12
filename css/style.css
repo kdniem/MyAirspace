@@ -207,10 +207,10 @@ html, body {
 }
 .cell:first-child { border-left: 0; padding-left: 0; }
 
-.cell-flight { flex: 1.8 1 0; }
-.cell-route  { flex: 1.9 1 0; }
-.cell-type   { flex: 1.45 1 0; }
-.cell-alt    { flex: 1.25 1 0; }
+.cell-flight { flex: 2.35 1 0; }
+.cell-route  { flex: 2.0 1 0; }
+.cell-type   { flex: 1.35 1 0; }
+.cell-alt    { flex: 1.1 1 0; }
 .cell-spd    { flex: 1.05 1 0; }
 .cell-dist   { flex: 1.0 1 0; }
 
@@ -233,6 +233,35 @@ html, body {
   letter-spacing: 0.02em;
 }
 .cell-flight .led { font-size: 5.2vh; color: var(--call-color); }
+
+/* operator badge: flat tile in the livery colour with the IATA code (js/airlines.js), no artwork.
+   Corner language follows the style (--radius); the thin edge separates it from the panel. */
+.bdg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 1.9em;
+  height: 1.45em;
+  padding: 0 0.35em;
+  font-family: var(--font);
+  font-size: 1em;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 1px var(--badge-edge);
+}
+.bdg-n { background: var(--badge-bg); color: var(--badge-fg); }
+.bdg-mono { background: transparent; color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.no-logos .logo { display: none; }
+.logo:empty { display: none; }
+
+.flightrow { display: flex; align-items: center; min-width: 0; }
+.flightrow .logo { flex: 0 0 auto; margin-right: 0.9vh; font-size: 2.5vh; }
+.flightrow .val { min-width: 0; }
 .led.idle { color: var(--idle); }
 
 .sub {
@@ -434,7 +463,9 @@ html, body {
 /* column widths follow the character counts of their content */
 .c-time    { flex: 4.6 1 0; }
 .c-flight  { flex: 8 1 0; text-overflow: ellipsis; }
-.c-airline { flex: 13.8 1 0; text-overflow: ellipsis; }
+.c-airline { flex: 14.6 1 0; display: flex; align-items: center; }
+.c-airline .logo { flex: 0 0 auto; margin-right: 0.8vw; font-size: 1.9vh; }
+.c-airline .lv-airline { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .c-type    { flex: 4.4 1 0; }
 .c-route   { flex: 9 1 0; }
 .c-alt     { flex: 5.4 1 0; text-align: right; }

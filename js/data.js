@@ -66,7 +66,7 @@
 
   function proxyRoutes(post, directFirst) {
     var own = MA.config.proxy;
-    var direct = function (u) { return u; };    // last unless the endpoint is known to send CORS
+    var direct = function (u) { return u; };    // only for endpoints known to send CORS (route API)
     if (post) return [direct];                  // no proxy relays POST
     var list = MA.config.public ? PUBLIC_PROXIES.slice() : [];
     if (own) {
@@ -74,7 +74,8 @@
       ownRoute.own = true;
       list.unshift(ownRoute);
     }
-    return directFirst ? [direct].concat(list) : list.concat([direct]);
+    // no direct request to flight or weather providers: they would see the visitor's IP and position
+    return directFirst ? [direct].concat(list) : list;
   }
 
   // `valid` rejects error bodies that arrive as HTTP 200 (e.g. a rate-limited
@@ -85,6 +86,7 @@
     // adsb.lol's route API sends CORS headers, its aircraft API does not
     var host = url.split('/').slice(2, 5).join('/') + (post ? ' post' : '');
     var list = proxyRoutes(post, directFirst);
+    if (!list.length) return Promise.reject(new Error('no route without the own proxy'));
     var start = Math.min(preferred[host] || 0, list.length - 1);
     var n = 0, retried = false, retryAfter = 0;
     function attempt() {

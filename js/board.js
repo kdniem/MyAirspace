@@ -59,7 +59,7 @@
     this.cfg = cfg;
     this.el = {
       board: $('board'), pager: $('pager'),
-      flight: $('b-flight'), airline: $('b-airline'),
+      flight: $('b-flight'), logo: $('b-logo'), airline: $('b-airline'),
       route: $('b-route'), badge: $('b-badge'),
       type: $('b-type'), reg: $('b-reg'),
       alt: $('b-alt'), vs: $('b-vs'),
@@ -93,6 +93,8 @@
     this._hex = ac.hex;
 
     flap(e.flight, (ac.callsign || ac.reg || ac.hex).toUpperCase());
+    // operator badge (js/airlines.js): flat tile with the airline code; type tile for private/GA flights
+    setSub(e.logo, MA.badge.html(MA.badge.info(ac), MA.STYLES[cfg.style].badge === 'mono'));
     setSub(e.airline, esc(f.airline(ac.callsign) || ac.reg || ''));
 
     var leg = MA.data.leg(ac);  // current leg only, e.g. NCE → HAM of HAM-NCE-HAM
@@ -136,6 +138,7 @@
     this.setPhase('idle');
     flap(e.flight, title);
     setSub(e.airline, esc(sub || ''));
+    setSub(e.logo, '');
     flap(e.route, '--- → ---');
     setSub(e.badge, '');
     flap(e.type, '----');

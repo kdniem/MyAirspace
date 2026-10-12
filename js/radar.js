@@ -1,7 +1,7 @@
 /* Canvas renderer: radar / navigation display centred on home.
    Colours and symbol shapes come from the style table (js/styles.js) via MA.style.resolve(),
    so this file knows roles (ink, target, special, accent …) and no hard-coded look.
-   Drawing language: ATC position symbols with history dots, a data block on a thin leader line,
+   Drawing language: aircraft silhouettes (js/glyphs.js) with a fading history line, a data block on a thin leader line,
    a compass rose with degree ticks on the outer ring, ICAO-chart style runways and airport symbols. */
 (function (MA) {
   var C = null;                      // resolved canvas palette of the current style and theme
@@ -347,50 +347,12 @@
   }
   function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a.toFixed(3) + ')'; }
 
-  /* Position symbol. shape: chevron | diamond | triangle | arrow | square; `fill` for the selected target. */
-  Radar.prototype.drawSymbol = function (shape, x, y, hdg, s, color, fill, rotor) {
-    var ctx = this.ctx, u = this.unit, lw = C.lw;
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.fillStyle = color;
-    ctx.strokeStyle = color;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    if (rotor) {                                  // helicopters: ring with centre dot
-      ctx.lineWidth = 1.6 * u * lw;
-      ctx.beginPath();
-      ctx.arc(0, 0, s * 0.3, 0, PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(0, 0, s * 0.8, 0, PI * 2);
-      ctx.stroke();
-      ctx.restore();
-      return;
-    }
-    ctx.rotate((hdg || 0) * PI / 180);
-    ctx.lineWidth = 1.7 * u * lw;
-    ctx.beginPath();
-    if (shape === 'diamond') {
-      ctx.moveTo(0, -s); ctx.lineTo(s * 0.75, 0); ctx.lineTo(0, s); ctx.lineTo(-s * 0.75, 0); ctx.closePath();
-      if (fill) ctx.fill(); else ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(0, -s * 2.1); ctx.stroke();      // track vector
-    } else if (shape === 'triangle') {
-      ctx.moveTo(0, -s); ctx.lineTo(s * 0.8, s * 0.8); ctx.lineTo(-s * 0.8, s * 0.8); ctx.closePath();
-      if (fill) ctx.fill(); else ctx.stroke();
-    } else if (shape === 'arrow') {
-      ctx.moveTo(0, -s * 1.1); ctx.lineTo(s * 0.75, s * 0.9); ctx.lineTo(0, s * 0.4); ctx.lineTo(-s * 0.75, s * 0.9); ctx.closePath();
-      ctx.fill();
-    } else if (shape === 'square') {
-      ctx.rect(-s * 0.7, -s * 0.7, s * 1.4, s * 1.4);
-      if (fill) ctx.fill(); else ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, -s * 0.7); ctx.lineTo(0, -s * 1.9); ctx.stroke();
-    } else {                                      // chevron: open V with a centre dot
-      ctx.lineWidth = 2.2 * u * lw;
-      ctx.moveTo(-s * 0.85, s * 0.8); ctx.lineTo(0, -s * 0.85); ctx.lineTo(s * 0.85, s * 0.8);
-      ctx.stroke();
-      ctx.beginPath(); ctx.arc(0, s * 0.1, 1.3 * u, 0, PI * 2); ctx.fill();
-    }
-    ctx.restore();
+  /* Aircraft symbol: top-down silhouette by ICAO type (js/glyphs.js), filled with the role colour and
+     separated from the map by a thin outline in the background colour. `s` is the half length in px. */
+  Radar.prototype.drawPlane = function (kind, x, y, hdg, s, color, alpha) {
+    MA.glyphs.draw(this.ctx, kind, x, y, hdg, s, {
+      fill: color, edge: C.halo, edgeW: 1.1 * this.unit * C.lw, lw: 1.3 * this.unit * C.lw, alpha: alpha
+    });
   };
 
   // Frame (corner brackets) around a special aircraft: discreet, no glow.
@@ -466,11 +428,17 @@
 
   // Lines of segments [[text, role]]: callsign / FL arrow gs / type / route / reg, order from cfg.fields.
   Radar.prototype.blockLines = function (ac, phase) {
-    var f = MA.fmt, cfg = this.cfg, lines = [], last = null;
+    var f = MA.fmt, cfg = this.cfg, lines = [], last = null, self = this;
     var arrow = phase === 'up' ? '↑' : (phase === 'down' ? '↓' : '');
     cfg.fields.forEach(function (k) {
       var seg = null, merge = false;
-      if (k === 'callsign') seg = [[ac.callsign || ac.reg || ac.hex.toUpperCase(), 'main']];
+      if (k === 'callsign') {
+        seg = [[ac.callsign || ac.reg || ac.hex.toUpperCase(), 'main']];
+        if (self.show.logos !== false) {          // operator badge in front of the callsign (known airlines only)
+          var bi = MA.badge.info(ac);
+          if (bi.kind === 'airline') seg.unshift(['', 'badge', bi]);
+        }
+      }
       else if (k === 'fl') {
         var a = f.altShort(ac.alt, cfg.units);
         if (a) { seg = [[a, 'val']]; if (arrow) seg.push([arrow, 'val']); merge = true; }
@@ -495,12 +463,19 @@
     return lines;
   };
 
+  Radar.prototype.badgeOpts = function (dim) {
+    return { font: C.font, weight: 600, radius: C.badgeR * this.unit, edge: C.badgeEdge, mono: C.badgeMono, ink: C.label,
+      neutralBg: C.badgeBg, neutralFg: C.badgeFg, alpha: dim ? 0.7 : undefined };
+  };
+
   Radar.prototype.measureBlock = function (lines, big) {
-    var ctx = this.ctx, u = this.unit, w = 0, wt = String(C.weight);
+    var ctx = this.ctx, u = this.unit, w = 0, wt = String(C.weight), self = this;
+    var bh = (big ? 17 : 15) * u;
     var fm = this.font(big ? 21 : 18, wt), fd = this.font(big ? 17 : 15, '');
     lines.forEach(function (ln, i) {
       var tw = 0;
       ln.segs.forEach(function (sg) {
+        if (sg[1] === 'badge') { sg.w = MA.badge.width(ctx, sg[2], bh, self.badgeOpts()) + 5 * u; sg.h = bh; return tw += sg.w; }
         ctx.font = sg[1] === 'main' || sg[1] === 'special' ? fm : fd;
         sg.w = ctx.measureText(sg[0]).width;
         tw += sg.w;
@@ -523,7 +498,7 @@
   Radar.prototype.placeBlock = function (it, m, placed, pts) {
     var u = this.unit, self = this, best = 0, bestScore = 1e12;
     function rectFor(q) {
-      var sx = QUADS[q][0], sy = QUADS[q][1], ex = it.p[0] + sx * 15 * u, ey = it.p[1] + sy * 15 * u, pd = 4 * u;
+      var sx = QUADS[q][0], sy = QUADS[q][1], off = Math.max(15 * u, it.size * 0.72 + 9 * u), ex = it.p[0] + sx * off, ey = it.p[1] + sy * off, pd = 4 * u;
       var x0 = sx > 0 ? ex + pd : ex - pd - m.w, y0 = sy < 0 ? ey - m.h + 5 * u : ey - 5 * u;
       return { ex: ex, ey: ey, rect: [x0 - 3 * u, y0 - 2 * u, m.w + 6 * u, m.h + 4 * u], x0: x0, y0: y0, sx: sx, sy: sy };
     }
@@ -534,7 +509,7 @@
       for (i = 0; i < av.length; i++) s += overlap(r.rect, av[i]) * 3;
       for (i = 0; i < pts.length; i++) {
         if (pts[i] === it.p) continue;
-        s += overlap(r.rect, [pts[i][0] - 9 * u, pts[i][1] - 9 * u, 18 * u, 18 * u]) * 6;
+        s += overlap(r.rect, [pts[i][0] - 12 * u, pts[i][1] - 12 * u, 24 * u, 24 * u]) * 6;
       }
       if (r.rect[0] < 4 * u || r.rect[0] + r.rect[2] > self.w - 4 * u || r.rect[1] < 4 * u ||
         r.rect[1] + r.rect[3] > self.areaBottom + self.h * 0.02) s += 5000;
@@ -575,7 +550,7 @@
     var ctx = this.ctx, u = this.unit, lw = C.lw, ac = it.ac;
     var col = it.sp ? rgba(it.spCol, 1) : (it.featured ? rgba(C.target, 1) : (it.high ? C.labelDim : C.label));
     // leader line
-    var dx = r.ex - it.p[0], dy = r.ey - it.p[1], l = Math.sqrt(dx * dx + dy * dy), k = (it.size * 1.3) / l;
+    var dx = r.ex - it.p[0], dy = r.ey - it.p[1], l = Math.sqrt(dx * dx + dy * dy), k = Math.min(0.9, (it.size * 0.9) / l);
     ctx.strokeStyle = it.featured ? rgba(C.target, 0.75) : (it.sp ? rgba(it.spCol, 0.8) : rgba(C.level, it.high ? 0.35 : 0.5));
     ctx.lineWidth = 1.1 * u * lw;
     ctx.lineCap = 'butt';
@@ -598,6 +573,11 @@
       if (r.sx < 0) x = r.x0 + (m.w - ln.w);   // right-aligned when the block sits left of the symbol
       for (var j = 0; j < ln.segs.length; j++) {
         var sg = ln.segs[j], main = sg[1] === 'main', spl = sg[1] === 'special';
+        if (sg[1] === 'badge') {
+          MA.badge.draw(ctx, sg[2], x, y - (it.featured ? 21 : 18) * u * 0.36 - sg.h / 2, sg.h, this.badgeOpts(it.high && !it.featured));
+          x += sg.w;
+          continue;
+        }
         ctx.font = main || spl ? m.fm : m.fd;
         ctx.fillStyle = spl ? rgba(it.spCol, 1) : (main ? col : (sg[1] === 'val' ? (it.high && !it.featured ? C.detailDim : C.detail) : C.detailDim));
         ctx.lineWidth = 3.5 * u;
@@ -656,45 +636,35 @@
       var baseA = ((featured || sp) ? 1 : (high ? C.high : 1)) * (typeof ac.fade === 'number' ? ac.fade : 1);   // fade: stale data, see main.js
       var col = featured ? C.target : C.level;
 
-      // history: dots every 15 s (ATC) or a thin fading line, ends at the symbol
+      // history: one smooth line that tapers and fades to nothing at its tail, ends at the symbol
       var tr = ac.trail;
       if (tr.length && show.trails !== false) {
         var maxAge = self.cfg.trailMin * 60000 || 1, i;
-        if (C.trail === 'dots') {
-          for (i = 0; i < tr.length; i++) {
-            if (i && Math.floor(tr[i][2] / 15000) === Math.floor(tr[i - 1][2] / 15000)) continue;
-            var fresh = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
-            var q = self.project(tr[i][0], tr[i][1]);
-            ctx.fillStyle = rgba(col, (0.25 + 0.65 * fresh) * baseA);
-            ctx.beginPath();
-            ctx.arc(q[0], q[1], (1.1 + 1.1 * fresh) * u * lw, 0, PI * 2);
-            ctx.fill();
-          }
-        } else {
-          var cur = self.project(ac.dlat, ac.dlon), head = 1.6 * u * lw;
-          ctx.lineCap = 'round';
-          // samples are joined by quadratic curves through segment midpoints: no visible corners
-          var pp = [];
-          for (i = 0; i < tr.length; i++) pp.push(self.project(tr[i][0], tr[i][1]));
-          pp.push(cur);
-          var last = pp.length - 1;
-          for (i = 0; i < last; i++) {
-            var a = i === 0 ? pp[0] : [(pp[i - 1][0] + pp[i][0]) / 2, (pp[i - 1][1] + pp[i][1]) / 2];
-            var b = i === last - 1 ? pp[last] : [(pp[i][0] + pp[i + 1][0]) / 2, (pp[i][1] + pp[i + 1][1]) / 2];
-            var fr = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
-            ctx.lineWidth = Math.max(0.6 * u, head * (0.35 + 0.65 * fr));
-            ctx.strokeStyle = rgba(col, 0.8 * Math.pow(fr, 1.5) * baseA);
-            ctx.beginPath();
-            ctx.moveTo(a[0], a[1]);
-            ctx.quadraticCurveTo(pp[i][0], pp[i][1], b[0], b[1]);
-            ctx.stroke();
-          }
+        var cur = self.project(ac.dlat, ac.dlon), head = 2 * u * lw * C.trailW;
+        ctx.lineCap = 'butt';
+        // samples are joined by quadratic curves through segment midpoints: no visible corners
+        var pp = [];
+        for (i = 0; i < tr.length; i++) pp.push(self.project(tr[i][0], tr[i][1]));
+        pp.push(cur);
+        var last = pp.length - 1;
+        for (i = 0; i < last; i++) {
+          var fr = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
+          if (fr < 0.02) continue;
+          var a = i === 0 ? pp[0] : [(pp[i - 1][0] + pp[i][0]) / 2, (pp[i - 1][1] + pp[i][1]) / 2];
+          var b = i === last - 1 ? pp[last] : [(pp[i][0] + pp[i + 1][0]) / 2, (pp[i][1] + pp[i + 1][1]) / 2];
+          ctx.lineWidth = Math.max(0.5 * u, head * (0.12 + 0.88 * fr));
+          ctx.strokeStyle = rgba(col, 0.85 * Math.pow(fr, 1.35) * baseA);
+          ctx.beginPath();
+          ctx.moveTo(a[0], a[1]);
+          ctx.quadraticCurveTo(pp[i][0], pp[i][1], b[0], b[1]);
+          ctx.stroke();
         }
       }
 
       var p = self.project(ac.dlat, ac.dlon);
-      var size = (high ? 7 : 9) * u * (featured ? 1.2 : 1);
-      var rotor = MA.fmt.isRotorcraft(ac);
+      var gk = MA.glyphs.kind(ac);
+      var size = (high ? 10.5 : 13) * u * C.plane * (featured ? 1.2 : 1);   // half length of a narrowbody; other kinds scale
+      var reach = size * Math.max(MA.glyphs.len(gk), 0.9);                  // radius used for leader lines and brackets
 
       if (featured) {
         // range / bearing line to home with its readout
@@ -719,15 +689,14 @@
           ctx.restore();
         }
       }
-      if (sp) self.drawBrackets(p[0], p[1], size * 1.9, rgba(spCol, sp.alert ? blink : 1), 1.6 * u * lw);
+      if (sp) self.drawBrackets(p[0], p[1], reach * 1.45, rgba(spCol, sp.alert ? blink : 1), 1.6 * u * lw);
 
-      var fill = featured || (C.symbol === 'diamond' && !high) || !!sp;
-      self.drawSymbol(C.symbol, p[0], p[1], ac.track, size, rgba(sp ? spCol : col, baseA), fill, rotor);
+      self.drawPlane(gk, p[0], p[1], ac.track, size, rgba(sp ? spCol : col, 1), baseA);
 
       var onScreen = p[0] > 0 && p[0] < self.w && p[1] > 0 && p[1] < self.areaBottom + self.h * 0.02;
       if ((self.cfg.labels || featured) && onScreen) {
         var lines = self.blockLines(ac, phase);
-        if (lines.length) items.push({ ac: ac, p: p, size: size, high: high, featured: featured, sp: sp, spCol: spCol, lines: lines });
+        if (lines.length) items.push({ ac: ac, p: p, size: reach, high: high, featured: featured, sp: sp, spCol: spCol, lines: lines });
       }
       pts.push(p);
     });
@@ -755,9 +724,17 @@
     // range readout of the selected aircraft, on its line to home
     items.forEach(function (it) {
       if (!it.featured || typeof it.ac.dist !== 'number') return;
-      var mx = (self.cx + it.p[0]) / 2, my = (self.cy + it.p[1]) / 2;
       if (Math.abs(it.p[0] - self.cx) + Math.abs(it.p[1] - self.cy) < 90 * u) return;
       ctx.font = self.font(13, '');
+      // on the line to home, moved along it until clear of every data block
+      var mx = 0, my = 0, tw = ctx.measureText('000° 00 km').width + 8 * u, fr = [0.5, 0.36, 0.64, 0.24, 0.76];
+      for (var q = 0; q < fr.length; q++) {
+        mx = self.cx + (it.p[0] - self.cx) * fr[q];
+        my = self.cy + (it.p[1] - self.cy) * fr[q];
+        var box = [mx - tw / 2, my - 18 * u, tw, 18 * u], clash = false;
+        for (var z = 0; z < placed.length; z++) if (overlap(box, placed[z])) clash = true;
+        if (!clash) break;
+      }
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = rgba(C.target, 1);

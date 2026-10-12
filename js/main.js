@@ -3,7 +3,6 @@
   var cfg = MA.config;
   var STALE_MS = 60 * 1000;      // drop aircraft not updated for a minute
   var MAX_EXTRAP_MS = 20 * 1000; // stop dead-reckoning after 20 s without data, then fade out until STALE_MS
-  var FADE_MIN = 0.3;            // below this opacity an aircraft is no longer picked as the featured one
   var WARN_AGE_S = 30;           // data older than this: amber "Daten N s alt"
   var ERR_AGE_S = 120;           // older than this: red "Keine Verbindung"
   var TRAIL_JUMP_KM = 5;         // break trails on implausible jumps
@@ -20,15 +19,15 @@
   var ground = {};               // hex -> aircraft on the ground at a mapped airport (static, not extrapolated)
   var GROUND_KM = 4;             // within this distance of an airport reference point counts as "at the airport"
   var GROUND_STALE_MS = 90 * 1000;
-  var featured = { hex: null, idx: 0, since: 0, jumpAt: -1 };
-  var jumped = {}, announced = {}; // special aircraft: hex -> time of board jump / toast
+  var featured = MA.pick.create();  // board selection state (js/pick.js); featured.jumped: special aircraft hex -> time of board jump
+  var announced = {};              // special aircraft: hex -> time of toast
   // dataAt: time of the newest position in the last answer (a cached answer is old although it just arrived)
 var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAfterMs: 0, nextAt: 0 };
 
   document.getElementById('place').textContent = cfg.label;
   document.getElementById('title').textContent = cfg.title;
   // element toggles (config show=…): classes hide the parts in CSS
-  ['board', 'clock', 'weather'].forEach(function (k) {
+  ['board', 'clock', 'weather', 'logos'].forEach(function (k) {
     if (cfg.show[k] === false) document.body.className += ' no-' + k;
   });
   if (cfg.show.weather !== false) MA.weather.start(cfg);   // METAR + runway in use, see js/weather.js
@@ -61,7 +60,6 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     for (var hex in aircraft) {
       if (now - aircraft[hex].seen > STALE_MS) delete aircraft[hex];
     }
-    forget(jumped, now);
     forget(announced, now);
     MA.data.lookupRoutes(nearest(), cfg.demo);
     var newest = 0;
@@ -162,45 +160,9 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     return best;
   }
 
-  // Special aircraft entering the radius jump the queue once per 30 min, at most once per
-  // two rotation slots so the nearest traffic still gets its turn.
-  function jumpSpecial(inRange, now) {
-    if (now - featured.jumpAt < cfg.rotateSec * 2000 || now - featured.since < 3000) return;
-    var ac = newSpecial(inRange, jumped);
-    if (!ac) return;
-    jumped[ac.hex] = now;
-    featured.hex = ac.hex;
-    featured.since = featured.jumpAt = now;
-  }
-
-  // Rotate through the nearest aircraft; jump to a newcomer that is very close.
+  // Which aircraft the board shows: calm, rule-based selection in js/pick.js (dwell, hysteresis, stable order)
   function pickFeatured(now) {
-    var inRange = visible.filter(function (ac) { return ac.dist <= cfg.radiusKm * 1.15 && ac.fade >= FADE_MIN; });
-    var cand = inRange.slice(0, 4);
-    if (!cand.length) { featured.hex = null; return null; }
-    jumpSpecial(inRange, now);
-    var jumpSlot = featured.since === featured.jumpAt;
-    var curIdx = -1;
-    for (var i = 0; i < cand.length; i++) if (cand[i].hex === featured.hex) curIdx = i;
-    if (curIdx < 0 && jumpSlot) {
-      // a jumped-to special beyond the nearest four takes the last slot during its turn
-      for (i = 4; i < inRange.length; i++) {
-        if (inRange[i].hex === featured.hex) { cand[3] = inRange[i]; curIdx = 3; }
-      }
-    }
-    var due = now - featured.since > cfg.rotateSec * 1000;
-    var closeNew = cand[0].hex !== featured.hex && cand[0].dist < 4 &&
-      now - featured.since > (jumpSlot ? cfg.rotateSec * 1000 : 3000);
-    if (curIdx < 0 || closeNew) curIdx = 0;
-    else if (due) curIdx = (curIdx + 1) % cand.length;
-    if (cand[curIdx].hex !== featured.hex || due) {
-      featured.hex = cand[curIdx].hex;
-      featured.since = now;
-    }
-    featured.idx = curIdx;
-    featured.count = cand.length;
-    featured.inRange = inRange.length;
-    return cand[curIdx];
+    return MA.pick.next(featured, visible, now, cfg);
   }
 
   /* ---------- special aircraft toast ---------- */

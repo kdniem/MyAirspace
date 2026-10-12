@@ -1,6 +1,6 @@
 # MyAirspace
 
-Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als ATC-Symbole mit Verlaufspunkten und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (ATC, Terminal, Karte, Airbus, Boeing, Nacht, Militär) und viele Optionen machen die Anzeige persönlich.
+Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als Flugzeug-Silhouetten mit auslaufender Flugspur und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (ATC, Terminal, Karte, Airbus, Boeing, Nacht, Militär) und viele Optionen machen die Anzeige persönlich.
 
 Die App ist nur zum Anschauen gedacht: URL öffnen, fertig. Es gibt keine Bedienung, keinen API-Key und keinen Build-Schritt.
 
@@ -27,7 +27,7 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `label`    | `Hamburg`       | Ortsname oben links |
 | `units`    | `ft`            | Höhenangaben in `ft` oder `m` |
 | `poll`     | `5`             | Abfrageintervall in Sekunden |
-| `rotate`   | `9`             | Sekunden pro Flugzeug auf der Tafel (sie wechselt durch die vier nächsten) |
+| `rotate`   | `20`            | Sekunden pro Flugzeug auf der Tafel (sie wechselt ruhig durch die vier nächsten, siehe [Tafel-Auswahl](#tafel-auswahl)) |
 | `trail`    | `4`             | Länge der Flugspuren in Minuten |
 | `night`    | `23-6`          | Zeitraum, in dem gedimmt wird (`off` schaltet das Dimmen aus) |
 | `dim`      | `0.45`          | Helligkeit während der Nachtzeit |
@@ -38,8 +38,8 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `font`     | je Stil         | `mono` (IBM Plex Mono) oder `sans` (Helvetica/Arial), beide mit tabellarischen Ziffern |
 | `brightness` | `1`           | Helligkeit von Karte, Ringen und Wasser, 0,5 bis 1,2 |
 | `datablock` | `callsign,fl,gs,type` | Felder des Datenblocks in dieser Reihenfolge: `callsign`, `fl` (Höhe), `gs` (Speed), `type`, `route`, `reg`. `datablock=0` blendet ihn aus |
-| `show`, `hide` | alles an     | Elemente: `weather`, `labels` (auch `datablock`), `trails`, `rings`, `places`, `board`, `clock`, `ground`, `compass`. `show=rings,clock` zeigt nur diese, `hide=board,compass` blendet sie aus |
-| `labels`, `places`, `weather`, `rings`, `compass`, `ground`, `board`, `clock`, `trails` | `1` | Einzelschalter je Element (`0` = aus; `trails=0` entspricht `trail=0`) |
+| `show`, `hide` | alles an     | Elemente: `weather`, `labels` (auch `datablock`), `trails`, `rings`, `places`, `board`, `clock`, `ground`, `compass`, `logos`. `show=rings,clock` zeigt nur diese, `hide=board,compass` blendet sie aus |
+| `labels`, `places`, `weather`, `rings`, `compass`, `ground`, `board`, `clock`, `trails`, `logos` | `1` | Einzelschalter je Element (`0` = aus; `trails=0` entspricht `trail=0`) |
 | `speed`    | `kt`            | Geschwindigkeit in `kt` oder `kmh` |
 | `pressure` | `hpa`           | QNH in `hpa` oder `inhg` |
 | `time`     | `both`          | `local` (Lokalzeit), `utc` oder `both` (Lokalzeit groß, darunter UTC mit Z) |
@@ -54,19 +54,19 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 
 ## Stile und Optionen
 
-Alle Looks sind Daten: die Tabelle `STYLES` in `js/styles.js` hält je Stil Rollenfarben für Dunkel und Hell, Symbolform, Spurart, Schrift und ein paar CSS-Variablen. `js/theme.js` setzt daraus die CSS-Variablen auf `<html>`, `js/radar.js` zeichnet mit denselben Rollen. Ein neuer Stil ist ein neuer Eintrag in der Tabelle (die Einrichtungsseite baut ihre Auswahl daraus). Farben folgen Cockpit-Regeln: **Weiß** normale Daten, **Grün** aktiv (Piste in Betrieb, Akzent), **Cyan** das gewählte Flugzeug (Ziel), **Bernstein** Vorsicht, **Rot** Warnung (Notfall-Squawk), **Magenta** besondere Flugzeuge. Dazu keine Dekorfarben.
+Alle Looks sind Daten: die Tabelle `STYLES` in `js/styles.js` hält je Stil Rollenfarben für Dunkel und Hell, Symbolgröße, Spurbreite, Schrift und ein paar CSS-Variablen. `js/theme.js` setzt daraus die CSS-Variablen auf `<html>`, `js/radar.js` zeichnet mit denselben Rollen. Ein neuer Stil ist ein neuer Eintrag in der Tabelle (die Einrichtungsseite baut ihre Auswahl daraus). Farben folgen Cockpit-Regeln: **Weiß** normale Daten, **Grün** aktiv (Piste in Betrieb, Akzent), **Cyan** das gewählte Flugzeug (Ziel), **Bernstein** Vorsicht, **Rot** Warnung (Notfall-Squawk), **Magenta** besondere Flugzeuge. Dazu keine Dekorfarben.
 
 | Stil | Look | Standard |
 |------|------|----------|
-| `atc` | Tower-Radarschirm: dunkles Phosphorgrün, Chevron-Symbole, Verlaufspunkte | dunkel |
+| `atc` | Tower-Radarschirm: dunkles Phosphorgrün, Flugzeug-Silhouetten, auslaufende Spur | dunkel |
 | `terminal` | Anzeigetafel (FIDS): Dunkelblau mit Gelb, Sans, eckige Tafel | dunkel |
-| `chart` | Luftfahrtkarte: Papier und Tinte, Dreiecke, Flughäfen in Magenta | hell |
-| `airbus` | ND + ECAM: Schwarz, Grün für Werte, Cyan für Einheiten, Rauten, dünne Linien | dunkel |
-| `boeing` | ND + EICAS: bläuliche Grautöne, kräftigere Schrift, Pfeilsymbole | dunkel |
+| `chart` | Luftfahrtkarte: Papier und Tinte, dunkle Tinte, Flughäfen in Magenta | hell |
+| `airbus` | ND + ECAM: Schwarz, Grün für Werte, Cyan für Einheiten, dünne Linien | dunkel |
+| `boeing` | ND + EICAS: bläuliche Grautöne, kräftigere Schrift, runde Kacheln | dunkel |
 | `night` | Sehr dunkel, nur Rot und Dunkelgrün, blendfrei fürs abgedunkelte Wohnzimmer | nur dunkel |
 | `military` | Taktische Anzeige in gedämpftem Oliv | nur dunkel |
 
-**Radar:** Flugzeuge sind Positionssymbole mit Verlaufspunkten (alle 15 s; bei Airbus/Boeing/Terminal eine dünne Spur) und einem Datenblock an einer Hilfslinie: Rufzeichen, Höhe als Flugfläche (`FL120` ab 5000 ft) oder in Hundertfuß (`038`), Pfeil für Steigen/Sinken, Ground Speed in kt, Muster. Die Blöcke weichen einander aus. Besondere Flugzeuge (siehe unten) bekommen eine dezente Eckenklammer in Magenta (Notfall rot, blinkend), keinen Schein. Das gewählte Flugzeug ist cyan mit Rahmen, Peil- und Entfernungslinie und einer Marke auf der Kompassrose. Die Karte zeigt Pisten mit Bezeichnern (05/23), Schwellenstrichen und Anfluglinien (die Piste in Betrieb in Grün), den Flughafen als Kreis mit Pistenkreuz und ICAO-Code, Entfernungsringe und außen eine Kompassrose (Strich alle 5°, Beschriftung alle 30°, N/E/S/W, Nordpfeil).
+**Radar:** Flugzeuge sind Silhouetten von oben (Schmalrumpf, Großraum, Jumbo, Regionaljet, Business-Jet, Turboprop, Leichtflugzeug, Hubschrauber, Kampfflugzeug; gewählt nach dem ICAO-Typ, `js/glyphs.js`), in Rollenfarbe gefüllt und mit dünner Kontur in der Kartenfarbe, in Flugrichtung gedreht. Dahinter läuft die Flugspur als durchgehende, sich verjüngende Linie aus, die zum Ende hin vollständig ausblendet (Länge: `trail`), und davor steht ein Datenblock an einer Hilfslinie: Rufzeichen, Höhe als Flugfläche (`FL120` ab 5000 ft) oder in Hundertfuß (`038`), Pfeil für Steigen/Sinken, Ground Speed in kt, Muster. Die Blöcke weichen einander aus. Besondere Flugzeuge (siehe unten) bekommen eine dezente Eckenklammer in Magenta (Notfall rot, blinkend), keinen Schein. Flugzeuge am Boden bleiben kleine Quadrate. Das gewählte Flugzeug ist cyan mit Rahmen, Peil- und Entfernungslinie und einer Marke auf der Kompassrose. Die Karte zeigt Pisten mit Bezeichnern (05/23), Schwellenstrichen und Anfluglinien (die Piste in Betrieb in Grün), den Flughafen als Kreis mit Pistenkreuz und ICAO-Code, Entfernungsringe und außen eine Kompassrose (Strich alle 5°, Beschriftung alle 30°, N/E/S/W, Nordpfeil).
 
 **Kopfzeile:** Ortsname (optional mit zweiter Zeile `title`), Lokalzeit (LT), UTC mit Z, Zahl der Flugzeuge, kompakter METAR (`EDDH 120820Z 23012G22KT 9999 … Q1013`), QNH und die Piste in Betrieb (`RWY 23`).
 
@@ -109,8 +109,8 @@ adsb.lol und die METAR-Quelle erlauben keine Abfragen direkt aus dem Browser (CO
   1. Auf [vercel.com](https://vercel.com) mit **Continue with GitHub** anmelden.
   2. **Add New → Project**, das Repo `kdniem/MyAirspace` importieren, Framework **Other**, nichts weiter einstellen, **Deploy**.
   3. Die Adresse `https://<projekt>.vercel.app/api/proxy` in `js/pwa.js` als `DEFAULT_PROXY` eintragen.
-- `?proxy=` wird nur akzeptiert, wenn der Wert `DEFAULT_PROXY` ist, `off` (kein Proxy, nur direkte Abfragen; die schlagen meist an CORS fehl) oder eine `https://…vercel.app/api/proxy`-Adresse auf dem Host des eigenen Projekts. Alles andere wird ignoriert.
-- **Routen** (`MUC → HAM`) fragt die App direkt bei adsb.lol ab, dieser Endpunkt erlaubt Browser-Abfragen; der eigene Proxy ist der Rückfall.
+- `?proxy=` wird nur akzeptiert, wenn der Wert `DEFAULT_PROXY` ist, `off` (kein Proxy: die App fragt dann keine Flugdaten ab, sondern zeigt den Status) oder eine `https://…vercel.app/api/proxy`-Adresse auf dem Host des eigenen Projekts. Alles andere wird ignoriert.
+- **Routen** (`MUC → HAM`) fragt die App direkt bei adsb.lol ab, dieser Endpunkt erlaubt Browser-Abfragen. Flugdaten und Wetter gehen nur über den eigenen Proxy, ohne direkten Rückfall an Dritte.
 - **Opt-in `?public=1`:** zusätzlich werden die öffentlichen CORS-Proxys `allorigins.win` und `codetabs.com` sowie die Quellen airplanes.live und OpenSky benutzt. Datenschutzhinweis: Diese Dritten sehen dann jede Abfrage samt (auf etwa 1 km gerundetem) Standort und deiner IP-Adresse. Die App zeigt es in der Fußzeile an („öffentliche Proxys“) und merkt sich die gewählte Route nicht dauerhaft.
 - Ein Cloudflare Worker eignet sich **nicht** als Proxy: adsb.lol drosselt Anfragen aus Cloudflare Workers (429), airplanes.live verlangt eine Registrierung (403), OpenSky ist nicht erreichbar (522). Stand Oktober 2026.
 
@@ -149,6 +149,22 @@ Die Pisten stammen aus [OurAirports](https://ourairports.com), Flüsse und Küst
 
 Die Route (z. B. `NCE → HAM`) kommt aus der Routendatenbank von adsb.lol. Bei Umläufen wie `HAM-NCE-HAM` zeigt die App nur den Abschnitt, den das Flugzeug gerade fliegt: Ausschlaggebend sind Position, Kurs und Steig- oder Sinkflug. „Anflug“ bzw. „Abflug“ erscheint bei Flughäfen bis 60 km vom Standort. Für Privatflieger, Hubschrauber und manche Charterflüge kennt die Datenbank keine Route.
 
+### Airline-Abzeichen statt Logos
+
+Echte Airline-Logos sind absichtlich **nicht** enthalten: Sie sind Marken mit eigenen Nutzungsbedingungen, und die App lädt auch keine Bilder von Dritten nach. Stattdessen gibt es selbst gebaute Abzeichen (`js/airlines.js`): eine flache Kachel in einer an die Lackierung angelehnten Farbe mit dem IATA-Code (`LH`, `EK`, `FR`), wo kein IATA-Code bekannt ist mit dem ICAO-Kürzel (`CHX`, `AIB`). Die Schriftfarbe (schwarz oder weiß) wird automatisch so gewählt, dass mindestens 4,5 : 1 Kontrast erreicht wird. Die Ecken folgen dem Stil (eckig bei Terminal/Airbus/Karte/Militär, leicht gerundet bei ATC/Nacht, rund bei Boeing); der Stil `night` zeigt nur eine Umrisskachel ohne Farbe (blendfrei). Der Betreiber ergibt sich aus den ersten drei Buchstaben des Rufzeichens (`DLH8NA` → `DLH`). Unbekannter Betreiber: neutrale graue Kachel mit dem ICAO-Kürzel; Privat- und Sportflug (Rufzeichen wie ein Kennzeichen): Kachel mit dem Flugzeugtyp. Zu sehen sind die Abzeichen links vom Rufzeichen auf der Tafel, im Datenblock der Karte (nur bekannte Betreiber) und in der Spalte AIRLINE der Überflugliste. Mit `logos=0` (oder in der Einrichtung unter Elemente) verschwinden sie.
+
+**Neue Airline ergänzen:** in `js/airlines.js` in der Tabelle `T` eine Zeile hinzufügen, Schlüssel ist der ICAO-Code des Betreibers:
+
+```
+XYZ: ['XY', 'Beispiel Air', '#1d3c78'],   // ICAO: [IATA oder '', Anzeigename, Lackierungsfarbe]
+```
+
+`node tools/contrast.mjs` prüft alle Einträge (Farbformat, Kontrast der Schrift). Bitte nur Farbe und Buchstaben verwenden, keine nachgezeichneten Logos.
+
+### Tafel-Auswahl
+
+Welches Flugzeug unten auf der Tafel steht, entscheidet `js/pick.js` ruhig und nachvollziehbar: mindestens 12 s Anzeigedauer vor jedem Wechsel (Ausnahme: ein neuer Notfall-Squawk 7700/7600/7500 springt sofort), danach Wechsel nach `rotate` Sekunden zum am längsten nicht gezeigten der vier nächsten Flugzeuge (stabile Reihenfolge nach Hex-Code, kein Hin und Her A-B-A innerhalb von 30 s). Das angezeigte Flugzeug bleibt, solange es im Radius und unter den sechs nächsten ist; ein sehr naher Neuankömmling (unter 2 km) löst es nur ab, wenn es weiter als 6 km entfernt ist oder sich entfernt. Besondere Flugzeuge springen höchstens einmal je zwei Rotationsschritte vor. Getestet mit `tools/tests/pick-test.cjs`.
+
 ## Veröffentlichen (GitHub Pages)
 
 1. Im Repository unter **Settings → Pages → Build and deployment → Source** die Option **GitHub Actions** wählen.
@@ -179,7 +195,7 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), proxy-test.mjs, motion-sim.js
+tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), proxy-test.mjs, motion-sim.js
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)
@@ -190,7 +206,10 @@ js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme u
 js/hint.js             Hinweis auf setup.html, wenn kein Standort in der URL steht
 js/data.js             Datenquellen, Fallback, Routen-Cache
 js/demo.js             Simulierter Verkehr für ?demo=1
-js/radar.js            Canvas-Karte: Kompassrose, Pisten, ATC-Symbole, Datenblöcke
+js/airlines.js         Tabelle MA.airlines und Abzeichen (Kacheln) für Tafel und Karte
+js/glyphs.js           Flugzeug-Silhouetten nach ICAO-Typ (Canvas-Pfade)
+js/pick.js             Auswahl des Flugzeugs auf der Tafel (reine Logik, getestet)
+js/radar.js            Canvas-Karte: Kompassrose, Pisten, Flugzeuge, Flugspuren, Datenblöcke
 js/board.js            Tafel mit Split-Flap-Effekt
 js/main.js             Abfrage-Schleife, Glättung, Rotation, Dimmen, Wake Lock
 ```
