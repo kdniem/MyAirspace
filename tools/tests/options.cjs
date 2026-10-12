@@ -56,6 +56,8 @@ ok(cfg('').config.airport === 'HAM' && cfg('?airport=fra').config.airport === 'F
 ok(cfg('?airport=XYZW').config.airport === 'HAM' && cfg('?airport=__proto__').config.airport === 'HAM', 'airport invalid falls back to HAM');
 ok(cfg('?view=airport').config.demo === false && cfg('?view=airport&demo=1').config.demo === true, 'focus view has no demo traffic by default');
 ok(cfg('?orient=track').config.orient === 'north', 'track-up is not built: north');
+ok(cfg('?motion=full').config.motion === 'full' && cfg('?motion=off').config.motion === 'off', 'motion levels');
+ok(cfg('').config.motion === 'calm' && cfg('?motion=loud').config.motion === 'calm', 'motion default calm, invalid falls back silently');
 
 // style table: every style resolves for both themes with all tokens, and unknown names fall back
 const MA = cfg('');
@@ -67,7 +69,7 @@ MA.style.names().forEach((n) => ['dark', 'light'].forEach((t) => {
 ok(MA.style.resolve('zzz', 'dark').style === 'atc', 'resolve fallback');
 
 // ES2017 only on the TV page: no optional chaining, nullish coalescing, class fields, modules
-const TV = ['pwa', 'styles', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'radar', 'airport', 'board', 'log', 'views', 'main', 'fullscreen', 'qr'];
+const TV = ['pwa', 'styles', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'motion', 'radar', 'airport', 'board', 'log', 'views', 'main', 'fullscreen', 'qr'];
 TV.forEach((n) => {
   const src = fs.readFileSync(ROOT + '/js/' + n + '.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''").replace(/\/\/.*$/gm, '');

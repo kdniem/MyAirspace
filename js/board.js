@@ -1,32 +1,37 @@
 /* LED board: shows one aircraft at a time with a split-flap style scramble. */
 (function (MA) {
-  var GLYPHS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-
   function $(id) { return document.getElementById(id); }
 
-  // Scramble from the old to the new text, settling left to right.
+  /* Split-flap, one behaviour for every cell (board and Anzeigetafel): the text scrambles and settles left to
+     right. Timing and glyphs come from js/motion.js. There is one clock: flap() queues the cell and
+     MA.flap.tick(now), called from the frame loop (js/main.js), advances all queued cells. So nothing runs in a
+     hidden tab, and motion=off (or the same text again) sets the text at once. */
+  var queue = [];
   function flap(el, text, animate) {
     if (el._target === text) return;
     el._target = text;
-    if (el._timer) clearInterval(el._timer);
-    el._timer = null;
-    if (animate === false) { el.textContent = text; return; }
-    var frames = 0, total = 14;
-    el._timer = setInterval(function () {
-      frames++;
-      var settled = Math.floor(text.length * frames / total);
-      var s = '';
-      for (var i = 0; i < text.length; i++) {
-        var ch = text.charAt(i);
-        s += (i < settled || ch === ' ' || /[^A-Z0-9]/.test(ch)) ? ch : GLYPHS.charAt(Math.floor(Math.random() * GLYPHS.length));
+    if (animate === false || !MA.motion.enabled()) { el._queued = false; el.textContent = text; return; }
+    el._text = text;
+    el._t0 = undefined;   // the clock starts at the next tick
+    el._step = -1;
+    if (!el._queued) { el._queued = true; queue.push(el); }
+    el.textContent = MA.motion.curves.flapText(text, 0, MA.motion.flap.steps, Math.random);
+  }
+  function tick(now) {
+    if (!queue.length) return;
+    var keep = [], F = MA.motion.flap, C = MA.motion.curves;
+    for (var i = 0; i < queue.length; i++) {
+      var el = queue[i];
+      if (!el._queued) continue;
+      if (el._t0 === undefined) el._t0 = now;
+      var s = C.flapStep(now - el._t0, F.stepMs, F.steps);
+      if (s !== el._step) {
+        el._step = s;
+        el.textContent = s >= F.steps ? el._text : C.flapText(el._text, s, F.steps, Math.random);
       }
-      el.textContent = s;
-      if (frames >= total) {
-        clearInterval(el._timer);
-        el._timer = null;
-        el.textContent = text;
-      }
-    }, 45);
+      if (s >= F.steps) el._queued = false; else keep.push(el);
+    }
+    queue = keep;
   }
 
   function setSub(el, html) {
@@ -88,17 +93,17 @@
     var e = this.el, f = MA.fmt, cfg = this.cfg;
     this.pager(idx, count);
     this.setPhase(f.phase(ac));
-    // scramble only when another aircraft is shown; live values just update
+    // scramble only when another aircraft is shown (flight, route, type and the values alike); live values just update
     var anim = this._hex !== ac.hex;
     this._hex = ac.hex;
 
-    flap(e.flight, (ac.callsign || ac.reg || ac.hex).toUpperCase());
+    flap(e.flight, (ac.callsign || ac.reg || ac.hex).toUpperCase(), anim);
     // operator badge (js/airlines.js): flat tile with the airline code; type tile for private/GA flights
     setSub(e.logo, MA.badge.html(MA.badge.info(ac), MA.STYLES[cfg.style].badge === 'mono'));
     setSub(e.airline, esc(f.airline(ac.callsign) || ac.reg || ''));
 
     var leg = MA.data.leg(ac);  // current leg only, e.g. NCE → HAM of HAM-NCE-HAM
-    flap(e.route, leg ? leg[0].code + ' → ' + leg[1].code : '--- → ---');
+    flap(e.route, leg ? leg[0].code + ' → ' + leg[1].code : '--- → ---', anim);
     var badge = '', local = localAirports(cfg);
     if (leg) {
       // round trips (e.g. Airbus test flights XFW → XFW): the phase decides
@@ -116,7 +121,7 @@
     }
     setSub(e.badge, badge);
 
-    flap(e.type, (ac.type || '----').toUpperCase());
+    flap(e.type, (ac.type || '----').toUpperCase(), anim);
     setSub(e.reg, esc([f.typeName(ac.type, ac.desc) !== ac.type ? f.typeName(ac.type, ac.desc) : '', ac.reg].filter(Boolean).join(' · ')));
 
     var alt = f.alt(ac.alt, cfg.units);
@@ -152,5 +157,6 @@
   };
 
   MA.Board = Board;
+  flap.tick = tick;   // called once per frame by js/main.js
   MA.flap = flap;
 })(window.MA);

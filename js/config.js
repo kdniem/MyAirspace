@@ -89,6 +89,12 @@ window.MA = MA;
     if (f.length) fields = f.slice(0, 5);
   }
 
+  // motion=off|calm|full (js/motion.js): calm by default, off when the system asks for reduced motion
+  var reducedMotion = false;
+  try { reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { reducedMotion = false; }
+  var motionArg = (q.get('motion') || '').toLowerCase();
+  var motion = /^(off|calm|full)$/.test(motionArg) ? motionArg : (reducedMotion ? 'off' : 'calm');
+
   MA.config = {
     lat: num('lat', 53.5511, -90, 90),          // default: Hamburg city centre
     lon: num('lon', 9.9937, -180, 180),
@@ -117,6 +123,7 @@ window.MA = MA;
     pressure: pick('pressure', /^(hpa|inhg)$/, 'hpa'),
     timeMode: pick('time', /^(utc|local|both)$/, 'both'),
     brightness: num('brightness', 1, 0.5, 1.2),
+    motion: motion,                             // off | calm | full (js/motion.js)
     orient: 'north',                            // track-up is not built: north-up only
     view: /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : 'auto', // radar | board | auto | airport (focus view, js/airport.js)
     airport: airportCode(str('airport', 'HAM')),  // focus view: HAM | XFW | FRA | FMO | CPH, checked against MA.features in js/airport.js (unknown = HAM)

@@ -23,6 +23,7 @@
   var GROUND_STALE_MS = 90 * 1000;
   var featured = MA.pick.create();  // board selection state (js/pick.js); featured.jumped: special aircraft hex -> time of board jump
   var announced = {};              // special aircraft: hex -> time of toast
+  var baselined = false;           // the first answer is the starting picture: aircraft in range then do not ring (js/motion.js)
   // dataAt: time of the newest position in the last answer (a cached answer is old although it just arrived)
 var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAfterMs: 0, nextAt: 0 };
 
@@ -43,8 +44,9 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       delete ground[n.hex];
       var ac = aircraft[n.hex];
       if (!ac) {
-        ac = aircraft[n.hex] = { hex: n.hex, trail: [], dlat: n.lat, dlon: n.lon,
-          dist: MA.geo.distKm(cfg.lat, cfg.lon, n.lat, n.lon) };
+        var d0 = MA.geo.distKm(cfg.lat, cfg.lon, n.lat, n.lon);
+        ac = aircraft[n.hex] = { hex: n.hex, trail: [], dlat: n.lat, dlon: n.lon, dist: d0,
+          inside: !baselined && d0 <= cfg.radiusKm };   // inside: has been in range once (arrival ring, js/motion.js)
       }
       if (MA.geo.distKm(ac.dlat, ac.dlon, n.lat, n.lon) > TRAIL_JUMP_KM) {
         ac.trail = [];
@@ -63,6 +65,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       if (now - aircraft[hex].seen > STALE_MS) delete aircraft[hex];
     }
     forget(announced, now);
+    baselined = true;
     MA.data.lookupRoutes(nearest(), cfg.demo);
     var newest = 0;
     list.forEach(function (n) { if (typeof n.ts === 'number' && n.ts > newest) newest = n.ts; });
@@ -139,10 +142,14 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       if (!ac.fade) { delete aircraft[hex]; continue; }
       // the trail is drawn from the smoothed on-screen position, independent of poll timing
       var last = ac.trail[ac.trail.length - 1];
-      if (!last || now - last[2] >= TRAIL_STEP_MS) ac.trail.push([ac.dlat, ac.dlon, now]);
+      if (!last || now - last[2] >= TRAIL_STEP_MS) {
+        if (!last) ac.trailT0 = now;   // a new trail draws on from the aircraft (js/motion.js growTrail)
+        ac.trail.push([ac.dlat, ac.dlon, now]);
+      }
       while (ac.trail.length && ac.trail[0][2] < now - trailMs) ac.trail.shift();
       ac.dist =MA.geo.distKm(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
       ac.brg = MA.geo.bearing(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
+      if (!ac.inside && ac.dist <= cfg.radiusKm) { ac.inside = true; ac.blipAt = now; }   // first time in range: ring and fade-in
       visible.push(ac);
     }
     visible.sort(function (a, b) { return a.dist - b.dist; });
@@ -205,6 +212,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       feat = pickFeatured(now);
       radar.render(visible, feat && feat.hex, now, MA.weather.active(), groundList());
     }
+    MA.flap.tick(now);   // split-flap of the board and the Anzeigetafel: one clock, see js/board.js
 
     if (now - lastBoard > 1000) {
       lastBoard = now;

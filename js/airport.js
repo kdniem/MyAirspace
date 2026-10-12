@@ -281,7 +281,7 @@
       self.drawPlane(MA.glyphs.kind(g), p[0], p[1], typeof g.track === 'number' ? g.track : 0, gsz, Radar.rgba(C.level, 0.9), 1);
     });
 
-    var items = [], pts = [], badges = [], blink = 0.6 + 0.4 * Math.sin(now * PI / 500);
+    var items = [], pts = [], badges = [], blink = MA.motion.alertAlpha(now);   // emergency frame pulse (js/motion.js)
     var sorted = list.slice().sort(function (a, b) { return (b.alt || 0) - (a.alt || 0); });
     sorted.forEach(function (ac) {
       var phase = MA.fmt.phase(ac), high = (ac.alt || 0) > 20000, featured = ac.hex === featuredHex;

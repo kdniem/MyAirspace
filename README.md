@@ -81,6 +81,22 @@ Für die Lesbarkeit aus drei Metern Abstand sind Schriften größer (nichts Wich
 
 Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil einer Abflugtafel ein: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
 
+## Bewegung
+
+Die Animationen sind optional und sparsam, und jede Schleife ist auf der Showcase-Seite [`motion.html`](motion.html) mit Dauer und Kosten zu sehen (die Seite ist vom Fernseher aus nicht verlinkt). Die Stufe steuert der URL-Parameter `motion`:
+
+| Wert | Wirkung |
+|------|---------|
+| `motion=calm` | Standard. Radar-Sweep (eine Umdrehung je 6 s, sehr schwach), Ring bei Neuankunft im Radius (einmal, 1,6 s, das Symbol blendet ein), Piste in Betrieb atmet (4 s), neue Spuren wachsen in 1 s, Notfall-Rahmen pulsiert langsam (3 s), Split-Flap, neueste Zeile der Anzeigetafel wird einmal markiert. |
+| `motion=full` | Dasselbe, etwas deutlicher: Sweep mit kurzem Nachlauf, zweiter Ring, Notfall-Puls 2 s. |
+| `motion=off` | Nichts bewegt sich: Werte springen, Rahmen stehen, keine Markierung. |
+
+Ohne Parameter gilt `calm`, bei der Systemeinstellung „Bewegung reduzieren“ (`prefers-reduced-motion`) `off`. Ein ausdrücklicher Wert in der Adresse hat immer Vorrang. Ungültige Werte werden stillschweigend auf den Standard gesetzt. Die Stufe liegt in `js/config.js`, die Effekte in `js/motion.js` (reine Zeitkurven, getestet in `tools/tests/motion-test.cjs`), der Split-Flap in `js/board.js` und die Markierung der Anzeigetafel in `css/motion.css`.
+
+Die Kosten sind klein: alle Effekte zusammen sind einige Linien und Kreise je Bild, ohne Schatten, ohne Filter und ohne Speicher je Bild. Der Split-Flap läuft im Takt der Bildschleife (keine eigenen Intervalle), im verborgenen Tab läuft nichts. Gemessen mit `node tools/tests/motion-perf.cjs` (Demo, 1920×1080, Headless-Chromium): die Bildarbeit liegt mit `motion=off` bei rund 2,3 ms, mit `motion=full` ebenso (Unterschied im Mittel unter 0,1 ms; auf einem Fernseher mit schwacher Grafik ist das nicht gemessen).
+
+Einbrennschutz: Bewegte Teile sind auf OLED-Fernsehern ein Risiko. Deshalb gibt es keinen Blinker mehr, der dauerhaft läuft (der bisherige Ein-Sekunden-Blinker des Notfall-Rahmens ist ein langsamer Puls), und die Uhr blinkt nicht. Nicht umgesetzt: einfahrende Überflugzeilen und ein blinkender Doppelpunkt (auf OLED kritisch) sowie ein Steig- und Sinkpfeil, der flackert.
+
 ## Einrichtungs-Assistent
 
 `setup.html` ist ein geführter Ablauf mit fünf Schritten, gedacht für Menschen, die den Link nur bekommen haben:
@@ -218,7 +234,7 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), proxy-test.mjs, motion-sim.js
+tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), proxy-test.mjs, motion-sim.js, motion-test.cjs (Bewegung), motion-perf.cjs (Bildkosten, nicht in run-all)
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 data/airport-detail.js Vorfeld, Rollwege, Terminals, Gates der fünf Flughäfen (erzeugt von tools/build-airport-detail.py, OpenStreetMap)
 tools/build-geo.py     Generator für die Kartendaten
@@ -235,6 +251,8 @@ js/glyphs.js           Flugzeug-Silhouetten nach ICAO-Typ (Canvas-Pfade)
 js/pick.js             Auswahl des Flugzeugs auf der Tafel (reine Logik, getestet)
 js/radar.js            Canvas-Karte: Kompassrose, Pisten, Flugzeuge, Flugspuren, Datenblöcke
 js/airport.js          Flughafen-Ansicht (view=airport): Anpassung der Box, statische Vorfeldschicht, Korridore, Flugzeuge am Boden und in der Luft
+js/motion.js           Bewegung (motion=off|calm|full): Zeitkurven und Zeichenhilfen für Radar, Tafel und Showcase
+motion.html            Showcase der Bewegungen mit Dauer und Kosten (nicht vom Fernseher aus verlinkt)
 js/board.js            Tafel mit Split-Flap-Effekt
 js/main.js             Abfrage-Schleife, Glättung, Rotation, Dimmen, Wake Lock
 ```

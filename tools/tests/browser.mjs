@@ -486,6 +486,29 @@ async function liveCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- motion option: off and full at 1280x720 (js/motion.js) ----------
+async function motionCase(browser, level) {
+  const id = 'motion_' + level + '_1280x720';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&motion=' + level, { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+    const r = await page.evaluate(PROBE);
+    const lvl = await page.evaluate(() => [document.documentElement.getAttribute('data-motion'), MA.motion.level, MA.motion.enabled()]);
+    collect(st, problems);
+    if (lvl[0] !== level || lvl[1] !== level) problems.push('motion level is ' + lvl.join('/') + ', expected ' + level);
+    if ((lvl[2] === true) !== (level !== 'off')) problems.push('motion enabled flag wrong for ' + level);
+    if (!r.canvas) problems.push('canvas missing or hidden');
+    else if (r.canvas.std < 1.5 || r.canvas.colors < 6) problems.push('canvas looks blank (std ' + r.canvas.std + ', colors ' + r.canvas.colors + ')');
+    r.overlap.forEach((m) => problems.push('header overlap: ' + m));
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -496,6 +519,7 @@ for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 
 for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }])
   jobs.push({ n: 'airport_' + code + '_' + vp.width, run: () => airportCase(browser, code, vp) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
+jobs.push({ n: 'motion_off', run: () => motionCase(browser, 'off') }, { n: 'motion_full', run: () => motionCase(browser, 'full') });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;
