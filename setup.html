@@ -232,6 +232,16 @@
               <div id="elements" class="toggles" role="group" aria-labelledby="elx-lbl"></div>
             </div>
             <div class="field">
+              <span class="label" id="chart-lbl">Luftfahrtkarte</span>
+              <div class="toggles" role="group" aria-labelledby="chart-lbl">
+                <label class="switch" id="chart-switch">
+                  <input id="chartbg" type="checkbox">
+                  <span class="track" aria-hidden="true"></span>
+                  <span><b id="chartbg-name"></b><small id="chartbg-hint"></small></span>
+                </label>
+              </div>
+            </div>
+            <div class="field">
               <label for="trail">Länge der Flugspuren <output id="trail-out" for="trail">4 min</output></label>
               <input id="trail" type="range" min="0" max="30" step="1" value="4">
             </div>

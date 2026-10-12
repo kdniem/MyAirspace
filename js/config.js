@@ -109,6 +109,7 @@ window.MA = MA;
     places: show.places,                        // town names on the map
     title: str('title', '').slice(0, 32),       // optional second line under the place name
     style: style,                               // atc | terminal | chart | airbus | boeing | night | military
+    chartbg: bool('chartbg', false),            // aeronautical-chart background: airspaces, navaids, grid (js/chart.js), off by default
     accent: accent,                             // '' (style default) | preset name | '#rrggbb'
     font: pick('font', /^(mono|sans)$/, STY[style].font || 'mono'),
     show: show,                                 // element toggles

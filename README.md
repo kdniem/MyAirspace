@@ -39,6 +39,7 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `brightness` | `1`           | Helligkeit von Karte, Ringen und Wasser, 0,5 bis 1,2 |
 | `datablock` | `callsign,fl,gs,type` | Felder des Datenblocks in dieser Reihenfolge: `callsign`, `fl` (Höhe), `gs` (Speed), `type`, `route`, `reg`. `datablock=0` blendet ihn aus |
 | `show`, `hide` | alles an     | Elemente: `weather`, `labels` (auch `datablock`), `trails`, `rings`, `places`, `board`, `clock`, `ground`, `compass`, `logos`. `show=rings,clock` zeigt nur diese, `hide=board,compass` blendet sie aus |
+| `chartbg` | aus | Luftfahrtkarte als Hintergrund: Lufträume, Funkfeuer, Hindernisse, Gradnetz im Papierlook (`chartbg=1`, siehe unten). Nur Schalter, keine Verbindung nach außen |
 | `labels`, `places`, `weather`, `rings`, `compass`, `ground`, `board`, `clock`, `trails`, `logos` | `1` | Einzelschalter je Element (`0` = aus; `trails=0` entspricht `trail=0`) |
 | `speed`    | `kt`            | Geschwindigkeit in `kt` oder `kmh` |
 | `pressure` | `hpa`           | QNH in `hpa` oder `inhg` |
@@ -167,6 +168,13 @@ Der Maßstab passt das Vorfeld (Box aus Vorfeld, Terminals und Gates, plus 0,6 k
 ### Flughafen-Detaildaten
 
 `data/airport-detail.js` (ODbL, bleibt unter ODbL und ist nicht vom MIT-Lizenztext der App abgedeckt) enthält für HAM, XFW, FRA, FMO und CPH Vorfelder, Rollwege, Terminals, Hangars, Gates, Abstellpositionen, Hubschrauberlandeplätze und Pisten für eine vergrößerte Flughafenansicht (`MA.airportDetail`, Koordinaten als `[lat, lon]` mit 5 Nachkommastellen, auf etwa 2 m vereinfacht). Quelle ist OpenStreetMap, Daten © OpenStreetMap-Mitwirkende, [ODbL](https://www.openstreetmap.org/copyright). Neu erzeugen mit `python3 -I tools/build-airport-detail.py [cache_dir]`; das Skript lädt die Rohdaten kachelweise von der OSM-API (mit Pausen und User-Agent) und legt sie in `cache_dir` ab, weitere Läufe arbeiten offline. Größe: siehe Commit-Nachricht bzw. `ls -l data/airport-detail.js` (Ziel höchstens 120 KB je Flughafen). Wie vollständig ein Flughafen ist, hängt von den Mappern ab; nicht jeder hat Gates oder Rollwegnamen. Nicht zur Navigation geeignet.
+### Luftfahrtkarte als Hintergrund (`chartbg=1`)
+
+Optional, Standard aus. Mit `chartbg=1` (oder dem Schalter „Luftfahrtkarte“ auf der Einrichtungsseite) zeichnet der Radar im Hintergrund eine Karte im Stil einer Luftfahrtkarte aus Papier: ein feines Gradnetz mit Grad- und Minutenbeschriftung am Rand, Lufträume als Umrisse in Klassenfarben (Kontrollzonen und Terminal-Bereiche blau, Sperr- und Gefahrengebiete rot, Gefahrengebiete magenta, Fallschirmsprung und Übriges gedämpft), Funkfeuer (VOR als Sechseck, NDB als Kreis, DME als Quadrat, mit Kennung und Frequenz), Hindernisse ab 150 m Höhe als kleine Dreiecke und eine Marke für die magnetische Nordrichtung (`MAG`, aus der Missweisung des nächsten Flughafens). Im Stil `chart` ist der Hintergrund hell wie Papier, in den anderen Stilen gedämpft. Flugzeuge, Wetter und Anzeigetafel liegen weiterhin darüber.
+
+**Daten:** Lufträume und Hindernisse aus den offenen [OpenAIP](https://www.openaip.net)-Datenbeständen (Lizenz CC BY-NC 4.0, Namensnennung wird in der Fußzeile gezeigt). Funkfeuer und Flughäfen aus [OurAirports](https://ourairports.com) (gemeinfrei). Die Daten sind in `data/chart-features.js` festgeschrieben: Die App ruft dafür nichts ab. Abgedeckt ist ein Umkreis von etwa 75 km um HAM, FRA, FMO und CPH mit den Nachbarländern DE, DK, NL und SE, außerhalb davon bleibt der Hintergrund leer. Die Datei entsteht mit `python3 tools/build-chart.py` (Quellen werden zuerst in `tools/.cache/` geladen; sie bleibt unter 150 KB). Die Karte zeigt das Gradnetz und die Lufträume vereinfacht und ist **nicht zur Navigation** geeignet: maßgeblich sind die amtlichen Unterlagen. Es wird keine offizielle Luftfahrtkarte nachgebildet oder kopiert.
+
+Test: `tools/tests/chart-test.cjs` prüft die Datei und die Zeichenfunktionen (mit `chartbg=0` wird nichts gezeichnet).
 
 ### Routen
 

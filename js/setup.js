@@ -147,6 +147,13 @@
     (e[3] ? el.elementsMain : el.elements).appendChild(l);
   });
 
+  // chart background (chartbg=1): its own switch, off by default, so it is not an element of ELEMENTS
+  toggles.chartbg = $('chartbg');
+  toggles.chartbg.checked = !!cfg0.chartbg;
+  toggles.chartbg.addEventListener('change', update);
+  $('chartbg-name').textContent = COPY.chartbg.label;
+  $('chartbg-hint').textContent = COPY.chartbg.hint;
+
   function pick(name, val) {
     const r = document.querySelector('input[name="' + name + '"][value="' + val + '"]');
     if (r) r.checked = true;
@@ -413,6 +420,7 @@
     const title = el.title.value.trim();
     if (title) p.set('title', title);
     ELEMENTS.forEach((e) => { if (!toggles[e[0]].checked) p.set(e[0], '0'); });
+    if (toggles.chartbg.checked) p.set('chartbg', '1');
     if (fieldsSel.join() !== DEF_FIELDS.join()) p.set('datablock', fieldsSel.join(','));
     const trail = +el.trail.value;
     if (trail !== DEF.trail) p.set('trail', trail);

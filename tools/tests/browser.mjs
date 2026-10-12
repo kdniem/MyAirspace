@@ -486,6 +486,29 @@ async function liveCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- chart background (chartbg=1, demo traffic, no third-party requests) ----------
+async function chartCase(browser, vp) {
+  const id = 'chart_' + vp.w + 'x' + vp.h;
+  const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&chartbg=1&style=chart', { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+    const r = await page.evaluate(PROBE);
+    collect(st, problems);
+    const data = await page.evaluate(() => (window.MA && MA.chartData) ? { air: MA.chartData.airspaces.length, nav: MA.chartData.navaids.length } : null);
+    if (!data || data.air < 10 || data.nav < 10) problems.push('chart data not loaded (' + JSON.stringify(data) + ')');
+    if (!r.canvas) problems.push('canvas missing or hidden');
+    else if (r.canvas.std < 1.5 || r.canvas.colors < 6) problems.push('canvas looks blank (std ' + r.canvas.std + ', colors ' + r.canvas.colors + ')');
+    r.overlap.forEach((m) => problems.push('header overlap: ' + m));
+    r.clipped.forEach((m) => problems.push('clipped: ' + m));
+    r.offscreen.forEach((m) => problems.push('outside viewport: ' + m));
+    r.contrast.forEach((x) => { if (x.ratio < x.min) problems.push('contrast ' + x.s + ' = ' + x.ratio + ':1 < ' + x.min); });
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); await shot(page, id); } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });

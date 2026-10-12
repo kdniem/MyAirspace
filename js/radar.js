@@ -168,6 +168,7 @@
     grd.addColorStop(1, C.land[1]);
     ctx.fillStyle = grd;
     ctx.fillRect(0, 0, this.w, this.h);
+    if (this.cfg.chartbg && MA.chart) MA.chart.under(this);   // chart background: paper and grid (js/chart.js), off by default
 
     // water: rivers and coasts at least 2.5 / 2 px at 1080p, the Elbe at its real width
     ctx.lineCap = 'round';
@@ -195,6 +196,8 @@
         ctx.fill();
       }
     });
+
+    if (this.cfg.chartbg && MA.chart) MA.chart.over(this);   // airspaces, navaids, obstacles, magnetic marker (js/chart.js)
 
     // range rings, labelled at 45 degrees below the east axis (clear of header and traffic labels)
     if (show.rings !== false) {
