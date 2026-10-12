@@ -6,5 +6,8 @@
   "scripts": {
     "test": "node tools/tests/run-all.mjs",
     "test:quick": "node tools/tests/run-all.mjs --quick"
+  },
+  "dependencies": {
+    "jsfive": "0.4.2"
   }
 }

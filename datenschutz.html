@@ -61,7 +61,10 @@
       <li><strong>adsb.lol</strong> (Flugzeugpositionen und Routen). Routen-Abfragen schickt dein Browser direkt an adsb.lol, dabei sieht adsb.lol deine IP-Adresse sowie Rufzeichen und Position des Flugzeugs.</li>
       <li><strong>aviationweather.gov</strong> (NOAA, METAR-Wetterberichte), über den Proxy.</li>
       <li>Nur wenn du ausdrücklich <code>?public=1</code> in der Adresse verwendest: <strong>airplanes.live</strong>, <strong>OpenSky Network</strong> sowie die öffentlichen Proxy-Dienste <strong>allorigins.win</strong> und <strong>codetabs.com</strong>. Diese Dritten sehen dann deine Abfragen und IP-Adresse. Ohne <code>public=1</code> werden sie nicht kontaktiert.</li>
+      <li>Nur wenn du <code>wx=radar</code> verwendest: <strong>Deutscher Wetterdienst (DWD)</strong>, Radarkomposit. Den Abruf macht der Server des Projekts (Vercel), nicht dein Browser, und er enthält keine Standortdaten. Der DWD sieht also nur die Server-Adresse von Vercel, nicht deine IP-Adresse und nicht deine Position.</li>
     </ul>
+    <h2>Wetterradar (nur mit wx=radar)</h2>
+    <p>Dein Browser fragt <code>/api/radar</code> beim eigenen Proxy ab. Die Anfrage enthält weder Standort noch Parameter; Vercel verarbeitet deine IP-Adresse und technische Verbindungsdaten wie bei jeder Anfrage an den Proxy. Der Server holt die DWD-Radardaten (Niederschlag, alle 5 Minuten) und gibt sie für alle Besucher gleich aus, für 2 Minuten zwischengespeichert. Die Radardaten werden nicht im Browser gespeichert und enthalten keine personenbezogenen Daten.</p>
   </section>
 
   <section>

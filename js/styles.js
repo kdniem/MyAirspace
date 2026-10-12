@@ -4,7 +4,7 @@
      accent                    signature colour (board values, active runway); user-overridable (accent=)
      target                    selected / target (the featured aircraft)       cockpit semantics:
      caution warning special   amber / red / magenta                           white normal, green active,
-     ok                        status OK (green)                               cyan target, amber caution,
+     ok moderate               status OK (green); moderate = yellow (weather)  cyan target, amber caution,
      water land                map tones                                       red warning, magenta special
    Palettes: dark and light (a style without `light` uses its dark palette in light mode).
    Loaded before config.js, ES2017 only (old TV browsers). */
@@ -24,10 +24,10 @@ window.MA = MA;
       plane: 1, trail: 'line', trailW: 1.15, lw: 1, br: 3, weight: 500,
       css: { '--radius': '0.3vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       dark: { bg: '#040706', panel: '#09110d', ink: '#e6eee8', quiet: '#8fa597', line: '#1c2a22', accent: '#7fd99a',
-        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a60', special: '#e57ad8', ok: '#7fd99a',
+        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a60', special: '#e57ad8', moderate: '#e8d24a', ok: '#7fd99a',
         water: '#1f3d44', land: '#9fb8a8' },
       light: { bg: '#f2f0e8', panel: '#e6e3d8', ink: '#1b1f1c', quiet: '#565d58', line: '#cbc7ba', accent: '#1d6b3c',
-        target: '#005f86', caution: '#8f5000', warning: '#b81d1d', special: '#9b1c8a', ok: '#1d6b3c',
+        target: '#005f86', caution: '#8f5000', warning: '#b81d1d', special: '#9b1c8a', moderate: '#8f6d00', ok: '#1d6b3c',
         water: '#a9bfc9', land: '#ffffff' }
     },
     terminal: {
@@ -35,10 +35,10 @@ window.MA = MA;
       plane: 1.05, trail: 'line', trailW: 1, lw: 1, br: 0, weight: 600,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)', '--call-color': 'var(--accent)' },
       dark: { bg: '#071426', panel: '#0c1d38', ink: '#f4f6fa', quiet: '#9db0cc', line: '#1d3358', accent: '#ffd23f',
-        target: '#6fd3ff', caution: '#ffb03a', warning: '#ff6b5e', special: '#f08be0', ok: '#5fdc8a',
+        target: '#6fd3ff', caution: '#ffb03a', warning: '#ff6b5e', special: '#f08be0', moderate: '#ffe14a', ok: '#5fdc8a',
         water: '#1d4468', land: '#6f8fc0' },
       light: { bg: '#eef1f6', panel: '#dfe5ee', ink: '#0b1c3a', quiet: '#4a5a78', line: '#c3ccdb', accent: '#7a5200',
-        target: '#00588a', caution: '#8f5200', warning: '#b3261e', special: '#8d2a86', ok: '#1c6b3c',
+        target: '#00588a', caution: '#8f5200', warning: '#b3261e', special: '#8d2a86', moderate: '#8f6d00', ok: '#1c6b3c',
         water: '#a9bfd6', land: '#ffffff' }
     },
     chart: {
@@ -46,10 +46,10 @@ window.MA = MA;
       plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 0, weight: 500, airportSpecial: true,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       light: { bg: '#f1ede0', panel: '#e6e0cf', ink: '#1a2433', quiet: '#55606f', line: '#cfc7b2', accent: '#1a4f9a',
-        target: '#0b6e99', caution: '#8a5200', warning: '#b3261e', special: '#9c1c6b', ok: '#1f6b3f',
+        target: '#0b6e99', caution: '#8a5200', warning: '#b3261e', special: '#9c1c6b', moderate: '#8f6d00', ok: '#1f6b3f',
         water: '#b5d1e3', land: '#ffffff' },
       dark: { bg: '#0c121b', panel: '#131b27', ink: '#dfe6ef', quiet: '#8e9bb0', line: '#243145', accent: '#7fb2f0',
-        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a5e', special: '#e57ac8', ok: '#6fdc8c',
+        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a5e', special: '#e57ac8', moderate: '#f0dc55', ok: '#6fdc8c',
         water: '#23425e', land: '#8aa0c0' }
     },
     airbus: {
@@ -57,10 +57,10 @@ window.MA = MA;
       plane: 0.95, trail: 'line', trailW: 0.9, lw: 0.85, br: 0, weight: 500,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
       dark: { bg: '#000000', panel: '#07090c', ink: '#f2f4f5', quiet: '#9aa4ad', line: '#1c2228', accent: '#4be37f',
-        target: '#3fd8ff', caution: '#ffb100', warning: '#ff4d42', special: '#ee64e0', ok: '#4be37f',
+        target: '#3fd8ff', caution: '#ffb100', warning: '#ff4d42', special: '#ee64e0', moderate: '#f5e04a', ok: '#4be37f',
         water: '#17394a', land: '#8aa0a8' },
       light: { bg: '#eef0f1', panel: '#e0e4e6', ink: '#12181c', quiet: '#4d5960', line: '#c5ccd0', accent: '#0a6e36',
-        target: '#006a96', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', ok: '#0a6e36',
+        target: '#006a96', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', moderate: '#8f6d00', ok: '#0a6e36',
         water: '#a9c0cc', land: '#ffffff' }
     },
     boeing: {
@@ -68,10 +68,10 @@ window.MA = MA;
       plane: 1.05, trail: 'line', trailW: 1.15, lw: 1.2, br: 5, weight: 600,
       css: { '--radius': '0.5vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
       dark: { bg: '#0b1118', panel: '#121b26', ink: '#eef2f6', quiet: '#93a1b2', line: '#223042', accent: '#5be08a',
-        target: '#4cc9f0', caution: '#ffb52e', warning: '#ff5348', special: '#e46ad9', ok: '#5be08a',
+        target: '#4cc9f0', caution: '#ffb52e', warning: '#ff5348', special: '#e46ad9', moderate: '#f2d94a', ok: '#5be08a',
         water: '#1c3f58', land: '#90a4bc' },
       light: { bg: '#e9edf1', panel: '#dbe1e8', ink: '#101820', quiet: '#4b5866', line: '#bcc6d1', accent: '#11703d',
-        target: '#00608c', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', ok: '#11703d',
+        target: '#00608c', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', moderate: '#8f6d00', ok: '#11703d',
         water: '#a7bcd0', land: '#ffffff' }
     },
     night: {
@@ -79,7 +79,7 @@ window.MA = MA;
       plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 3, weight: 500, badge: 'mono',
       css: { '--radius': '0.3vh', '--val-color': 'var(--ink)', '--unit-color': 'var(--sub)' },
       dark: { bg: '#000000', panel: '#080303', ink: '#e0604b', quiet: '#d0563f', line: '#2a0f0b', accent: '#4aa862',
-        target: '#4aa862', caution: '#e0604b', warning: '#ff8a76', special: '#ff8a76', ok: '#4aa862',
+        target: '#4aa862', caution: '#e0604b', warning: '#ff8a76', special: '#ff8a76', moderate: '#e0a060', ok: '#4aa862',
         water: '#3a1a14', land: '#e0604b' }
     },
     military: {
@@ -87,7 +87,7 @@ window.MA = MA;
       plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 0, weight: 500,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       dark: { bg: '#0a0e08', panel: '#10160c', ink: '#d3dbb4', quiet: '#8e9973', line: '#232c1a', accent: '#a7c957',
-        target: '#8fd6c8', caution: '#e0b040', warning: '#ff6e50', special: '#e48cd8', ok: '#a7c957',
+        target: '#8fd6c8', caution: '#e0b040', warning: '#ff6e50', special: '#e48cd8', moderate: '#e6df5c', ok: '#a7c957',
         water: '#1f3328', land: '#9aa878' }
     }
   };
@@ -168,7 +168,9 @@ window.MA = MA;
       '--line': P.line, '--faint': mix(P.bg, P.ink, 0.12), '--pager': mix(P.panel, P.ink, 0.22),
       '--idle': mix(P.panel, P.ink, 0.3),
       '--accent': acc, '--target': P.target, '--caution': P.caution, '--warning': P.warning,
-      '--special': P.special, '--ok': P.ok,
+      '--special': P.special, '--ok': P.ok, '--moderate': P.moderate,
+      // weather radar steps (js/wxradar.js): light, moderate, heavy, very heavy
+      '--wx1': P.ok, '--wx2': P.moderate, '--wx3': P.caution, '--wx4': P.warning,
       '--badge-bg': badgeBg, '--badge-fg': badgeFg, '--badge-edge': badgeEdge,
       '--toast-bg': rgba(P.panel, 0.96), '--toast-line': rgba(P.special, 0.7),
       '--zebra': rgba(P.ink, light ? 0.04 : 0.035), '--head': mix(P.panel, P.ink, light ? 0.025 : 0.07),
@@ -220,7 +222,9 @@ window.MA = MA;
       plane: st.plane || 1, trail: 'line', trailW: st.trailW || 1, lw: st.lw || 1, badgeR: st.br || 0, badgeMono: st.badge === 'mono',
       badgeBg: badgeBg, badgeFg: badgeFg, badgeEdge: badgeEdge, weight: st.weight || 500, font: fam,
       bgHex: P.bg, panelHex: P.panel, accentHex: acc, targetHex: P.target, specialHex: P.special, warningHex: P.warning,
-      chart: chart
+      chart: chart,
+      // weather radar: the four step colours (role tokens) and the alpha of the overlay, below aircraft and labels
+      wx: [P.ok, P.moderate, P.caution, P.warning], wxAlpha: light ? 0.62 : 0.42
     };
     return { css: css, c: c, style: style, theme: light ? 'light' : 'dark', font: font, fam: fam };
   }

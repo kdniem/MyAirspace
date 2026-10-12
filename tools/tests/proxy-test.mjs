@@ -155,4 +155,131 @@ await t('method handling', async () => {
   assert.equal((await call('https://api.adsb.lol/v2/point/1/2/3', { origin: ORIGIN, method: 'OPTIONS' })).code, 204);
   assert.equal((await call(undefined, { origin: ORIGIN })).code, 400);
 });
+
+/* ---- /api/radar (api/radar.js): one fixed DWD file, no client parameters ---- */
+const { default: radarHandler } = await import('../../api/radar.js');
+const fs = await import('node:fs');
+const path = await import('node:path');
+const { fileURLToPath } = await import('node:url');
+const FIXTURE = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures/wn-small-000.h5'));
+function tarOf(name, data) {
+  const h = Buffer.alloc(512, 0);
+  h.write(name, 0, 'latin1');
+  h.write(data.length.toString(8).padStart(11, '0') + '\0', 124, 'latin1');
+  h.write('0', 156, 'latin1');
+  return Buffer.concat([h, data, Buffer.alloc((512 - (data.length % 512)) % 512, 0), Buffer.alloc(1024, 0)]);
+}
+let radarTar = tarOf('composite_wn_20261012_1650_000-hd5', FIXTURE);
+// the observation time of the fixture is 2026-10-12, so answers are stale by now: the handler refuses them
+let radarFetch = null;
+const realFetch = globalThis.fetch;
+function stubRadar(status, body, headers = {}) {
+  globalThis.fetch = async (url, opts) => {
+    radarFetch = { url, opts };
+    return {
+      status, ok: status >= 200 && status < 300,
+      headers: { get: (k) => headers[k.toLowerCase()] ?? null },
+      body: new Response(body).body      // a stream, as the real fetch returns it
+    };
+  };
+}
+// a chunked upstream of `total` bytes without Content-Length, read by the handler through its stream
+function stubStream(total, chunk = 1024 * 1024) {
+  let sent = 0;
+  globalThis.fetch = async (url, opts) => {
+    radarFetch = { url, opts };
+    return {
+      status: 200, ok: true, headers: { get: () => null },
+      body: new ReadableStream({
+        pull(c) {
+          if (sent >= total) { c.close(); return; }
+          const n = Math.min(chunk, total - sent);
+          sent += n;
+          c.enqueue(new Uint8Array(n));
+        }
+      })
+    };
+  };
+  return () => sent;
+}
+async function callRadar(url, { origin, method = 'GET' } = {}) {
+  const headers = {};
+  if (origin) headers.origin = origin;
+  const res = {
+    code: 200, h: {}, body: undefined,
+    setHeader(k, v) { this.h[k.toLowerCase()] = v; },
+    status(c) { this.code = c; return this; },
+    json(o) { this.h['content-type'] = 'application/json; charset=utf-8'; this.body = JSON.stringify(o); return this; },
+    send(b) { this.body = b; return this; },
+    end() { return this; }
+  };
+  await radarHandler({ method, headers, query: url === undefined ? {} : url }, res);
+  return res;
+}
+// the clock is pinned: the fixture's observation time is 2026-10-12T16:50:03Z
+const FIXTURE_OBS = Date.parse('2026-10-12T16:50:03Z');
+function pinClock(ms) { const real = Date.now; Date.now = () => ms; return () => { Date.now = real; }; }
+await t('radar: fixed upstream URL, query ignored, origin rule and method rule', async () => {
+  const unpin = pinClock(FIXTURE_OBS + 60 * 1000);
+  try {
+    stubRadar(200, radarTar);
+    const r = await callRadar({ lat: '53.5', url: 'https://evil.example/x' }, { origin: ORIGIN });
+    assert.equal(radarFetch.url, 'https://opendata.dwd.de/weather/radar/composite/wn/composite_wn__LATEST.tar');
+    assert.equal(r.code, 200);
+    assert.equal((await callRadar({}, { origin: 'https://evil.example' })).code, 403);
+    assert.equal((await callRadar({}, { origin: ORIGIN, method: 'POST' })).code, 405);
+    assert.equal((await callRadar({}, { origin: ORIGIN, method: 'OPTIONS' })).code, 204);
+  } finally { unpin(); globalThis.fetch = realFetch; }
+});
+await t('radar: an observation older than 15 minutes is refused', async () => {
+  const unpin = pinClock(FIXTURE_OBS + 16 * 60 * 1000);
+  try {
+    stubRadar(200, radarTar);
+    const r = await callRadar({}, { origin: ORIGIN });
+    assert.equal(r.code, 502);
+    assert.equal(r.h['cache-control'], 'no-store');
+  } finally { unpin(); globalThis.fetch = realFetch; }
+});
+await t('radar: upstream errors, redirects and oversize bodies are not cached', async () => {
+  stubRadar(302, radarTar, { location: 'https://evil.example/' });
+  assert.equal((await callRadar({}, { origin: ORIGIN })).code, 502);
+  stubRadar(200, Buffer.from('not a tar at all, just text that is long enough to be read'));
+  assert.equal((await callRadar({}, { origin: ORIGIN })).h['cache-control'], 'no-store');
+  stubRadar(200, radarTar, { 'content-length': String(9 * 1024 * 1024) });
+  assert.equal((await callRadar({}, { origin: ORIGIN })).code, 502);
+  globalThis.fetch = async () => { throw new Error('network'); };
+  assert.equal((await callRadar({}, { origin: ORIGIN })).code, 502);
+  globalThis.fetch = realFetch;
+});
+await t('radar: a chunked body without Content-Length is cut off at the byte cap', async () => {
+  const read = stubStream(9 * 1024 * 1024);     // 9 MB, no length header
+  const r = await callRadar({}, { origin: ORIGIN });
+  assert.equal(r.code, 502);
+  assert.equal(r.h['cache-control'], 'no-store');
+  // the stream reads ahead by a chunk or two; the handler stops at the cap, far short of the 9 MB body
+  assert.ok(read() < 8 * 1024 * 1024, 'read stopped near the 4 MB cap, read ' + read());
+  globalThis.fetch = realFetch;
+});
+await t('radar: a fresh observation is answered with the grid and a short CDN cache', async () => {
+  // rewrite the frame's time to "now" in the fixture: one byte pair edit is not possible for HDF5, so the
+  // staleness limit is checked through the clock instead
+  const realNow = Date.now;
+  const fixtureObs = Date.parse('2026-10-12T16:50:03Z');
+  Date.now = () => fixtureObs + 60 * 1000;
+  try {
+    stubRadar(200, radarTar);
+    const r = await callRadar({}, { origin: ORIGIN });
+    assert.equal(r.code, 200);
+    assert.equal(r.h['access-control-allow-origin'], ORIGIN);
+    assert.equal(r.h['cache-control'], 'public, s-maxage=120, stale-while-revalidate=300, stale-if-error=900');
+    assert.equal(r.h['content-type'], 'application/json; charset=utf-8');
+    const j = JSON.parse(r.body);
+    assert.equal(j.obs, '2026-10-12T16:50:03Z');
+    assert.equal(j.grid.rows, 520);
+    assert.equal(j.grid.cols, 580);
+  } finally {
+    Date.now = realNow;
+    globalThis.fetch = realFetch;
+  }
+});
 console.log(n + ' tests passed');
