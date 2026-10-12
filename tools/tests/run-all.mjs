@@ -39,6 +39,7 @@ cmd('URL options + ES2017 scan (options.cjs)', ['tools/tests/options.cjs', '.'])
 cmd('board selection (pick-test.cjs)', ['tools/tests/pick-test.cjs', '.']);
 cmd('old-browser guard (compat.mjs)', ['tools/tests/compat.mjs']);
 cmd('contrast', ['tools/contrast.mjs']);
+cmd('look distinctness (theme-distinct-test.cjs)', ['tools/tests/theme-distinct-test.cjs', '.']);
 cmd('proxy', ['tools/tests/proxy-test.mjs']);
 if (!argv.includes('--no-browser')) cmd('browser suite', ['tools/tests/browser.mjs'].concat(argv.includes('--quick') ? ['--quick'] : []));
 

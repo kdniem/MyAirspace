@@ -6,7 +6,9 @@
      caution warning special   amber / red / magenta                           white normal, green active,
      ok                        status OK (green)                               cyan target, amber caution,
      water land                map tones                                       red warning, magenta special
-   Palettes: dark and light (a style without `light` uses its dark palette in light mode).
+   Palettes: dark and light (a style without `light` is dark only: it stays dark in light mode).
+   Seven looks, each with its own identity (hue family, type, line weight, symbol, trail, data block, density).
+   Old ids (atc, terminal, …) are aliases, see ALIAS: old links keep working.
    Loaded before config.js, ES2017 only (old TV browsers). */
 var MA = window.MA || {};
 window.MA = MA;
@@ -15,82 +17,99 @@ window.MA = MA;
   var MONO = '"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace';
   var SANS = '"Helvetica Neue", Helvetica, Arial, "Segoe UI", Roboto, "Liberation Sans", sans-serif';
 
-  /* plane: size factor of the aircraft glyph (js/glyphs.js)   trail: always a fading line, trailW its width factor
-     lw: line weight factor   br: corner radius of badges in px at 1080p (matches --radius)   badge: brand | mono
-     css: extra CSS custom properties for this look */
+  /* Per look:
+     font, weight, caps, track   typography class: family, weight, upper-case labels, label letter-spacing (em)
+     plane    size factor of the aircraft symbol          lw     line weight factor (outlines, leaders, rose)
+     trail    'taper' (fading line) | 'dots' | 'dash' | 'none';  trailW  its width factor
+     symbol   'glyph' (silhouette by type) | 'ring' | 'dot' | 'box' | 'cross' | 'diamond'
+     block    data block: 'plain' (text on a leader) | 'frame' (outlined) | 'tab' (filled, accent bar)
+     br       corner radius of badges in px at 1080p; badge 'brand' (livery colour) | 'mono' (outline)
+     sweep    rotating radar sweep (round scope feel)     grid   square grid under the map
+     arc      compass rose only as an arc of +/- this many degrees (Airbus ND); 0 = full rose
+     halo     false: no dark outline behind text and symbols (night vision)
+     ringRole, mainRing   palette role for the range rings and the main ring (airspace)
+     airportSpecial  airport codes in the special colour (chart)
+     fixedAccent      the accent is not user-overridable
+     css     extra CSS custom properties (corner radius, board borders) */
   var STYLES = {
-    atc: {
-      name: 'ATC', info: 'Tower-Radarschirm', font: 'mono', theme: 'dark',
-      plane: 1, trail: 'line', trailW: 1.15, lw: 1, br: 3, weight: 500,
-      css: { '--radius': '0.3vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
-      dark: { bg: '#040706', panel: '#09110d', ink: '#e6eee8', quiet: '#8fa597', line: '#1c2a22', accent: '#7fd99a',
-        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a60', special: '#e57ad8', ok: '#7fd99a',
-        water: '#1f3d44', land: '#9fb8a8' },
-      light: { bg: '#f2f0e8', panel: '#e6e3d8', ink: '#1b1f1c', quiet: '#565d58', line: '#cbc7ba', accent: '#1d6b3c',
-        target: '#005f86', caution: '#8f5000', warning: '#b81d1d', special: '#9b1c8a', ok: '#1d6b3c',
-        water: '#a9bfc9', land: '#ffffff' }
+    tower: {
+      name: 'Tower', info: 'ATC-Radarschirm: Phosphorgrün, runder Schwenk', font: 'mono', weight: 400, caps: false, track: 0.2,
+      theme: 'dark', plane: 1, lw: 0.8, trail: 'dots', trailW: 1, symbol: 'ring', block: 'plain', br: 2, badge: 'mono',
+      sweep: true, css: { '--radius': '0.4vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
+      dark: { bg: '#010b05', panel: '#03150b', ink: '#b9ffd3', quiet: '#58b07a', line: '#0f3a21', accent: '#40ffd0',
+        target: '#e8fff2', caution: '#ffd166', warning: '#ff5d4d', special: '#ff8ad8', ok: '#40ffd0',
+        water: '#0a2a18', land: '#7fbf98' }
     },
-    terminal: {
-      name: 'Terminal', info: 'Anzeigetafel (FIDS)', font: 'sans', theme: 'dark',
-      plane: 1.05, trail: 'line', trailW: 1, lw: 1, br: 0, weight: 600,
+    fids: {
+      name: 'FIDS', info: 'Flughafen-Anzeigetafel: Versalien, Split-Flap, Zeilenbänder', font: 'sans', weight: 600, caps: true, track: 0.08,
+      theme: 'dark', plane: 0.9, lw: 1.3, trail: 'none', trailW: 1, symbol: 'dot', block: 'tab', br: 0, badge: 'brand',
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)', '--call-color': 'var(--accent)' },
-      dark: { bg: '#071426', panel: '#0c1d38', ink: '#f4f6fa', quiet: '#9db0cc', line: '#1d3358', accent: '#ffd23f',
-        target: '#6fd3ff', caution: '#ffb03a', warning: '#ff6b5e', special: '#f08be0', ok: '#5fdc8a',
-        water: '#1d4468', land: '#6f8fc0' },
-      light: { bg: '#eef1f6', panel: '#dfe5ee', ink: '#0b1c3a', quiet: '#4a5a78', line: '#c3ccdb', accent: '#7a5200',
-        target: '#00588a', caution: '#8f5200', warning: '#b3261e', special: '#8d2a86', ok: '#1c6b3c',
-        water: '#a9bfd6', land: '#ffffff' }
+      dark: { bg: '#0c0d10', panel: '#16181d', ink: '#f6eedb', quiet: '#a79c84', line: '#34302a', accent: '#ffb000',
+        target: '#7fd6ff', caution: '#ff8a1f', warning: '#ff4b3e', special: '#ff7ad9', ok: '#9be36a',
+        water: '#1c2430', land: '#4b463b' },
+      light: { bg: '#efe9da', panel: '#e3dccb', ink: '#15130f', quiet: '#5a5242', line: '#c4bba5', accent: '#8a4a00',
+        target: '#005f8f', caution: '#9a4a00', warning: '#b3261e', special: '#8d2a86', ok: '#1f6b3c',
+        water: '#c8d2d9', land: '#fbf8f0' }
     },
-    chart: {
-      name: 'Karte', info: 'Luftfahrtkarte', font: 'mono', theme: 'light',
-      plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 0, weight: 500, airportSpecial: true,
-      css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
-      light: { bg: '#f1ede0', panel: '#e6e0cf', ink: '#1a2433', quiet: '#55606f', line: '#cfc7b2', accent: '#1a4f9a',
-        target: '#0b6e99', caution: '#8a5200', warning: '#b3261e', special: '#9c1c6b', ok: '#1f6b3f',
-        water: '#b5d1e3', land: '#ffffff' },
-      dark: { bg: '#0c121b', panel: '#131b27', ink: '#dfe6ef', quiet: '#8e9bb0', line: '#243145', accent: '#7fb2f0',
-        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a5e', special: '#e57ac8', ok: '#6fdc8c',
-        water: '#23425e', land: '#8aa0c0' }
-    },
-    airbus: {
-      name: 'Airbus', info: 'ND + ECAM', font: 'sans', theme: 'dark',
-      plane: 0.95, trail: 'line', trailW: 0.9, lw: 0.85, br: 0, weight: 500,
-      css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
-      dark: { bg: '#000000', panel: '#07090c', ink: '#f2f4f5', quiet: '#9aa4ad', line: '#1c2228', accent: '#4be37f',
-        target: '#3fd8ff', caution: '#ffb100', warning: '#ff4d42', special: '#ee64e0', ok: '#4be37f',
-        water: '#17394a', land: '#8aa0a8' },
-      light: { bg: '#eef0f1', panel: '#e0e4e6', ink: '#12181c', quiet: '#4d5960', line: '#c5ccd0', accent: '#0a6e36',
-        target: '#006a96', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', ok: '#0a6e36',
+    'efis-airbus': {
+      name: 'Airbus', info: 'ND: Schwarz mit Weiß, Grün, Cyan und Magenta, Bogen', font: 'sans', weight: 500, caps: false, track: 0.02,
+      theme: 'dark', plane: 0.95, lw: 0.7, trail: 'taper', trailW: 0.8, symbol: 'glyph', block: 'plain', br: 6, badge: 'brand', arc: 60,
+      css: { '--radius': '1vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
+      dark: { bg: '#000000', panel: '#06080a', ink: '#ffffff', quiet: '#9fa9b1', line: '#1f272e', accent: '#4cff3c',
+        target: '#3fd8ff', caution: '#ffb100', warning: '#ff4d42', special: '#ff44cc', ok: '#4cff3c',
+        water: '#0f2a36', land: '#6f8590' },
+      light: { bg: '#eef0f1', panel: '#e0e4e6', ink: '#0d1317', quiet: '#4d5960', line: '#c5ccd0', accent: '#0a6e2a',
+        target: '#006a96', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', ok: '#0a6e2a',
         water: '#a9c0cc', land: '#ffffff' }
     },
-    boeing: {
-      name: 'Boeing', info: 'ND + EICAS', font: 'sans', theme: 'dark',
-      plane: 1.05, trail: 'line', trailW: 1.15, lw: 1.2, br: 5, weight: 600,
-      css: { '--radius': '0.5vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
-      dark: { bg: '#0b1118', panel: '#121b26', ink: '#eef2f6', quiet: '#93a1b2', line: '#223042', accent: '#5be08a',
-        target: '#4cc9f0', caution: '#ffb52e', warning: '#ff5348', special: '#e46ad9', ok: '#5be08a',
-        water: '#1c3f58', land: '#90a4bc' },
-      light: { bg: '#e9edf1', panel: '#dbe1e8', ink: '#101820', quiet: '#4b5866', line: '#bcc6d1', accent: '#11703d',
-        target: '#00608c', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', ok: '#11703d',
-        water: '#a7bcd0', land: '#ffffff' }
+    'eicam-boeing': {
+      name: 'Boeing', info: 'EICAS: Blaugrau, Weiß und Cyan, eckige Module, kräftige Schrift', font: 'sans', weight: 600, caps: false, track: 0.03,
+      theme: 'dark', plane: 1.08, lw: 1.3, trail: 'dash', trailW: 1.4, symbol: 'box', block: 'frame', br: 0, badge: 'brand',
+      css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
+      dark: { bg: '#0c1620', panel: '#142230', ink: '#e9f1f8', quiet: '#8fa3b8', line: '#2a3d52', accent: '#8fe6ff',
+        target: '#ffffff', caution: '#ffb52e', warning: '#ff5348', special: '#ff7ae0', ok: '#6fe39a',
+        water: '#1a3a52', land: '#5f7589' },
+      light: { bg: '#dfe6ee', panel: '#cdd7e2', ink: '#0c1822', quiet: '#44566a', line: '#b3c0cd', accent: '#005f80',
+        target: '#0b2233', caution: '#7a4700', warning: '#a31f17', special: '#9a2a90', ok: '#11703d',
+        water: '#9db6cb', land: '#ffffff' }
     },
-    night: {
-      name: 'Nacht', info: 'Rot und Dunkelgrün, blendfrei', font: 'mono', theme: 'dark', fixedAccent: true,
-      plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 3, weight: 500, badge: 'mono',
-      css: { '--radius': '0.3vh', '--val-color': 'var(--ink)', '--unit-color': 'var(--sub)' },
-      dark: { bg: '#000000', panel: '#080303', ink: '#e0604b', quiet: '#d0563f', line: '#2a0f0b', accent: '#4aa862',
-        target: '#4aa862', caution: '#e0604b', warning: '#ff8a76', special: '#ff8a76', ok: '#4aa862',
-        water: '#3a1a14', land: '#e0604b' }
-    },
-    military: {
-      name: 'Militär', info: 'Taktische Anzeige, Oliv', font: 'mono', theme: 'dark',
-      plane: 1, trail: 'line', trailW: 1.1, lw: 1, br: 0, weight: 500,
+    'chart-paper': {
+      name: 'Karte', info: 'Luftfahrtkarte auf Papier: Tinte, Magenta-Luftraum, Versalien', font: 'mono', weight: 500, caps: true, track: 0.12,
+      theme: 'light', plane: 1, lw: 0.9, trail: 'none', trailW: 1, symbol: 'cross', block: 'plain', br: 0, badge: 'mono',
+      ringRole: 'accent', mainRing: 'special', airportSpecial: true,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
-      dark: { bg: '#0a0e08', panel: '#10160c', ink: '#d3dbb4', quiet: '#8e9973', line: '#232c1a', accent: '#a7c957',
-        target: '#8fd6c8', caution: '#e0b040', warning: '#ff6e50', special: '#e48cd8', ok: '#a7c957',
-        water: '#1f3328', land: '#9aa878' }
+      light: { bg: '#f1ede0', panel: '#e6e0cf', ink: '#1b2a4a', quiet: '#55607a', line: '#cbc3ad', accent: '#1f4e9c',
+        target: '#0b6e99', caution: '#8a5200', warning: '#b3261e', special: '#a0197c', ok: '#1f6b3f',
+        water: '#b9d3e4', land: '#fbf8ee' },
+      dark: { bg: '#0c1424', panel: '#121c30', ink: '#dfe7f5', quiet: '#8d9bb8', line: '#243352', accent: '#7fb2f0',
+        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a5e', special: '#e57ac8', ok: '#6fdc8c',
+        water: '#1d3a5a', land: '#7d93b8' }
+    },
+    'nvg-night': {
+      name: 'Nacht', info: 'Nachtsicht: nur Rot und Dunkelgrün, ohne Schein, sehr dunkel', font: 'mono', weight: 600, caps: false, track: 0.04,
+      theme: 'dark', fixedAccent: true, plane: 1.1, lw: 1, trail: 'taper', trailW: 1.3, symbol: 'glyph', block: 'plain', br: 3,
+      badge: 'mono', halo: false,
+      css: { '--radius': '0.3vh', '--val-color': 'var(--ink)', '--unit-color': 'var(--quiet)', '--head': '#000000' },
+      dark: { bg: '#000000', panel: '#070100', ink: '#d4503c', quiet: '#cc4a36', line: '#2a0d08', accent: '#3f9e5a',
+        target: '#ff8a6e', caution: '#e0603a', warning: '#ff3b2b', special: '#ff8f7f', ok: '#3f9e5a',
+        water: '#1c0906', land: '#6a2219' }
+    },
+    'tactical-olive': {
+      name: 'Taktik', info: 'Taktische Anzeige in Oliv: Raster, Schablonen-Versalien', font: 'mono', weight: 500, caps: true, track: 0.18,
+      theme: 'dark', plane: 1, lw: 1.1, trail: 'dash', trailW: 1, symbol: 'diamond', block: 'frame', br: 0, badge: 'mono', grid: true,
+      css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
+      dark: { bg: '#0b0c06', panel: '#14150b', ink: '#d8d39c', quiet: '#8f8b5c', line: '#2c2c19', accent: '#b9c46b',
+        target: '#e8e0a0', caution: '#e0b040', warning: '#ff6e50', special: '#e48cd8', ok: '#b9c46b',
+        water: '#1d2a1c', land: '#7d7f52' }
     }
   };
+
+  // old style ids (links and bookmarks from before the redesign) -> the look they became
+  var ALIAS = {
+    atc: 'tower', terminal: 'fids', airbus: 'efis-airbus', boeing: 'eicam-boeing',
+    chart: 'chart-paper', night: 'nvg-night', military: 'tactical-olive'
+  };
+  var DEFAULT_STYLE = 'tower';
 
   // accent=<name>: [dark, light] colours; accent=<hex> is adjusted to be readable
   var ACCENTS = {
@@ -131,6 +150,14 @@ window.MA = MA;
 
   /* ---------- resolve ---------- */
 
+  // canonical style id: new ids as they are, old ids through ALIAS, anything else null
+  function canonical(name) {
+    name = String(name || '');
+    if (Object.prototype.hasOwnProperty.call(STYLES, name)) return name;
+    if (Object.prototype.hasOwnProperty.call(ALIAS, name)) return ALIAS[name];
+    return null;
+  }
+
   function paletteFor(style, theme) {
     var st = STYLES[style];
     return (theme === 'light' ? st.light : st.dark) || st.dark || st.light;
@@ -148,7 +175,7 @@ window.MA = MA;
   /* opts: {accent, font, brightness}; returns CSS custom properties, the canvas palette and style flags */
   function resolve(style, theme, opts) {
     opts = opts || {};
-    if (!STYLES[style]) style = 'atc';
+    style = canonical(style) || DEFAULT_STYLE;
     var st = STYLES[style], P = paletteFor(style, theme), light = P === st.light;
     var br = typeof opts.brightness === 'number' ? opts.brightness : 1;
     var acc = accentFor(P, light, opts.accent, st);
@@ -160,9 +187,10 @@ window.MA = MA;
     var badgeEdge = ensure(mix(P.panel, P.ink, 0.5), [P.panel, P.bg], 3);
     var font = opts.font === 'sans' || opts.font === 'mono' ? opts.font : st.font;
     var fam = font === 'sans' ? SANS : MONO;
+    var ringBase = st.ringRole ? P[st.ringRole] : P.ink, mainBase = st.mainRing ? P[st.mainRing] : P.ink;
 
     var css = {
-      '--bg': P.bg, '--panel': P.panel, '--ink': P.ink, '--dim': P.quiet,
+      '--bg': P.bg, '--panel': P.panel, '--ink': P.ink, '--dim': P.quiet, '--quiet': P.quiet,
       '--sub': ensure(mix(P.ink, P.panel, 0.22), surf, 4.5),
       '--attrib': ensure(mix(P.bg, P.ink, 0.55), [P.bg], 4.5),
       '--line': P.line, '--faint': mix(P.bg, P.ink, 0.12), '--pager': mix(P.panel, P.ink, 0.22),
@@ -172,16 +200,18 @@ window.MA = MA;
       '--badge-bg': badgeBg, '--badge-fg': badgeFg, '--badge-edge': badgeEdge,
       '--toast-bg': rgba(P.panel, 0.96), '--toast-line': rgba(P.special, 0.7),
       '--zebra': rgba(P.ink, light ? 0.04 : 0.035), '--head': mix(P.panel, P.ink, light ? 0.025 : 0.07),
-      '--font': fam, '--weight': String(st.weight || 500)
+      '--font': fam, '--weight': String(st.weight || 500),
+      '--lbl-track': (st.track || 0) + 'em', '--lbl-case': st.caps ? 'uppercase' : 'none'
     };
     for (var k in st.css) css[k] = st.css[k];
 
     var wcol = mix(P.bg, P.water, br > 1 ? 1 : Math.max(0.35, br));
+    var blockEdge = ensure(mix(P.bg, P.ink, 0.5), [P.bg], 3);
     var c = {
       bg: P.bg,
       land: [rgba(P.land, (light ? 0.8 : 0.1) * br), rgba(P.land, 0)],
-      water: wcol, halo: P.bg,
-      ring: a(P.ink, light ? 0.16 : 0.14), ringMain: a(P.ink, light ? 0.5 : 0.45),
+      water: wcol, halo: P.bg, outline: st.halo !== false,
+      ring: a(ringBase, st.ringRole ? 0.3 : (light ? 0.16 : 0.14)), ringMain: a(mainBase, st.mainRing ? 0.85 : (light ? 0.5 : 0.45)),
       tick: a(P.ink, light ? 0.55 : 0.5), tickMajor: a(P.ink, light ? 0.85 : 0.8),
       ringLabel: txt(0.62), tickLabel: txt(0.7),
       place: txt(0.6, [P.bg, P.water]), placeMajor: txt(0.86, [P.bg, P.water]), placeDot: a(P.ink, 0.5),
@@ -197,7 +227,12 @@ window.MA = MA;
       label: P.ink, labelDim: txt(0.72), detail: txt(0.8), detailDim: txt(0.62),
       quiet: P.quiet,
       high: light ? 0.6 : 0.55,
-      plane: st.plane || 1, trail: 'line', trailW: st.trailW || 1, lw: st.lw || 1, badgeR: st.br || 0, badgeMono: st.badge === 'mono',
+      // look: symbol, trail, data block, sweep, grid, rose arc (see the table above)
+      plane: st.plane || 1, lw: st.lw || 1, trailW: st.trailW || 1,
+      symbol: st.symbol || 'glyph', trail: st.trail || 'taper', block: st.block || 'plain',
+      sweep: !!st.sweep, grid: st.grid ? a(P.ink, light ? 0.1 : 0.07) : null, arc: st.arc || 0,
+      blockEdge: blockEdge, blockFill: rgba(P.panel, 0.92),
+      badgeR: st.br || 0, badgeMono: st.badge === 'mono',
       badgeBg: badgeBg, badgeFg: badgeFg, badgeEdge: badgeEdge, weight: st.weight || 500, font: fam,
       bgHex: P.bg, panelHex: P.panel, accentHex: acc, targetHex: P.target, specialHex: P.special, warningHex: P.warning
     };
@@ -213,8 +248,9 @@ window.MA = MA;
   MA.ACCENTS = ACCENTS;
   MA.style = {
     names: function () { return Object.keys(STYLES); },
+    canonical: canonical, aliases: ALIAS, defaultStyle: DEFAULT_STYLE,
     resolve: resolve, apply: apply, ensure: ensure, ratio: ratio, mix: mix,
     fonts: { mono: MONO, sans: SANS },
-    defaultTheme: function (name) { return (STYLES[name] && STYLES[name].theme) || 'dark'; }
+    defaultTheme: function (name) { var s = canonical(name); return (s && STYLES[s].theme) || 'dark'; }
   };
 })(window.MA);

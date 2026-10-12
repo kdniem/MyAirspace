@@ -31,6 +31,8 @@
   --unit-color: var(--sub);
   --call-color: var(--target);
   --weight: 500;
+  --lbl-track: 0.18em;   /* label letter-spacing and case: set per look by js/styles.js */
+  --lbl-case: none;
   --font: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --safe-x: 3.6vw;   /* overscan safe area */
   --safe-y: 3.6vh;
@@ -216,7 +218,8 @@ html, body {
 
 .lbl {
   font-size: 1.45vh;
-  letter-spacing: 0.18em;
+  letter-spacing: var(--lbl-track);
+  text-transform: var(--lbl-case);
   color: var(--dim);
   margin-bottom: 1vh;
 }
@@ -435,7 +438,8 @@ html, body {
   border-top: 0;
   background: var(--head);
   font-size: 1.55vh;
-  letter-spacing: 0.14em;
+  letter-spacing: var(--lbl-track);
+  text-transform: var(--lbl-case);
   color: var(--dim);
 }
 .lv-row.newest:before {
@@ -496,7 +500,7 @@ html, body {
 .st:first-child { border-left: 0; padding-left: 0; }
 .st-l {
   font-size: 1.45vh;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--lbl-track);
   color: var(--dim);
   text-transform: uppercase;
   white-space: nowrap;
@@ -568,3 +572,70 @@ html, body {
   transition-property: opacity, visibility, background-color;
   transition-duration: 1.6s, 0s, 1.8s;
 }
+
+/* ---------- looks: structure per style (js/styles.js sets the colours, type and symbols) ----------
+   Board, cells and table keep the same markup; the seven looks differ in borders, corners, rules and banding. */
+
+/* tower: thin hairlines, dotted cell rules, sharp scope corners */
+[data-style="tower"] #board { border-width: 1px; border-top-width: 1px; border-color: var(--line); }
+[data-style="tower"] #board { border-top-color: var(--accent); }
+[data-style="tower"] .cell { border-left-style: dotted; }
+[data-style="tower"] .lv-table { border-color: var(--line); }
+
+/* fids: no frame, split-flap seams (background-coloured gaps), amber header bar, bold caps */
+[data-style="fids"] #board { border: 0; background: var(--bg); }
+[data-style="fids"] .board-inner { background: var(--panel); }
+[data-style="fids"] .cell { border-left: 0.5vh solid var(--bg); }
+[data-style="fids"] .cell:first-child { border-left: 0; }
+[data-style="fids"] .val, [data-style="fids"] .led { letter-spacing: -0.01em; text-transform: uppercase; }
+[data-style="fids"] .lv-table { border: 0; background: var(--bg); padding: 0; }
+[data-style="fids"] .lv-head { margin: 0; padding: 0 1.6vw; background: var(--accent); color: var(--bg); font-weight: 600; }
+[data-style="fids"] .lv-row { border-top: 0.35vh solid var(--bg); }
+[data-style="fids"] .lv-rows .lv-row:nth-child(odd) { background: var(--panel); }
+[data-style="fids"] .lv-rows .lv-row:nth-child(even) { background: var(--head); }
+[data-style="fids"] .lv-rows .c { text-transform: uppercase; }
+[data-style="fids"] .lv-heading { text-transform: uppercase; }
+
+/* efis-airbus: thin rounded tiles, 1 px lines, the ND arc comes from the rose (js/radar.js) */
+[data-style="efis-airbus"] #board { border: 1px solid var(--line); border-top: 1px solid var(--line); }
+[data-style="efis-airbus"] .board-inner { padding: 1.4vh 1.2vw; }
+[data-style="efis-airbus"] .cell { border: 1px solid var(--line); border-radius: var(--radius); margin: 0 0.3vw; padding: 1.4vh 1vw; }
+[data-style="efis-airbus"] .cell:first-child { border: 1px solid var(--line); padding-left: 1vw; }
+[data-style="efis-airbus"] .lv-table { border: 1px solid var(--line); }
+[data-style="efis-airbus"] .lv-head { background: var(--panel); }
+
+/* eicam-boeing: squarer modules, a thick accent rule on top, lighter grey labels */
+[data-style="eicam-boeing"] #board { border-radius: 0; border: 1px solid var(--line); border-top: 0.5vh solid var(--accent); }
+[data-style="eicam-boeing"] .board-inner { padding: 1.2vh 1vw; }
+[data-style="eicam-boeing"] .cell { border: 1px solid var(--line); background: var(--head); margin: 0 0.25vw; padding: 1.4vh 1vw; }
+[data-style="eicam-boeing"] .cell:first-child { border: 1px solid var(--line); background: var(--head); padding-left: 1vw; }
+[data-style="eicam-boeing"] .lbl { color: var(--dim); font-weight: 400; }
+[data-style="eicam-boeing"] .lv-table { border: 1px solid var(--line); border-top: 0.5vh solid var(--accent); }
+[data-style="eicam-boeing"] .lv-head { background: var(--head); }
+
+/* chart-paper: a sheet with ink rules, dashed cell divisions, double rule on top */
+[data-style="chart-paper"] #board { border: 1px solid var(--accent); border-top: 0.3vh double var(--accent); }
+[data-style="chart-paper"] .cell { border-left-style: dashed; border-left-color: var(--line); }
+[data-style="chart-paper"] .lv-table { border: 1px solid var(--accent); }
+[data-style="chart-paper"] .lv-head { background: transparent; border-bottom: 1px solid var(--accent); }
+
+/* nvg-night: no frames, no glow, only hairline rules */
+[data-style="nvg-night"] #board { border: 0; border-top: 1px solid var(--line); }
+[data-style="nvg-night"] .wx, [data-style="nvg-night"] .clock, [data-style="nvg-night"] .brand-place { text-shadow: none; }
+[data-style="nvg-night"] .lv-table { border: 0; border-top: 1px solid var(--line); }
+
+/* tactical-olive: a grid under the board and table, boxed stencil labels, accent frame */
+[data-style="tactical-olive"] #board {
+  border: 1px solid var(--accent); border-top-width: 1px; border-radius: 0;
+  background-color: var(--panel);
+  background-image: linear-gradient(var(--zebra) 1px, transparent 1px), linear-gradient(90deg, var(--zebra) 1px, transparent 1px);
+  background-size: 4.6vh 4.6vh;
+}
+[data-style="tactical-olive"] .lbl {
+  display: inline-block; align-self: flex-start; padding: 0.2vh 0.5vw;
+  border: 1px solid var(--dim); color: var(--dim);
+}
+[data-style="tactical-olive"] .cell { border-left: 1px solid var(--line); }
+[data-style="tactical-olive"] .lv-table { border: 1px solid var(--accent); }
+[data-style="tactical-olive"] .lv-head { color: var(--accent); }
+[data-style="tactical-olive"] .badge { border-color: var(--caution); color: var(--caution); }

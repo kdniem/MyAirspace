@@ -91,7 +91,10 @@ const ROWS = [
   ['Focus view apron edge', 'c.apronEdge', 'c.bg', 3],
   ['Focus view stand dot', 'c.stand', 'c.bg', 3],
   ['Focus view gate label', 'c.gateLabel', 'c.bg', 4.5],
-  ['Focus view terminal label', 'c.placeMajor', 'c.bg', 4.5]
+  ['Focus view terminal label', 'c.placeMajor', 'c.bg', 4.5],
+  // data block looks (js/styles.js block: frame, tab): the outline is a line (3:1), the text on the tab fill 4.5:1
+  ['Data block frame (frame look)', 'c.blockEdge', 'c.bg', 3],
+  ['Data block text on tab fill', 'c.label', 'c.blockFill', 4.5]
 ];
 
 function table(style, theme, opts) {

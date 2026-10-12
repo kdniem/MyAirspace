@@ -5,10 +5,10 @@
   'use strict';
 
   // Must match the defaults in js/config.js: only differing values go into the URL.
-  const DEF = { r: 25, label: 'Hamburg', units: 'ft', trail: 4, night: '23-6', speed: 'kt', pressure: 'hpa', time: 'both', style: 'atc' };
+  const DEF = { r: 25, label: 'Hamburg', units: 'ft', trail: 4, night: '23-6', speed: 'kt', pressure: 'hpa', time: 'both', style: 'tower' };
   const PASSTHROUGH = ['poll', 'rotate', 'dim', 'provider', 'orient'];  // advanced, kept if present
   const MAc = window.MA || {};
-  const STY = MAc.STYLES || { atc: { name: 'ATC', info: '', font: 'mono', theme: 'dark' } };
+  const STY = MAc.STYLES || { tower: { name: 'Tower', info: '', font: 'mono', theme: 'dark' } };
   const cfg0 = MAc.config || {};          // js/config.js parsed this page's own query: validated options
   const defTheme = (s) => (STY[s] && STY[s].theme) || 'dark';
   const defFont = (s) => (STY[s] && STY[s].font) || 'mono';
@@ -626,18 +626,21 @@
         const tx = x + Math.sin(a) * i * 17 * unit * 1.6, ty = y - Math.cos(a) * i * 17 * unit * 1.6;
         g.globalAlpha = 1 - i / (trailN + 1.5);
         g.fillStyle = color; g.strokeStyle = color;
-        if (c.trail === 'line') { if (i === 1) { g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(a) * trailN * 27 * unit, y - Math.cos(a) * trailN * 27 * unit); g.stroke(); } }
-        else { g.beginPath(); g.arc(tx, ty, 3 * unit * 1.6, 0, Math.PI * 2); g.fill(); }
+        if (c.trail === 'none') { if (i === 1) { /* no history */ } }
+        else if (c.trail === 'dots') { g.beginPath(); g.arc(tx, ty, 3 * unit * 1.6, 0, Math.PI * 2); g.fill(); }
+        else { if (i === 1) { g.lineWidth = 2; if (c.trail === 'dash') g.setLineDash([6, 5]); g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(a) * trailN * 27 * unit, y - Math.cos(a) * trailN * 27 * unit); g.stroke(); g.setLineDash([]); } }
       }
       g.globalAlpha = 1;
       g.save(); g.translate(x, y); g.rotate(hdg * Math.PI / 180);
       const s = 12 * unit * 1.6;
       g.fillStyle = color; g.strokeStyle = color; g.lineWidth = 3.2 * c.lw; g.lineJoin = 'round'; g.lineCap = 'round';
       g.beginPath();
-      if (sym === 'diamond') { g.moveTo(0, -s); g.lineTo(s * 0.75, 0); g.lineTo(0, s); g.lineTo(-s * 0.75, 0); g.closePath(); fill ? g.fill() : g.stroke(); }
-      else if (sym === 'triangle') { g.moveTo(0, -s); g.lineTo(s * 0.8, s * 0.8); g.lineTo(-s * 0.8, s * 0.8); g.closePath(); fill ? g.fill() : g.stroke(); }
-      else if (sym === 'arrow') { g.moveTo(0, -s * 1.1); g.lineTo(s * 0.75, s * 0.9); g.lineTo(0, s * 0.4); g.lineTo(-s * 0.75, s * 0.9); g.closePath(); g.fill(); }
-      else if (sym === 'square') { g.rect(-s * 0.7, -s * 0.7, s * 1.4, s * 1.4); fill ? g.fill() : g.stroke(); }
+      // same marks as js/radar.js drawPlane: ring, dot, box, cross, diamond; glyph (silhouette) is a chevron here
+      if (sym === 'ring') { g.lineWidth = 2.4 * c.lw; g.arc(0, 0, s * 0.8, 0, Math.PI * 2); g.moveTo(0, -s * 0.8); g.lineTo(0, -s * 1.7); g.stroke(); }
+      else if (sym === 'dot') { g.fillRect(-s * 0.36, -s * 0.36, s * 0.72, s * 0.72); }
+      else if (sym === 'box') { g.lineWidth = 2.4 * c.lw; g.rect(-s * 0.64, -s * 0.64, s * 1.28, s * 1.28); g.moveTo(0, -s * 0.64); g.lineTo(0, -s * 1.6); g.stroke(); }
+      else if (sym === 'cross') { g.lineWidth = 2.4 * c.lw; g.moveTo(-s * 0.8, 0); g.lineTo(s * 0.8, 0); g.moveTo(0, -s * 0.8); g.lineTo(0, s * 0.8); g.stroke(); }
+      else if (sym === 'diamond') { g.lineWidth = 2.4 * c.lw; g.moveTo(0, -s * 0.8); g.lineTo(s * 0.64, 0); g.lineTo(0, s * 0.8); g.lineTo(-s * 0.64, 0); g.closePath(); g.stroke(); }
       else { g.lineWidth = 4 * c.lw; g.moveTo(-s * 0.85, s * 0.8); g.lineTo(0, -s * 0.85); g.lineTo(s * 0.85, s * 0.8); g.stroke(); g.beginPath(); g.arc(0, s * 0.1, 2.5, 0, Math.PI * 2); g.fill(); }
       g.restore();
     };

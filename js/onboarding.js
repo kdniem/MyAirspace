@@ -102,13 +102,13 @@
 
     // style names come from js/styles.js; here the sentence for a first-time user
     styles: {
-      atc: 'Wie der Radar im Tower. Grün auf Schwarz, ruhig und klassisch.',
-      terminal: 'Wie die Anzeigetafel am Flughafen. Blau mit Gelb.',
-      chart: 'Wie eine Luftfahrtkarte aus Papier. Hell und übersichtlich.',
-      airbus: 'Wie im Cockpit eines Airbus. Schwarz mit Grün und Cyan.',
-      boeing: 'Wie im Cockpit einer Boeing. Bläuliches Grau, kräftige Schrift.',
-      night: 'Sehr dunkel und nur Rot. Blendet am Abend nicht.',
-      military: 'Gedämpftes Oliv, wie eine taktische Anzeige.'
+      tower: 'Wie der Radarschirm im Tower. Phosphorgrün auf Schwarz, runder Schwenk, feine Linien.',
+      fids: 'Wie die Anzeigetafel am Flughafen. Holzkohle und Warmweiß mit Bernstein, große Versalien.',
+      'efis-airbus': 'Wie im Airbus-Cockpit. Schwarz, Grün, Cyan und Magenta, der Kompass als Bogen.',
+      'eicam-boeing': 'Wie die Anzeigen einer Boeing. Blaugrau, Weiß und Cyan, eckige Kacheln.',
+      'chart-paper': 'Wie eine Luftfahrtkarte aus Papier. Tinte und Magenta, hell und übersichtlich.',
+      'nvg-night': 'Nachtsicht: nur Rot und Dunkelgrün, ohne Schein. Blendet am Abend nicht.',
+      'tactical-olive': 'Wie eine taktische Anzeige in Oliv. Raster und Schablonenschrift.'
     },
     themeHint: 'Automatisch: hell zwischen Sonnenauf- und -untergang an deinem Standort, nachts dunkel.',
     accentAuto: 'Stil',
@@ -187,7 +187,7 @@
     recap: (label, styleName, km) => (label ? label + ' · ' : '') + 'Stil ' + styleName + ' · Radius ' + km + ' km',
     tips: [
       { title: 'Nachts wird es dunkler', text: 'Von 23 bis 6 Uhr dimmt der Bildschirm von selbst. Die Zeiten änderst du unter „Alle Einstellungen“.' },
-      { title: 'Look schnell wechseln', text: 'Hänge an die Adresse &style=night an, oder ändere den Wert nach style=. Möglich sind atc, terminal, chart, airbus, boeing, night und military.' },
+      { title: 'Look schnell wechseln', text: 'Hänge an die Adresse &style=nvg-night an, oder ändere den Wert nach style=. Möglich sind tower, fids, efis-airbus, eicam-boeing, chart-paper, nvg-night und tactical-olive (die alten Namen atc, terminal, airbus, boeing, chart, night und military funktionieren weiter).' },
       { title: 'Später ändern', text: 'Der Fernseher merkt sich nur die letzte Adresse. Alles Wichtige steckt in der Adresse, speichere sie als Lesezeichen. Zum Ändern öffnest du diese Seite einfach noch einmal.' }
     ]
   };
