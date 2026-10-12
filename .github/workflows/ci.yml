@@ -21,7 +21,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      # no dependencies in the repo: install Playwright outside of it and point the tests at it
+      # runtime dependencies (jsfive, pako) for the weather radar code; lockfile pinned, no install scripts needed
+      - name: Install repo dependencies
+        run: npm ci --ignore-scripts
+      # Playwright lives outside the repo: install it there and point the tests at it
       - name: Install Playwright and Chromium
         run: |
           npm install --ignore-scripts --prefix "$RUNNER_TEMP/pw" playwright@1.56.1
