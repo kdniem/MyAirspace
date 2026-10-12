@@ -199,6 +199,19 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     toast.el.className = 'toast' + (sp.alert ? ' alert' : '') + ' on';
     toast.on = true;
     toast.until = now + TOAST_MS;
+    clearHeader();
+  }
+
+  // The banner stays clear of the header block (clock, summary, METAR and runway lines). On phones the
+  // header lines wrap down the same column the banner runs through, so the banner then starts below the block.
+  function clearHeader() {
+    var el = toast.el, meta = document.querySelector('#top .meta');
+    el.style.top = '';
+    if (!meta) return;
+    var a = el.getBoundingClientRect(), m = meta.getBoundingClientRect();
+    if (a.right <= m.left || a.left >= m.right || a.bottom <= m.top || a.top >= m.bottom) return;
+    var host = el.offsetParent ? el.offsetParent.getBoundingClientRect() : { top: 0 };
+    el.style.top = Math.ceil(m.bottom - host.top + 6) + 'px';
   }
 
   /* ---------- canvas: radar or focus view ---------- */

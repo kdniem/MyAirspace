@@ -376,6 +376,7 @@ html, body {
   transition: opacity 1.2s ease, transform 1.2s ease;
 }
 .toast.on { opacity: 1; transform: translateY(0); }
+@media (max-width: 700px) { .toast { white-space: normal; } }   /* phones: the banner wraps instead of cutting its text */
 .toast-mark { display: none; }
 .toast-label {
   font-weight: 600;
@@ -523,6 +524,7 @@ html, body {
   align-items: stretch;
   margin-top: 2.2vh;
   min-height: 8.6vh;
+  padding-right: 17vw;   /* the fullscreen button sits in this corner (js/fullscreen.js), also with its longer label */
 }
 .st {
   flex: 1 1 auto;
