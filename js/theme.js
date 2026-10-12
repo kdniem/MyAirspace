@@ -50,8 +50,9 @@
     return isDay(t, cfg.lat, cfg.lon) ? 'light' : 'dark';
   }
 
-  function apply(name, fade) {
-    if (name === current) return;
+  // force: re-resolve the style tokens even when the name is unchanged (settings overlay, js/settings.js)
+  function apply(name, fade, force) {
+    if (name === current && !force) return;
     current = name;
     if (fade) {
       // .theme-fade (css/style.css) turns on colour transitions for the switch only
@@ -69,7 +70,7 @@
   }
 
   apply(resolve(Date.now()), false);
-  if (cfg.theme === 'auto') setInterval(function () { apply(resolve(Date.now()), true); }, CHECK_MS);
+  setInterval(function () { if (cfg.theme === 'auto') apply(resolve(Date.now()), true); }, CHECK_MS);
 
   MA.theme = {
     current: function () { return current; },
@@ -77,6 +78,9 @@
     fadeMs: FADE_MS,
     sun: sun,
     isDay: isDay,
-    set: function (name) { apply(name, true); }   // for tests and the console
+    set: function (name) { apply(name, true); },   // for tests and the console
+    // settings overlay: a new mode or a changed style/brightness, applied at once (the radar palette follows via listeners)
+    setMode: function (mode) { cfg.theme = mode; apply(resolve(Date.now()), true, true); },
+    refresh: function () { apply(resolve(Date.now()), true, true); }
   };
 })(window.MA);

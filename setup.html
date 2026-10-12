@@ -199,23 +199,35 @@
 
           <div class="group">
             <div class="field">
-              <span class="label" id="view-lbl">Ansicht</span>
-              <div class="seg" role="radiogroup" aria-labelledby="view-lbl">
-                <label><input type="radio" name="view" value="auto" checked><span>Wechselnd</span></label>
-                <label><input type="radio" name="view" value="radar"><span>Radar</span></label>
-                <label><input type="radio" name="view" value="board"><span>Tafel</span></label>
-                <label><input type="radio" name="view" value="airport"><span>Flughafen</span></label>
+              <label class="label" for="view-sel">Ansicht: Wechsel</label>
+              <select id="view-sel" name="view">
+                <option value="radar">Radar</option>
+                <option value="board">Tafel</option>
+                <option value="airport">Flughafen</option>
+                <option value="rot2" selected>Wechsel: Radar · Tafel</option>
+                <option value="rot3">Wechsel: Radar · Tafel · Flughafen</option>
+              </select>
+            </div>
+            <div class="field" id="rot-field" style="display:none">
+              <span class="label" id="rot-lbl">Zeit je Ansicht</span>
+              <label for="radarsec">Radar <output id="radarsec-out" for="radarsec">240 s</output></label>
+              <input id="radarsec" type="range" min="10" max="600" step="10" value="240" aria-labelledby="rot-lbl">
+              <label for="boardsec">Tafel <output id="boardsec-out" for="boardsec">40 s</output></label>
+              <input id="boardsec" type="range" min="5" max="120" step="5" value="40" aria-labelledby="rot-lbl">
+              <div id="airportsec-row" style="display:none">
+                <label for="airportsec">Flughafen <output id="airportsec-out" for="airportsec">60 s</output></label>
+                <input id="airportsec" type="range" min="10" max="600" step="10" value="60" aria-labelledby="rot-lbl">
               </div>
             </div>
             <div class="field" id="airport-field" style="display:none">
-              <span class="label" id="airport-lbl">Flughafen</span>
-              <div class="seg" role="radiogroup" aria-labelledby="airport-lbl">
-                <label><input type="radio" name="airport" value="HAM" checked><span>HAM</span></label>
-                <label><input type="radio" name="airport" value="XFW"><span>XFW</span></label>
-                <label><input type="radio" name="airport" value="FRA"><span>FRA</span></label>
-                <label><input type="radio" name="airport" value="FMO"><span>FMO</span></label>
-                <label><input type="radio" name="airport" value="CPH"><span>CPH</span></label>
-              </div>
+              <label class="label" for="airport-sel">Flughafen</label>
+              <select id="airport-sel" name="airport">
+                <option value="HAM" selected>HAM · Hamburg</option>
+                <option value="XFW">XFW · Finkenwerder</option>
+                <option value="FRA">FRA · Frankfurt</option>
+                <option value="FMO">FMO · Münster/Osnabrück</option>
+                <option value="CPH">CPH · Kopenhagen</option>
+              </select>
             </div>
             <p id="view-hint" class="note"></p>
           </div>
@@ -230,6 +242,16 @@
             <div class="field">
               <span class="label" id="elx-lbl">Weitere Elemente</span>
               <div id="elements" class="toggles" role="group" aria-labelledby="elx-lbl"></div>
+            </div>
+            <div class="field">
+              <span class="label" id="chart-lbl">Luftfahrtkarte</span>
+              <div class="toggles" role="group" aria-labelledby="chart-lbl">
+                <label class="switch" id="chart-switch">
+                  <input id="chartbg" type="checkbox">
+                  <span class="track" aria-hidden="true"></span>
+                  <span><b id="chartbg-name"></b><small id="chartbg-hint"></small></span>
+                </label>
+              </div>
             </div>
             <div class="field">
               <label for="trail">Länge der Flugspuren <output id="trail-out" for="trail">4 min</output></label>
@@ -273,6 +295,11 @@
               </div>
             </div>
           </div>
+          <details class="more" id="diag-more">
+            <summary>Erweitert: Diagnoseprotokoll</summary>
+            <!-- js/diag.js fills this box: count, download (.txt, on click only), clear -->
+            <div id="diag-box" class="diag-box"></div>
+          </details>
         </div>
       </section>
 
@@ -336,13 +363,14 @@
     <p id="wz-hint" class="wz-hint" role="status"></p>
   </nav>
 
-  <footer class="foot">Ortssuche: © OpenStreetMap-Mitwirkende, Nominatim · <a href="datenschutz.html">Datenschutz</a></footer>
+  <footer class="foot">Keine Navigation. Die Stile „Airbus“ und „Boeing“ sind nur Vorbilder, ohne Verbindung zu den Firmen. Ortssuche: © OpenStreetMap-Mitwirkende, Nominatim · <a href="datenschutz.html">Datenschutz</a></footer>
 
   <script src="data/geo-features.js"></script>
   <script src="js/styles.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/config.js"></script>
   <script src="js/qr.js"></script>
+  <script src="js/diag.js"></script>
   <script src="js/setup.js"></script>
 </body>
 </html>

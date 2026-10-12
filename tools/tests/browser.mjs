@@ -67,8 +67,8 @@ const ALLOW = {
   setup: [/^https:\/\/nominatim\.openstreetmap\.org\//, /^https:\/\/myairspace-nu\.vercel\.app\/api\/proxy\?/],   // the preview runs live (mocked)
   live: [/^https:\/\/myairspace-nu\.vercel\.app\/api\/proxy\?/, /^https:\/\/api\.adsb\.lol\/api\/0\/route\//]
 };
-async function newPage(browser, vp, mode, geo) {
-  const ctx = await browser.newContext(Object.assign({ viewport: vp, serviceWorkers: 'block', deviceScaleFactor: 1 }, geo ? { permissions: ['geolocation'], geolocation: { latitude: 53.5511, longitude: 9.9937 } } : {}));
+async function newPage(browser, vp, mode, geo, extra) {
+  const ctx = await browser.newContext(Object.assign({ viewport: vp, serviceWorkers: 'block', deviceScaleFactor: 1 }, extra || {}, geo ? { permissions: ['geolocation'], geolocation: { latitude: 53.5511, longitude: 9.9937 } } : {}));
   const page = await ctx.newPage();
   const st = { errors: [], blocked: [], dialogs: 0, local404: [], reqs: [], nom: '[]' };
   page.on('pageerror', (e) => st.errors.push('pageerror: ' + e.message));
@@ -221,12 +221,24 @@ async function setupCase(browser, vp) {
     if (!/style=eicam-boeing/.test(info.url)) problems.push('generated URL lacks style=eicam-boeing: ' + info.url);
     if (!/accent=amber/.test(info.url)) problems.push('generated URL lacks accent=amber: ' + info.url);
     // focus view choice: the address gets view=airport and the airport, the airport row shows up
-    await page.check('input[name=view][value=airport]', { force: true });
-    await page.check('input[name=airport][value=FRA]', { force: true });
+    await page.selectOption('#view-sel', 'airport');
+    await page.selectOption('#airport-sel', 'FRA');
     await page.waitForTimeout(300);
     const u2 = await page.textContent('#url');
     if (!/view=airport/.test(u2) || !/airport=FRA/.test(u2)) problems.push('generated URL lacks the focus view: ' + u2);
     if (!(await page.locator('#airport-field').isVisible())) problems.push('airport choice hidden in the focus view');
+    // the rotation with the focus view: views= and the airport, the duration sliders show up
+    await page.selectOption('#view-sel', 'rot3');
+    await page.waitForTimeout(300);
+    const u3 = await page.textContent('#url');
+    if (!/views=radar(%2C|,)board(%2C|,)airport/.test(u3) || !/airport=FRA/.test(u3)) problems.push('generated URL lacks the rotation: ' + u3);
+    if (!(await page.locator('#rot-field').isVisible())) problems.push('rotation durations hidden in a rotation preset');
+    if (!(await page.locator('#airportsec-row').isVisible())) problems.push('airport duration hidden in the rotation with the airport');
+    await page.selectOption('#view-sel', 'rot2');
+    await page.waitForTimeout(300);
+    const u4 = await page.textContent('#url');
+    if (/views=|airport=|airportsec=/.test(u4)) problems.push('default rotation writes non-default options: ' + u4);
+    if (!/lat=53\.5/.test(u4)) problems.push('default rotation URL lost its location: ' + u4);
     if (!/lat=53\.5/.test(info.url) || !/lon=9\.9/.test(info.url)) problems.push('generated URL lacks the location: ' + info.url);
     checked.pages++;
     if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
@@ -407,6 +419,36 @@ async function airportCase(browser, code, vp) {
   } finally { await ctx.close(); }
 }
 
+// ---------- rotation with the focus view: the canvas switches after radarsec, the body gets view-airport ----------
+async function rotationCase(browser) {
+  const id = 'rotation_airport_1280x720';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&views=radar,airport&radarsec=10&airportsec=10', { waitUntil: 'load' });
+    await page.waitForTimeout(1000);
+    if (await page.evaluate(() => document.body.classList.contains('view-airport'))) problems.push('focus view on before the first switch');
+    await page.waitForTimeout(12500);   // radar 10 s, then the 1.2 s fade to the focus view
+    const s = await page.evaluate(() => ({
+      view: document.body.classList.contains('view-airport'),
+      board: getComputedStyle(document.getElementById('board')).display,
+      opacity: getComputedStyle(document.getElementById('radar')).opacity,
+      place: document.getElementById('place').textContent,
+      attrib: document.getElementById('attrib').textContent
+    }));
+    collect(st, problems);
+    if (!s.view) problems.push('body has no view-airport after the switch');
+    if (s.board !== 'none') problems.push('board visible in the focus view');
+    if (s.opacity !== '1') problems.push('canvas not back at full opacity after the fade: ' + s.opacity);
+    if (s.place !== 'HAMBURG') problems.push('header does not show the airport: ' + s.place);
+    if (!/OpenStreetMap/.test(s.attrib)) problems.push('attribution lacks the OpenStreetMap credit in the focus view');
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
 // ---------- TV first-run welcome overlay ----------
 async function hintCase(browser) {
   const id = 'tv_welcome';
@@ -486,6 +528,209 @@ async function liveCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- motion option: off and full at 1280x720 (js/motion.js) ----------
+async function motionCase(browser, level) {
+  const id = 'motion_' + level + '_1280x720';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&motion=' + level, { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+    const r = await page.evaluate(PROBE);
+    const lvl = await page.evaluate(() => [document.documentElement.getAttribute('data-motion'), MA.motion.level, MA.motion.enabled()]);
+    collect(st, problems);
+    if (lvl[0] !== level || lvl[1] !== level) problems.push('motion level is ' + lvl.join('/') + ', expected ' + level);
+    if ((lvl[2] === true) !== (level !== 'off')) problems.push('motion enabled flag wrong for ' + level);
+    if (!r.canvas) problems.push('canvas missing or hidden');
+    else if (r.canvas.std < 1.5 || r.canvas.colors < 6) problems.push('canvas looks blank (std ' + r.canvas.std + ', colors ' + r.canvas.colors + ')');
+    r.overlap.forEach((m) => problems.push('header overlap: ' + m));
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
+// ---------- chart background (chartbg=1, demo traffic, no third-party requests) ----------
+async function chartCase(browser, vp) {
+  const id = 'chart_' + vp.w + 'x' + vp.h;
+  const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&chartbg=1&style=chart-paper', { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+    const r = await page.evaluate(PROBE);
+    collect(st, problems);
+    const data = await page.evaluate(() => (window.MA && MA.chartData) ? { air: MA.chartData.airspaces.length, nav: MA.chartData.navaids.length } : null);
+    if (!data || data.air < 10 || data.nav < 10) problems.push('chart data not loaded (' + JSON.stringify(data) + ')');
+    if (!r.canvas) problems.push('canvas missing or hidden');
+    else if (r.canvas.std < 1.5 || r.canvas.colors < 6) problems.push('canvas looks blank (std ' + r.canvas.std + ', colors ' + r.canvas.colors + ')');
+    r.overlap.forEach((m) => problems.push('header overlap: ' + m));
+    r.clipped.forEach((m) => problems.push('clipped: ' + m));
+    r.offscreen.forEach((m) => problems.push('outside viewport: ' + m));
+    r.contrast.forEach((x) => { if (x.ratio < x.min) problems.push('contrast ' + x.s + ' = ' + x.ratio + ':1 < ' + x.min); });
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); await shot(page, id); } finally { await ctx.close(); }
+}
+
+async function diagPanelCase(browser) {
+  const id = 'diag_panel';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?diag=1&demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(1500);
+    const info = await page.evaluate(() => {
+      const p = document.getElementById('diag-panel');
+      if (!p) return null;
+      const box = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+      return { panel: box(p), brand: box(document.querySelector('.brand')), meta: box(document.querySelector('#top .meta')),
+        board: box(document.getElementById('board')), text: p.textContent, display: getComputedStyle(p).display, fonts: document.fonts.status };
+    });
+    if (!info) problems.push('?diag=1 shows no diagnostics panel');
+    else {
+      if (!/\bboot\b/.test(info.text)) problems.push('diagnostics panel has no boot event');
+      const hit = (a, b) => a && b && Math.min(a.r, b.r) - Math.max(a.l, b.l) > 1 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 1;
+      const fmt = (b) => b ? [b.l, b.t, b.r, b.b].map((v) => Math.round(v)).join(',') : 'none';
+      if (hit(info.panel, info.brand) || hit(info.panel, info.meta)) problems.push('diagnostics panel overlaps the header (panel l,t,r,b ' + fmt(info.panel) + '; brand ' + fmt(info.brand) + '; meta ' + fmt(info.meta) + '; fonts ' + info.fonts + ')');
+      if (hit(info.panel, info.board)) problems.push('diagnostics panel overlaps the board');
+      if (info.panel.r > 1280 || info.panel.b > 720 || info.panel.l < 0 || info.panel.t < 0) problems.push('diagnostics panel leaves the 1280x720 screen');
+    }
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); }
+    await shot(page, id + '_1280');
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
+}
+async function diagSetupCase(browser) {
+  const id = 'diag_setup';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 800 }, 'setup');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/setup.html?demo=1&wizard=0', { waitUntil: 'load' });
+    const btns = await page.evaluate(() => Array.from(document.querySelectorAll('#diag-box button')).map((b) => b.textContent));
+    if (!btns.some((t) => /Diagnoseprotokoll herunterladen/.test(t))) problems.push('setup page has no "Diagnoseprotokoll herunterladen" button');
+    if (!btns.some((t) => /Protokoll leeren/.test(t))) problems.push('setup page has no "Protokoll leeren" button');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
+}
+
+// ---------- settings overlay (js/settings.js): gear, keyboard, focus, persistence, reload note ----------
+const SETTINGS_RECT = () => {
+  const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+  return { gear: r('#set-btn'), board: r('#board'), fs: r('#fs-btn'), attrib: r('#attrib'), top: r('#top'), panel: r('#set-layer .set-panel') };
+};
+const overlaps = (a, b) => !!a && !!b && a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1;
+
+async function settingsCase(browser) {
+  const id = 'settings_1280';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(1200);
+    const geo = await page.evaluate(SETTINGS_RECT);
+    ['gear', 'board', 'fs', 'attrib', 'top'].forEach((k) => { if (!geo[k]) problems.push('missing element for overlap check: ' + k); });
+    if (overlaps(geo.gear, geo.board)) problems.push('gear overlaps the flight board');
+    if (overlaps(geo.gear, geo.fs)) problems.push('gear overlaps the fullscreen button');
+    if (overlaps(geo.gear, geo.attrib)) problems.push('gear overlaps the attribution footer');
+    if (overlaps(geo.gear, geo.top)) problems.push('gear overlaps the header');
+    // mouse: click opens, focus moves into the dialog, Tab stays inside
+    await page.click('#set-btn');
+    await page.waitForTimeout(400);
+    if (!(await page.evaluate(() => document.getElementById('set-layer').classList.contains('open')))) problems.push('click on the gear did not open the overlay');
+    for (let i = 0; i < 12; i++) await page.keyboard.press('Tab');
+    const inside = await page.evaluate(() => document.getElementById('set-layer').contains(document.activeElement));
+    if (!inside) problems.push('focus left the overlay while it was open (Tab)');
+    // change Stil: applies live and is saved
+    await page.selectOption('#set-style', 'eicam-boeing');
+    await page.waitForTimeout(300);
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'eicam-boeing') problems.push('Stil did not apply live');
+    const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('ma.settings')); } catch (e) { return null; } });
+    if (!saved || saved.style !== 'eicam-boeing') problems.push('Stil was not saved in localStorage ma.settings');
+    if (saved && ('lat' in saved || 'lon' in saved)) problems.push('localStorage ma.settings holds a location');
+    // Ansicht = Flughafen waits for a reload and says so
+    await page.selectOption('#set-view', 'airport');
+    await page.waitForTimeout(150);
+    const reloadShown = await page.evaluate(() => !document.getElementById('set-reload').hidden && /Neuladen/.test(document.getElementById('note-view').textContent));
+    if (!reloadShown) problems.push('Ansicht Flughafen did not show "wirkt nach Neuladen" and the Neu laden button');
+    await page.selectOption('#set-view', 'auto');
+    await page.waitForTimeout(150);
+    if (await page.evaluate(() => !document.getElementById('set-reload').hidden)) problems.push('Neu laden stayed visible after the view was set back');
+    // Escape closes and returns focus to the gear
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+    if (await page.evaluate(() => document.getElementById('set-layer').classList.contains('open'))) problems.push('Escape did not close the overlay');
+    if (!(await page.evaluate(() => document.activeElement && document.activeElement.id === 'set-btn'))) problems.push('focus did not return to the gear after closing');
+    // keyboard: S opens and closes
+    await page.evaluate(() => document.body.focus());
+    await page.keyboard.press('s');
+    await page.waitForTimeout(300);
+    if (!(await page.evaluate(() => document.getElementById('set-layer').classList.contains('open')))) problems.push('key S did not open the overlay');
+    await page.keyboard.press('S');
+    await page.waitForTimeout(300);
+    if (await page.evaluate(() => document.getElementById('set-layer').classList.contains('open'))) problems.push('key S did not close the overlay');
+    // persistence: after reload the saved Stil applies, and an address parameter still wins
+    await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'eicam-boeing') problems.push('saved Stil did not survive a reload');
+    await page.goto(BASE + '/index.html?demo=1&style=tower', { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'tower') problems.push('address parameter style=tower did not win over the saved style');
+    // show= hides the board: no gear
+    await page.goto(BASE + '/index.html?demo=1&hide=board', { waitUntil: 'load' });
+    await page.waitForTimeout(600);
+    if (await page.evaluate(() => !!document.getElementById('set-btn'))) problems.push('gear shown although hide=board removes the board');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
+async function settingsTouchCase(browser) {
+  const id = 'settings_touch_390';
+  const { ctx, page, st } = await newPage(browser, { width: 390, height: 844 }, 'demo', false, { hasTouch: true, isMobile: true });
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(1000);
+    await page.tap('#set-btn');
+    await page.waitForTimeout(400);
+    const panel = await page.evaluate(() => {
+      const e = document.querySelector('#set-layer .set-panel');
+      const open = document.getElementById('set-layer').classList.contains('open');
+      if (!e) return { open, none: true };
+      const b = e.getBoundingClientRect();
+      return { open, left: b.left, right: b.right, innerWidth, overflowX: document.documentElement.scrollWidth - innerWidth };
+    });
+    if (!panel.open) problems.push('tap on the gear did not open the overlay');
+    if (panel.none) problems.push('overlay panel missing');
+    if (!panel.none && (panel.left < 15 || panel.right > panel.innerWidth - 15)) problems.push('overlay panel does not keep the 16px gutter at 390 px (' + Math.round(panel.left) + '..' + Math.round(panel.right) + ')');
+    await page.tap('#set-chartbg');
+    await page.waitForTimeout(200);
+    await page.tap('#set-close');
+    await page.waitForTimeout(400);
+    if (await page.evaluate(() => document.getElementById('set-layer').classList.contains('open'))) problems.push('tap on the close button did not close the overlay');
+    const geo = await page.evaluate(SETTINGS_RECT);
+    if (overlaps(geo.gear, geo.board)) problems.push('gear overlaps the flight board at 390 px');
+    if (overlaps(geo.gear, geo.fs)) problems.push('gear overlaps the fullscreen button at 390 px');
+    // the tapped Karte switch is kept and applies after a reload
+    await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(800);
+    if ((await page.evaluate(() => MA.config.chartbg)) !== true) problems.push('tapped Karte switch did not persist');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -495,8 +740,12 @@ for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 
   for (const vp of VPS) for (const view of ['radar', 'board']) jobs.push({ n: [style, theme, vp.w, view].join('_'), run: () => matrixCase(browser, { style, theme, vp, view }) });
 for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }])
   jobs.push({ n: 'airport_' + code + '_' + vp.width, run: () => airportCase(browser, code, vp) });
+jobs.push({ n: 'rotation_airport_1280', run: () => rotationCase(browser) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
+jobs.push({ n: 'motion_off', run: () => motionCase(browser, 'off') }, { n: 'motion_full', run: () => motionCase(browser, 'full') });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
+jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });
+jobs.push({ n: 'settings_1280', run: () => settingsCase(browser) }, { n: 'settings_touch_390', run: () => settingsTouchCase(browser) });
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;
 await Promise.all(Array.from({ length: CONC }, async () => { while (next < filtered.length) await filtered[next++].run(); }));

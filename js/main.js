@@ -1,8 +1,10 @@
-/* App loop: polling, smoothing, featured-aircraft rotation, ambient housekeeping. */
+/* App loop: polling, smoothing, featured-aircraft rotation, ambient housekeeping.
+   The canvas shows the radar or the focus view (js/airport.js); which one is decided by MA.views.current()
+   (the rotation in js/views.js), asked every frame, and the switch is a 1.2 s fade. */
 (function (MA) {
   var cfg = MA.config;
-  var AIRPORT = cfg.view === 'airport' && !!MA.airport;   // focus view: js/airport.js (the airport is the centre)
-  if (AIRPORT) { MA.airport.configure(cfg); document.body.className += ' view-airport'; }
+  var airportOk = !!MA.airport;
+  if (airportOk) MA.airport.configure(cfg);   // once: the airport of the airport= option; applyMode() enters it
   var STALE_MS = 60 * 1000;      // drop aircraft not updated for a minute
   var MAX_EXTRAP_MS = 20 * 1000; // stop dead-reckoning after 20 s without data, then fade out until STALE_MS
   var WARN_AGE_S = 30;           // data older than this: amber "Daten N s alt"
@@ -13,6 +15,9 @@
   var TOAST_MS = 8000;
 
   var radar = new MA.Radar(document.getElementById('radar'), cfg);
+  radar.wxOn = !!cfg.wxRadar;    // weather radar overlay, opt-in with wx=radar (js/wxradar.js)
+  if (MA.wxradar) MA.wxradar.start(cfg);
+  MA.radar = radar;                // the settings overlay (js/settings.js) rebuilds the palette and base layer through it
   var board = new MA.Board(cfg);
   var feed = new MA.data.Feed(cfg);
 
@@ -23,11 +28,10 @@
   var GROUND_STALE_MS = 90 * 1000;
   var featured = MA.pick.create();  // board selection state (js/pick.js); featured.jumped: special aircraft hex -> time of board jump
   var announced = {};              // special aircraft: hex -> time of toast
+  var baselined = false;           // the first answer is the starting picture: aircraft in range then do not ring (js/motion.js)
   // dataAt: time of the newest position in the last answer (a cached answer is old although it just arrived)
 var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAfterMs: 0, nextAt: 0 };
 
-  document.getElementById('place').textContent = cfg.label;
-  document.getElementById('title').textContent = cfg.title;
   // element toggles (config show=…): classes hide the parts in CSS
   ['board', 'clock', 'weather', 'logos'].forEach(function (k) {
     if (cfg.show[k] === false) document.body.className += ' no-' + k;
@@ -43,8 +47,9 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       delete ground[n.hex];
       var ac = aircraft[n.hex];
       if (!ac) {
-        ac = aircraft[n.hex] = { hex: n.hex, trail: [], dlat: n.lat, dlon: n.lon,
-          dist: MA.geo.distKm(cfg.lat, cfg.lon, n.lat, n.lon) };
+        var d0 = MA.geo.distKm(cfg.lat, cfg.lon, n.lat, n.lon);
+        ac = aircraft[n.hex] = { hex: n.hex, trail: [], dlat: n.lat, dlon: n.lon, dist: d0,
+          inside: !baselined && d0 <= cfg.radiusKm };   // inside: has been in range once (arrival ring, js/motion.js)
       }
       if (MA.geo.distKm(ac.dlat, ac.dlon, n.lat, n.lon) > TRAIL_JUMP_KM) {
         ac.trail = [];
@@ -63,6 +68,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       if (now - aircraft[hex].seen > STALE_MS) delete aircraft[hex];
     }
     forget(announced, now);
+    baselined = true;
     MA.data.lookupRoutes(nearest(), cfg.demo);
     var newest = 0;
     list.forEach(function (n) { if (typeof n.ts === 'number' && n.ts > newest) newest = n.ts; });
@@ -104,8 +110,8 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       status.retryAfterMs = (err && err.retryAfter) || 0;
       if (window.console) console.warn('[MyAirspace] no data:', err && err.message);
     }).then(function () {
+      setAttrib();
       var p = feed.provider();
-      document.getElementById('attrib').textContent = p.attrib + ' · Karte: Natural Earth, OurAirports' + (AIRPORT ? ' · © OpenStreetMap-Mitwirkende (ODbL)' : '') + (cfg.public ? ' · öffentliche Proxys (public=1)' : '');
       var interval = Math.max(cfg.pollSec, p.minPollSec) * 1000;
       if (!cfg.demo && !cfg.proxy) interval = Math.max(interval, 8000); // be gentle with shared public proxies
       // back off on failures (respecting Retry-After), come back to the normal rate gradually
@@ -139,10 +145,14 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       if (!ac.fade) { delete aircraft[hex]; continue; }
       // the trail is drawn from the smoothed on-screen position, independent of poll timing
       var last = ac.trail[ac.trail.length - 1];
-      if (!last || now - last[2] >= TRAIL_STEP_MS) ac.trail.push([ac.dlat, ac.dlon, now]);
+      if (!last || now - last[2] >= TRAIL_STEP_MS) {
+        if (!last) ac.trailT0 = now;   // a new trail draws on from the aircraft (js/motion.js growTrail)
+        ac.trail.push([ac.dlat, ac.dlon, now]);
+      }
       while (ac.trail.length && ac.trail[0][2] < now - trailMs) ac.trail.shift();
       ac.dist =MA.geo.distKm(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
       ac.brg = MA.geo.bearing(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
+      if (!ac.inside && ac.dist <= cfg.radiusKm) { ac.inside = true; ac.blipAt = now; }   // first time in range: ring and fade-in
       visible.push(ac);
     }
     visible.sort(function (a, b) { return a.dist - b.dist; });
@@ -191,13 +201,46 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     toast.until = now + TOAST_MS;
   }
 
+  /* ---------- canvas: radar or focus view ---------- */
+
+  var canvasEl = document.getElementById('radar');
+  var FADE_MS = 600;                       // the switch is a 1.2 s fade: out, swap at the dark point, in (CSS on #radar)
+  var canvas = { air: false, timer: 0 };   // air: the canvas shows the focus view; timer: a switch is running
+  function wantAir() { return airportOk && MA.views.current() === 'airport'; }
+
+  // Puts the canvas into the mode: origin (cfg), layout, header, attribution. Runs while the canvas is faded out.
+  function applyMode(air) {
+    canvas.air = air;
+    document.body.classList.toggle('view-airport', air);
+    if (airportOk) MA.airport.enter(air);
+    radar.setAirport(air);
+    MA.weather.origin(cfg.lat, cfg.lon, air ? cfg.airportCode : null);   // no-op without weather
+    featured = MA.pick.create();   // no dwell carried over from the other view
+    document.getElementById('place').textContent = cfg.label;
+    document.getElementById('title').textContent = cfg.title;
+    setAttrib();
+    updateSummary(Date.now());
+  }
+
+  function switchCanvas() {
+    canvasEl.style.opacity = '0';
+    canvas.timer = setTimeout(function () {
+      canvas.timer = 0;
+      var want = wantAir();   // asked again: the schedule may have moved on during the fade
+      if (want !== canvas.air) applyMode(want);
+      canvasEl.style.opacity = '1';
+    }, FADE_MS);
+  }
+
   var lastFrame = Date.now(), lastBoard = 0;
   function frame() {
     var now = Date.now();
+    if (MA.diag) MA.diag.frame(now);
     advance(now, now - lastFrame);
     lastFrame = now;
+    if (!canvas.timer && wantAir() !== canvas.air) switchCanvas();
     var feat, air = null;
-    if (AIRPORT) {
+    if (canvas.air) {
       air = MA.airport.frame(visible, groundList(), now, featured);
       feat = air.feat;
       radar.render(air.air, feat && feat.hex, now, MA.weather.active(), air.ground);
@@ -205,10 +248,11 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       feat = pickFeatured(now);
       radar.render(visible, feat && feat.hex, now, MA.weather.active(), groundList());
     }
+    MA.flap.tick(now);   // split-flap of the board and the Anzeigetafel: one clock, see js/board.js
 
     if (now - lastBoard > 1000) {
       lastBoard = now;
-      if (AIRPORT) { /* no Tafel in the focus view */ }
+      if (canvas.air) { /* no Tafel in the focus view */ }
       else if (feat) board.show(feat, featured.idx, featured.count);
       else if (!status.lastOk && !status.failures) board.empty('------', 'Verbinde…');
       else if (status.lastOk ? (now - status.dataAt) / 1000 >= WARN_AGE_S : status.failures) {
@@ -218,7 +262,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       else board.empty('------', 'Verbinde…');
       updateSummary(now);
       announce(now);
-      MA.log.observe(visible, now);
+      if (!canvas.air) MA.log.observe(visible, now);   // passes through the radius of the location only
       MA.views.tick(now);
     }
     requestAnimationFrame(frame);
@@ -228,7 +272,16 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
+  // the provider, and the map credits (OpenStreetMap only while the focus view is on screen)
+  function setAttrib() {
+    document.getElementById('attrib').textContent = feed.provider().attrib + ' · Karte: Natural Earth, OurAirports' +
+      (canvas.air ? ' · © OpenStreetMap-Mitwirkende (ODbL)' : '') +
+      (cfg.chartbg ? ' · Lufträume und Hindernisse: OpenAIP (CC BY-NC 4.0)' : '') +
+      (cfg.public ? ' · öffentliche Proxys (public=1)' : '');
+  }
+
   function updateSummary(now) {
+    if (MA.diag) MA.diag.status(status, now);
     var d = new Date(now);
     var local = pad(d.getHours()) + ':' + pad(d.getMinutes());
     var utc = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
@@ -260,7 +313,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     }
     dot.className = 'dot ok';
     sum.className = 'summary';
-    if (AIRPORT) {   // focus view: counts of this airport, attention first
+    if (canvas.air) {   // focus view: counts of this airport, attention first
       var k = MA.airport.counts();
       txt.textContent = k.anflug + ' im Anflug · ' + k.boden + ' am Boden';
       return;
@@ -288,8 +341,9 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     if (!navigator.wakeLock || document.visibilityState !== 'visible' || lock) return;
     navigator.wakeLock.request('screen').then(function (l) {
       lock = l;
-      l.addEventListener('release', function () { lock = null; });
-    }, function () {});
+      if (MA.diag) MA.diag.log('wake', 'an', 'Wake Lock aktiv');
+      l.addEventListener('release', function () { lock = null; if (MA.diag) MA.diag.log('wake', 'aus', 'Wake Lock freigegeben'); });
+    }, function () { if (MA.diag) MA.diag.log('wake', 'fehler', 'Wake Lock abgelehnt'); });
   }
   document.addEventListener('visibilitychange', wake);
 
@@ -304,6 +358,9 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
   ambient();
   setInterval(ambient, 2 * 60 * 1000);
   wake();
+  // the first view: no fade at start
+  MA.views.tick(Date.now());
+  applyMode(wantAir());
   poll();
   requestAnimationFrame(frame);
 })(window.MA);

@@ -1,4 +1,5 @@
-/* Focus view (view=airport, airport=HAM|XFW|FRA|FMO|CPH): one airport centred and zoomed to its apron.
+/* Focus view (airport=HAM|XFW|FRA|FMO|CPH; shown with view=airport or in the rotation, views=…,airport):
+   one airport centred and zoomed to its apron.
    Static layer (apron, taxiways, terminals, hangars, runways, gates, stands) is cached per airport, size and
    theme by js/radar.js; per frame come the corridors (last 10 km of the runway centrelines), the aircraft
    within 12 km (airborne: symbol and data block on final/departure; on the ground: small symbols at their real
@@ -12,6 +13,7 @@
   var MARGIN_RWY_KM = 2;    // margin around the runway ends (fallback)
   var FRAME = { left: 0.03, right: 0.97, top: 0.2, bottom: 0.86 };   // stage, fractions of the screen
   var state = { cfg: null, ap: null, counts: { anflug: 0, boden: 0 } };
+  var home = null, away = null;   // the two origins: the radar's (cfg.lat/lon of the location) and the airport's
 
   function find(code) {
     var list = MA.features.airports;
@@ -45,18 +47,26 @@
     };
   }
 
-  // Called by main.js before the radar exists: the airport becomes the centre of data, distances and weather.
+  // Called once by main.js before the radar exists. The airport= option picks the airport; the origins are kept
+  // here and enter() swaps them in while the focus view is on screen (the rest of the app reads cfg.lat/lon/radiusKm).
   function configure(cfg) {
     var ap = resolve(cfg.airport);
     state.cfg = cfg;
     cfg.airportCode = ap.code;
-    cfg.lat = ap.lat;
-    cfg.lon = ap.lon;
-    cfg.radiusKm = AIR_KM;
-    cfg.label = ap.name.toUpperCase();
-    cfg.title = ap.code + ' · ' + ap.icao;
-    cfg.show.board = false;                 // the focus view has no Tafel: the data block sits on the apron
-    if (cfg.demo && MA.demo) MA.demo.anchor(ap);
+    home = { lat: cfg.lat, lon: cfg.lon, radiusKm: cfg.radiusKm, label: cfg.label, title: cfg.title };
+    away = { lat: ap.lat, lon: ap.lon, radiusKm: AIR_KM, label: ap.name.toUpperCase(), title: ap.code + ' · ' + ap.icao, ap: ap };
+  }
+
+  // on: the airport becomes the centre of data, distances, labels and (demo) traffic; off: the location again.
+  function enter(on) {
+    var o = on ? away : home, cfg = state.cfg;
+    if (!o || !cfg) return;
+    cfg.lat = o.lat;
+    cfg.lon = o.lon;
+    cfg.radiusKm = o.radiusKm;
+    cfg.label = o.label;
+    cfg.title = o.title;
+    if (cfg.demo && MA.demo) MA.demo.anchor(on ? away.ap : null);
   }
 
   // Called by Radar on construction: the layout target of the chosen airport.
@@ -281,7 +291,7 @@
       self.drawPlane(MA.glyphs.kind(g), p[0], p[1], typeof g.track === 'number' ? g.track : 0, gsz, Radar.rgba(C.level, 0.9), 1);
     });
 
-    var items = [], pts = [], badges = [], blink = 0.6 + 0.4 * Math.sin(now * PI / 500);
+    var items = [], pts = [], badges = [], blink = MA.motion.alertAlpha(now);   // emergency frame pulse (js/motion.js)
     var sorted = list.slice().sort(function (a, b) { return (b.alt || 0) - (a.alt || 0); });
     sorted.forEach(function (ac) {
       var phase = MA.fmt.phase(ac), high = (ac.alt || 0) > 20000, featured = ac.hex === featuredHex;
@@ -340,6 +350,7 @@
 
   MA.airport = {
     configure: configure,
+    enter: enter,
     target: target,
     frame: frame,
     counts: counts,

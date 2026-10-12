@@ -94,7 +94,12 @@ const ROWS = [
   ['Focus view terminal label', 'c.placeMajor', 'c.bg', 4.5],
   // data block looks (js/styles.js block: frame, tab): the outline is a line (3:1), the text on the tab fill 4.5:1
   ['Data block frame (frame look)', 'c.blockEdge', 'c.bg', 3],
-  ['Data block text on tab fill', 'c.label', 'c.blockFill', 4.5]
+  ['Data block text on tab fill', 'c.label', 'c.blockFill', 4.5],
+  // settings overlay (js/settings.js, css/style.css)
+  ['Settings overlay text', '--ink', '--panel', 4.5],
+  ['Settings overlay note and hint', '--sub', '--panel', 4.5],
+  ['Settings overlay select text', '--ink', '--bg', 4.5],
+  ['Settings overlay focus ring', '--accent', '--panel', 3]
 ];
 
 function table(style, theme, opts) {

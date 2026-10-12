@@ -123,15 +123,23 @@
       ['compass', 'Kompass', 'Gradskala rund um den Radar', true],
       ['labels', 'Datenblöcke', 'Rufzeichen, Höhe und Tempo am Flugzeug', false],
       ['rings', 'Entfernungsringe', 'Ringe mit km-Beschriftung', false],
-      ['places', 'Ortsnamen', 'Städte und Orte auf der Karte', false]
+      ['places', 'Ortsnamen', 'Städte und Orte auf der Karte', false],
+      // not a show= flag: on writes wx=radar (opt-in, see js/wxradar.js), off writes nothing
+      ['wxradar', 'Wetterradar', 'Niederschlag über der Karte in Cockpit-Farben (Daten DWD, Deutschland)', false]
     ],
+    // the aeronautical-chart background (chartbg=1): one switch in the settings, off by default
+    chartbg: {
+      label: 'Luftfahrtkarte als Hintergrund',
+      hint: 'Lufträume, Funkfeuer und Hindernisse, dazu ein Gradnetz wie auf einer Papierkarte. Aus lassen, wenn es zu voll wirkt.'
+    },
     fields: [['callsign', 'Rufzeichen'], ['fl', 'Höhe'], ['gs', 'Tempo'], ['type', 'Muster'], ['route', 'Route'], ['reg', 'Kennz.']],
     unitsHint: 'Piloten rechnen in Fuß und Knoten. 1 Knoten sind etwa 1,85 km/h.',
     viewHint: {
-      auto: 'Radar und Tafel wechseln sich ab, wie bisher.',
       radar: 'Nur der Radar, ohne Tafel.',
       board: 'Nur die Tafel mit den letzten Überflügen.',
-      airport: 'Der Flughafen in der Mitte: Vorfeld, kurze Anflug- und Abflugschneisen und die Flugzeuge im Umkreis von 12 km. Der Standort wird dafür nicht gebraucht.'
+      airport: 'Der Flughafen in der Mitte: Vorfeld, kurze Anflug- und Abflugschneisen und die Flugzeuge im Umkreis von 12 km. Der Standort wird dafür nicht gebraucht.',
+      rot2: 'Radar und Tafel wechseln sich ab, wie bisher. Wie lange jede Ansicht bleibt, stellst du unten ein.',
+      rot3: 'Radar, Tafel und Flughafen wechseln sich ab. Den Flughafen wählst du unten aus. Ohne Standort läuft der Radar mit Beispieldaten.'
     },
     radiusHint: (km) => 'So weit schaut der Radar. ' + (km <= 15 ? 'Nah dran: vor allem Flugzeuge direkt über dir.' : (km <= 40 ? 'Gut für Stadt und Flughafen.' : 'Weiter Blick: viele Flugzeuge, dafür kleiner.')),
 

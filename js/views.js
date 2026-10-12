@@ -1,6 +1,7 @@
 /* Second view: "Anzeigetafel" with the latest passes and today's statistics.
-   Alternates with the radar (view=auto), or is forced with view=board / view=radar.
-   The radar keeps running underneath; this only crossfades an overlay. */
+   Part of the rotation (view=auto, views=radar,board,airport, see js/rotation.js), or forced with view=board.
+   The radar keeps running underneath; this only crossfades an overlay. The focus view (airport) is a canvas
+   mode switched by js/main.js, which asks MA.views.current() every frame. */
 (function (MA) {
   var cfg = MA.config;
   var ROWS = 10;
@@ -45,7 +46,11 @@
     rows.push({ el: row, cells: cells });
   }
 
-  var state = { shown: false, since: 0, rendered: 0, timers: [] };
+  var state = { shown: false, rendered: 0, timers: [] };
+  // the rotation: [radar, board, airport] with their durations (config radarsec, boardsec, airportsec)
+  var sched = MA.rotation.create(cfg.views, {
+    radar: cfg.radarSec * 1000, board: cfg.boardSec * 1000, airport: cfg.airportSec * 1000
+  });
 
   function rowTexts(e) {
     var f = MA.fmt, d = new Date(e.tmin);
@@ -79,9 +84,16 @@
         COLS.forEach(function (c) { MA.flap(r.cells[c], texts ? texts[c] : '', anim); });
         var lg = texts ? texts.logo : '';
         if (r.cells.logo._html !== lg) { r.cells.logo._html = lg; r.cells.logo.innerHTML = lg; }
+        // a new passing at the top while the table is up: one light sweep across that row (css/motion.css)
+        if (!animate && i === 0 && e && anim && MA.motion.enabled()) sweepRow(r.el);
       };
       if (animate) later(apply, 350 + i * 110); else apply();
     });
+  }
+
+  function sweepRow(el) {
+    el.className += ' hl';
+    later(function () { el.className = el.className.replace(' hl', ''); }, MA.motion.rowHighlightMs());
   }
 
   function stat(label, value, extra) {
@@ -125,7 +137,6 @@
 
   function show(now) {
     state.shown = true;
-    state.since = now;
     state.rendered = now;
     document.body.classList.add('view-board');
     renderTitle(now);
@@ -133,25 +144,22 @@
     renderRows(true);
   }
 
-  function hide(now) {
+  function hide() {
     state.shown = false;
-    state.since = now;
     document.body.classList.remove('view-board');
     later(clear, 1800); // after the crossfade
   }
 
+  // Called once a second by js/main.js. The schedule decides; the board overlay follows it.
   function tick(now) {
-    if (!state.since) state.since = now;
-    var mode = cfg.view;
-    if (mode === 'radar' || mode === 'airport') return;   // the focus view has no overlay
-    if (mode === 'board') {
+    if (cfg.view === 'auto') {
+      sched.tick(now, MA.log.count() > 0);
+      var cur = sched.name();
+      if (cur === 'board' && !state.shown) show(now);
+      else if (cur !== 'board' && state.shown) hide();
+    } else if (cfg.view === 'board') {            // a fixed view, possibly switched live in the settings overlay
       if (!state.shown) show(now);
-    } else if (state.shown) {
-      if (now - state.since >= cfg.boardSec * 1000) { hide(now); return; }
-    } else if (now - state.since >= cfg.radarSec * 1000 && MA.log.count() > 0) {
-      show(now);
-      return;
-    }
+    } else if (state.shown) hide();
     if (state.shown && now - state.rendered >= REFRESH_MS) {
       state.rendered = now;
       renderTitle(now);
@@ -162,6 +170,6 @@
 
   MA.views = {
     tick: tick,
-    current: function () { return state.shown ? 'board' : 'radar'; }
+    current: function () { return sched.name(); }   // 'radar' | 'board' | 'airport'
   };
 })(window.MA);

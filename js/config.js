@@ -5,6 +5,8 @@ window.MA = MA;
 
 (function () {
   var q = new URLSearchParams(location.search);
+  // saved settings from the overlay (js/prefs.js; empty without it, e.g. in setup.html): the address always wins
+  var S = (MA.prefs && MA.prefs.stored) || {};
 
   function num(name, def, min, max) {
     var v = parseFloat(q.get(name));
@@ -25,6 +27,17 @@ window.MA = MA;
   function airportCode(v) {
     var up = String(v || '').toUpperCase();
     return /^[A-Z]{3}$/.test(up) ? up : 'HAM';
+  }
+
+  // views=radar,board,airport: the rotation order (duplicates weight a view); invalid entries are dropped silently
+  var VIEW_NAMES = ['radar', 'board', 'airport'];
+  function viewList(name) {
+    var out = [];
+    String(q.get(name) || '').toLowerCase().split(',').forEach(function (x) {
+      x = x.trim();
+      if (VIEW_NAMES.indexOf(x) >= 0) out.push(x);
+    });
+    return out;
   }
 
   // "23-6" -> {from: 23, to: 6}; "off" -> null
@@ -53,7 +66,8 @@ window.MA = MA;
     return re.test(v) ? v : def;
   }
   // old ids (atc, terminal, …) resolve to the new looks (js/styles.js ALIAS); anything unknown falls back
-  var style = MA.style ? (MA.style.canonical((q.get('style') || '').toLowerCase()) || MA.style.defaultStyle) : 'tower';
+  // saved look (overlay, js/prefs.js) counts when the address does not name one
+  var style = MA.style ? (MA.style.canonical((q.get('style') || S.style || '').toLowerCase()) || MA.style.defaultStyle) : 'tower';
   var accent = (q.get('accent') || '').toLowerCase().replace('#', '');
   if (!(MA.ACCENTS && MA.ACCENTS.hasOwnProperty(accent)) && !/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(accent)) accent = '';
   else if (/^[0-9a-f]{3,6}$/.test(accent) && !(MA.ACCENTS && MA.ACCENTS.hasOwnProperty(accent))) accent = '#' + accent;
@@ -72,7 +86,13 @@ window.MA = MA;
   }
   list('hide').forEach(function (k) { if (show.hasOwnProperty(k)) show[k] = false; });
   KEYS.forEach(function (k) { if (q.has(k)) show[k] = bool(k, show[k]); });
-  if (q.has('wx')) show.weather = bool('wx', show.weather);
+  // wx=radar is the weather radar overlay (below), not the weather box: only other values toggle the box
+  if (q.has('wx') && !/^radar$/i.test(q.get('wx'))) show.weather = bool('wx', show.weather);
+  // saved toggles (overlay Ebenen): only for the elements the address does not mention
+  var P = MA.prefs || { mentions: function () { return false; } };
+  ['labels', 'trails', 'places', 'weather'].forEach(function (k) {
+    if (typeof S[k] === 'boolean' && !P.mentions(location.search, k)) show[k] = S[k];
+  });
 
   // datablock=callsign,fl,gs,type: fields and their order; datablock=0 switches the labels off
   var FIELDS = ['callsign', 'fl', 'gs', 'type', 'route', 'reg'];
@@ -89,6 +109,14 @@ window.MA = MA;
     if (f.length) fields = f.slice(0, 5);
   }
 
+  // motion=off|calm|full (js/motion.js): calm by default, off when the system asks for reduced motion
+  var reducedMotion = false;
+  try { reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { reducedMotion = false; }
+  var motionArg = (q.get('motion') || '').toLowerCase();
+  var motion = /^(off|calm|full)$/.test(motionArg) ? motionArg : (reducedMotion ? 'off' : 'calm');
+  var view = /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : (S.view || 'auto');
+  var THEME = /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (S.theme || (STY[style].theme || 'dark'));
+
   MA.config = {
     lat: num('lat', 53.5511, -90, 90),          // default: Hamburg city centre
     lon: num('lon', 9.9937, -180, 180),
@@ -100,7 +128,7 @@ window.MA = MA;
     proxy: proxy(),                             // own CORS proxy, see api/proxy.js
     public: q.get('public') === '1',            // opt-in: public CORS proxies and the other providers
     // no location in the address = the empty state: simulated traffic behind the welcome overlay (js/hint.js)
-    demo: bool('demo', !(q.has('lat') && q.has('lon')) && q.get('view') !== 'airport'),   // the focus view needs no home location
+    demo: bool('demo', !(q.has('lat') && q.has('lon')) && view !== 'airport'),   // the focus view needs no home location
     rotateSec: num('rotate', 20, 3, 120),       // seconds per aircraft on the board
     trailMin: show.trails ? num('trail', 4, 0, 30) : 0, // trail length in minutes
     night: hours('night', '23-6'),              // dim the screen at night
@@ -109,6 +137,7 @@ window.MA = MA;
     places: show.places,                        // town names on the map
     title: str('title', '').slice(0, 32),       // optional second line under the place name
     style: style,                               // tower | fids | efis-airbus | eicam-boeing | chart-paper | nvg-night | tactical-olive
+    chartbg: bool('chartbg', S.chartbg === true),            // aeronautical-chart background: airspaces, navaids, grid (js/chart.js), off by default
     accent: accent,                             // '' (style default) | preset name | '#rrggbb'
     font: pick('font', /^(mono|sans)$/, STY[style].font || 'mono'),
     show: show,                                 // element toggles
@@ -116,12 +145,18 @@ window.MA = MA;
     speedUnit: pick('speed', /^(kt|kmh)$/, 'kt'),
     pressure: pick('pressure', /^(hpa|inhg)$/, 'hpa'),
     timeMode: pick('time', /^(utc|local|both)$/, 'both'),
-    brightness: num('brightness', 1, 0.5, 1.2),
+    brightness: num('brightness', typeof S.brightness === 'number' ? S.brightness : 1, 0.5, 1.2),
+    motion: motion,                             // off | calm | full (js/motion.js)
     orient: 'north',                            // track-up is not built: north-up only
-    view: /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : 'auto', // radar | board | auto | airport (focus view, js/airport.js)
+    view: view,                                 // radar | board | airport: one fixed view; auto: the rotation below
+    // the rotation, in order: views=radar,board,airport (view=auto). A fixed view is a one-entry list. An empty or
+    // one-entry views= falls back to the old rotation radar,board.
+    views: view !== 'auto' ? [view] : (viewList('views').length >= 2 ? viewList('views') : ['radar', 'board']),
     airport: airportCode(str('airport', 'HAM')),  // focus view: HAM | XFW | FRA | FMO | CPH, checked against MA.features in js/airport.js (unknown = HAM)
-    boardSec: num('boardsec', 40, 5, 600),      // auto: seconds on the Anzeigetafel
-    radarSec: num('radarsec', 240, 10, 3600),   // auto: seconds on the radar
-    theme: /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (STY[style].theme || 'dark') // auto: light from sunrise to sunset
+    boardSec: num('boardsec', 40, 5, 600),      // rotation: seconds on the Anzeigetafel
+    radarSec: num('radarsec', 240, 10, 3600),   // rotation: seconds on the radar
+    airportSec: num('airportsec', 60, 10, 3600), // rotation: seconds on the focus view
+    theme: THEME, // auto: light from sunrise to sunset
+    wxRadar: str('wx', '').toLowerCase() === 'radar'   // weather radar overlay (js/wxradar.js), default off
   };
 })();

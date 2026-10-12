@@ -1,0 +1,18 @@
+/* Motion (js/motion.js, URL option motion=off|calm|full). Only the newest row of the Anzeigetafel sweeps:
+   a transform on the compositor, no script per frame. The class is added and removed by js/views.js;
+   with motion off it is never added. Colour by passing: landing (accent), departure (target), overflight (ink). */
+.lv-row.hl:after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background: var(--accent);
+  opacity: 0.16;
+  pointer-events: none;
+  transform: translateX(-101%);
+  animation: lv-sweep 0.9s ease-out 1 forwards;
+}
+.lv-row.hl.ph-up:after { background: var(--target); }
+@keyframes lv-sweep {
+  from { transform: translateX(-101%); }
+  to { transform: translateX(101%); }
+}

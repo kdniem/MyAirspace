@@ -4,7 +4,7 @@
      accent                    signature colour (board values, active runway); user-overridable (accent=)
      target                    selected / target (the featured aircraft)       cockpit semantics:
      caution warning special   amber / red / magenta                           white normal, green active,
-     ok                        status OK (green)                               cyan target, amber caution,
+     ok moderate               status OK (green); moderate = yellow (weather)  cyan target, amber caution,
      water land                map tones                                       red warning, magenta special
    Palettes: dark and light (a style without `light` is dark only: it stays dark in light mode).
    Seven looks, each with its own identity (hue family, type, line weight, symbol, trail, data block, density).
@@ -37,7 +37,7 @@ window.MA = MA;
       theme: 'dark', plane: 1, lw: 0.8, trail: 'dots', trailW: 1, symbol: 'ring', block: 'plain', br: 2, badge: 'mono',
       sweep: true, css: { '--radius': '0.4vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       dark: { bg: '#010b05', panel: '#03150b', ink: '#b9ffd3', quiet: '#58b07a', line: '#0f3a21', accent: '#40ffd0',
-        target: '#e8fff2', caution: '#ffd166', warning: '#ff5d4d', special: '#ff8ad8', ok: '#40ffd0',
+        target: '#e8fff2', caution: '#ffd166', warning: '#ff5d4d', special: '#ff8ad8', moderate: '#d4f25c', ok: '#40ffd0',
         water: '#0a2a18', land: '#7fbf98' }
     },
     fids: {
@@ -45,10 +45,10 @@ window.MA = MA;
       theme: 'dark', plane: 0.9, lw: 1.3, trail: 'none', trailW: 1, symbol: 'dot', block: 'tab', br: 0, badge: 'brand',
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)', '--call-color': 'var(--accent)' },
       dark: { bg: '#0c0d10', panel: '#16181d', ink: '#f6eedb', quiet: '#a79c84', line: '#34302a', accent: '#ffb000',
-        target: '#7fd6ff', caution: '#ff8a1f', warning: '#ff4b3e', special: '#ff7ad9', ok: '#9be36a',
+        target: '#7fd6ff', caution: '#ff8a1f', warning: '#ff4b3e', special: '#ff7ad9', moderate: '#ffe14a', ok: '#9be36a',
         water: '#1c2430', land: '#4b463b' },
       light: { bg: '#efe9da', panel: '#e3dccb', ink: '#15130f', quiet: '#5a5242', line: '#c4bba5', accent: '#8a4a00',
-        target: '#005f8f', caution: '#9a4a00', warning: '#b3261e', special: '#8d2a86', ok: '#1f6b3c',
+        target: '#005f8f', caution: '#9a4a00', warning: '#b3261e', special: '#8d2a86', moderate: '#8f6d00', ok: '#1f6b3c',
         water: '#c8d2d9', land: '#fbf8f0' }
     },
     'efis-airbus': {
@@ -56,10 +56,10 @@ window.MA = MA;
       theme: 'dark', plane: 0.95, lw: 0.7, trail: 'taper', trailW: 0.8, symbol: 'glyph', block: 'plain', br: 6, badge: 'brand', arc: 60,
       css: { '--radius': '1vh', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
       dark: { bg: '#000000', panel: '#06080a', ink: '#ffffff', quiet: '#9fa9b1', line: '#1f272e', accent: '#4cff3c',
-        target: '#3fd8ff', caution: '#ffb100', warning: '#ff4d42', special: '#ff44cc', ok: '#4cff3c',
+        target: '#3fd8ff', caution: '#ffb100', warning: '#ff4d42', special: '#ff44cc', moderate: '#f5e04a', ok: '#4cff3c',
         water: '#0f2a36', land: '#6f8590' },
       light: { bg: '#eef0f1', panel: '#e0e4e6', ink: '#0d1317', quiet: '#4d5960', line: '#c5ccd0', accent: '#0a6e2a',
-        target: '#006a96', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', ok: '#0a6e2a',
+        target: '#006a96', caution: '#8f5300', warning: '#b3261e', special: '#9a2a90', moderate: '#8f6d00', ok: '#0a6e2a',
         water: '#a9c0cc', land: '#ffffff' }
     },
     'eicam-boeing': {
@@ -67,10 +67,10 @@ window.MA = MA;
       theme: 'dark', plane: 1.08, lw: 1.3, trail: 'dash', trailW: 1.4, symbol: 'box', block: 'frame', br: 0, badge: 'brand',
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--target)' },
       dark: { bg: '#0c1620', panel: '#142230', ink: '#e9f1f8', quiet: '#8fa3b8', line: '#2a3d52', accent: '#8fe6ff',
-        target: '#ffffff', caution: '#ffb52e', warning: '#ff5348', special: '#ff7ae0', ok: '#6fe39a',
+        target: '#ffffff', caution: '#ffb52e', warning: '#ff5348', special: '#ff7ae0', moderate: '#f2d94a', ok: '#6fe39a',
         water: '#1a3a52', land: '#5f7589' },
       light: { bg: '#dfe6ee', panel: '#cdd7e2', ink: '#0c1822', quiet: '#44566a', line: '#b3c0cd', accent: '#005f80',
-        target: '#0b2233', caution: '#7a4700', warning: '#a31f17', special: '#9a2a90', ok: '#11703d',
+        target: '#0b2233', caution: '#7a4700', warning: '#a31f17', special: '#9a2a90', moderate: '#8f6d00', ok: '#11703d',
         water: '#9db6cb', land: '#ffffff' }
     },
     'chart-paper': {
@@ -79,10 +79,10 @@ window.MA = MA;
       ringRole: 'accent', mainRing: 'special', airportSpecial: true,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       light: { bg: '#f1ede0', panel: '#e6e0cf', ink: '#1b2a4a', quiet: '#55607a', line: '#cbc3ad', accent: '#1f4e9c',
-        target: '#0b6e99', caution: '#8a5200', warning: '#b3261e', special: '#a0197c', ok: '#1f6b3f',
+        target: '#0b6e99', caution: '#8a5200', warning: '#b3261e', special: '#a0197c', moderate: '#8f6d00', ok: '#1f6b3f',
         water: '#b9d3e4', land: '#fbf8ee' },
       dark: { bg: '#0c1424', panel: '#121c30', ink: '#dfe7f5', quiet: '#8d9bb8', line: '#243352', accent: '#7fb2f0',
-        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a5e', special: '#e57ac8', ok: '#6fdc8c',
+        target: '#5fd0e8', caution: '#f0b04a', warning: '#ff6a5e', special: '#e57ac8', moderate: '#f0dc55', ok: '#6fdc8c',
         water: '#1d3a5a', land: '#7d93b8' }
     },
     'nvg-night': {
@@ -91,7 +91,7 @@ window.MA = MA;
       badge: 'mono', halo: false,
       css: { '--radius': '0.3vh', '--val-color': 'var(--ink)', '--unit-color': 'var(--quiet)', '--head': '#000000' },
       dark: { bg: '#000000', panel: '#070100', ink: '#d4503c', quiet: '#cc4a36', line: '#2a0d08', accent: '#3f9e5a',
-        target: '#ff8a6e', caution: '#e0603a', warning: '#ff3b2b', special: '#ff8f7f', ok: '#3f9e5a',
+        target: '#ff8a6e', caution: '#e0603a', warning: '#ff3b2b', special: '#ff8f7f', moderate: '#e0a060', ok: '#3f9e5a',
         water: '#1c0906', land: '#6a2219' }
     },
     'tactical-olive': {
@@ -99,7 +99,7 @@ window.MA = MA;
       theme: 'dark', plane: 1, lw: 1.1, trail: 'dash', trailW: 1, symbol: 'diamond', block: 'frame', br: 0, badge: 'mono', grid: true,
       css: { '--radius': '0', '--val-color': 'var(--accent)', '--unit-color': 'var(--sub)' },
       dark: { bg: '#0b0c06', panel: '#14150b', ink: '#d8d39c', quiet: '#8f8b5c', line: '#2c2c19', accent: '#b9c46b',
-        target: '#e8e0a0', caution: '#e0b040', warning: '#ff6e50', special: '#e48cd8', ok: '#b9c46b',
+        target: '#e8e0a0', caution: '#e0b040', warning: '#ff6e50', special: '#e48cd8', moderate: '#d9c35a', ok: '#b9c46b',
         water: '#1d2a1c', land: '#7d7f52' }
     }
   };
@@ -196,7 +196,9 @@ window.MA = MA;
       '--line': P.line, '--faint': mix(P.bg, P.ink, 0.12), '--pager': mix(P.panel, P.ink, 0.22),
       '--idle': mix(P.panel, P.ink, 0.3),
       '--accent': acc, '--target': P.target, '--caution': P.caution, '--warning': P.warning,
-      '--special': P.special, '--ok': P.ok,
+      '--special': P.special, '--ok': P.ok, '--moderate': P.moderate,
+      // weather radar steps (js/wxradar.js): light, moderate, heavy, very heavy
+      '--wx1': P.ok, '--wx2': P.moderate, '--wx3': P.caution, '--wx4': P.warning,
       '--badge-bg': badgeBg, '--badge-fg': badgeFg, '--badge-edge': badgeEdge,
       '--toast-bg': rgba(P.panel, 0.96), '--toast-line': rgba(P.special, 0.7),
       '--zebra': rgba(P.ink, light ? 0.04 : 0.035), '--head': mix(P.panel, P.ink, light ? 0.025 : 0.07),
@@ -204,6 +206,26 @@ window.MA = MA;
       '--lbl-track': (st.track || 0) + 'em', '--lbl-case': st.caps ? 'uppercase' : 'none'
     };
     for (var k in st.css) css[k] = st.css[k];
+
+    // chart background (chartbg=1, js/chart.js): paper tone, airspace classes, navaids, obstacles.
+    // Lines are checked against the paper at 3:1, labels at 4.5:1 (ensure moves them towards black or white).
+    // The 'chart' style is already a paper look; the other styles get a muted, slightly darker tone.
+    // On dark palettes the class colours are pulled towards the paper so the chart stays under the traffic.
+    var paper = light ? P.bg : mix(P.bg, P.ink, 0.06), mute = light ? 0 : 0.45;
+    function cls(col) { return ensure(mute ? mix(col, paper, mute) : col, [paper], 3); }
+    var chart = {
+      paper: paper,
+      grid: ensure(mix(paper, P.ink, 0.4), [paper], 3),
+      ctl: cls(P.target),                                      // controlled airspace: CTR, TMA, CTA, ATZ …
+      res: cls(P.warning),                                     // restricted, TRA, TSA, MTA, alert, warning areas
+      dng: cls(P.special),                                     // danger areas
+      pro: cls(P.warning),                                     // prohibited areas
+      oth: cls(P.quiet),                                       // other: parachute zones, protected areas …
+      nav: ensure(mix(P.ink, P.target, 0.35), [paper], 4.5),   // VOR, NDB, DME symbols and labels
+      obs: ensure(P.ink, [paper], 3),                          // obstacles
+      label: ensure(P.ink, [paper], 4.5),
+      labelDim: ensure(mix(paper, P.ink, 0.72), [paper], 4.5)
+    };
 
     var wcol = mix(P.bg, P.water, br > 1 ? 1 : Math.max(0.35, br));
     var blockEdge = ensure(mix(P.bg, P.ink, 0.5), [P.bg], 3);
@@ -234,7 +256,10 @@ window.MA = MA;
       blockEdge: blockEdge, blockFill: rgba(P.panel, 0.92),
       badgeR: st.br || 0, badgeMono: st.badge === 'mono',
       badgeBg: badgeBg, badgeFg: badgeFg, badgeEdge: badgeEdge, weight: st.weight || 500, font: fam,
-      bgHex: P.bg, panelHex: P.panel, accentHex: acc, targetHex: P.target, specialHex: P.special, warningHex: P.warning
+      bgHex: P.bg, panelHex: P.panel, accentHex: acc, targetHex: P.target, specialHex: P.special, warningHex: P.warning,
+      chart: chart,
+      // weather radar: the four step colours (role tokens) and the alpha of the overlay, below aircraft and labels
+      wx: [P.ok, P.moderate, P.caution, P.warning], wxAlpha: light ? 0.62 : 0.42
     };
     return { css: css, c: c, style: style, theme: light ? 'light' : 'dark', font: font, fam: fam };
   }

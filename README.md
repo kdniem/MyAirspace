@@ -2,7 +2,7 @@
 
 Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als Flugzeug-Silhouetten mit auslaufender Flugspur und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (Tower, FIDS, Airbus, Boeing, Karte, Nacht, Taktik) und viele Optionen machen die Anzeige persönlich.
 
-Die App ist nur zum Anschauen gedacht: URL öffnen, fertig. Es gibt keine Bedienung, keinen API-Key und keinen Build-Schritt.
+Die App ist zum Anschauen gedacht: URL öffnen, fertig. Am Computer und Tablet gibt es unten links ein Zahnrad für die häufigsten Einstellungen (siehe „Einstellungen im Dashboard“). Kein API-Key, kein Build-Schritt.
 
 ## Einrichten
 
@@ -11,6 +11,11 @@ Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace
 Öffnest du die TV-Seite ohne Standort, zeigt sie ein ruhiges Willkommensbild mit QR-Code zur Einrichtungsseite, darunter laufen die Beispielflugzeuge weiter. Das Bild bleibt, bis ein Standort in der Adresse steht. Mit Standort erscheint einmalig pro Gerät kurz ein „Alles bereit“-Hinweis.
 
 **Als App:** Die Seite hat ein Web-App-Manifest. Auf iPad/iPhone in Safari *Teilen → Zum Home-Bildschirm*, auf Android *Zum Startbildschirm hinzufügen*. Die App startet im Vollbild mit deinen zuletzt geöffneten Einstellungen. Ein kleiner Service Worker (`sw.js`) hält nur die App-Dateien offline vor, nie Flugdaten.
+
+## Hinweise
+
+- **Keine Navigation:** MyAirspace ist eine Anzeige für Neugier und Ambiente. Es ist kein Navigations‑, Flugsicherungs‑ oder Sicherheitsinstrument und darf dafür nicht verwendet werden.
+- **Stilnamen:** Die Stile `airbus` und `boeing` sind nur optische Vorbilder. Sie stehen in keiner Verbindung zu Airbus oder Boeing, deren Namen und Marken gehören den jeweiligen Firmen.
 
 ## Aufrufen
 
@@ -39,6 +44,7 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `brightness` | `1`           | Helligkeit von Karte, Ringen und Wasser, 0,5 bis 1,2 |
 | `datablock` | `callsign,fl,gs,type` | Felder des Datenblocks in dieser Reihenfolge: `callsign`, `fl` (Höhe), `gs` (Speed), `type`, `route`, `reg`. `datablock=0` blendet ihn aus |
 | `show`, `hide` | alles an     | Elemente: `weather`, `labels` (auch `datablock`), `trails`, `rings`, `places`, `board`, `clock`, `ground`, `compass`, `logos`. `show=rings,clock` zeigt nur diese, `hide=board,compass` blendet sie aus |
+| `chartbg` | aus | Luftfahrtkarte als Hintergrund: Lufträume, Funkfeuer, Hindernisse, Gradnetz im Papierlook (`chartbg=1`, siehe unten). Nur Schalter, keine Verbindung nach außen |
 | `labels`, `places`, `weather`, `rings`, `compass`, `ground`, `board`, `clock`, `trails`, `logos` | `1` | Einzelschalter je Element (`0` = aus; `trails=0` entspricht `trail=0`) |
 | `speed`    | `kt`            | Geschwindigkeit in `kt` oder `kmh` |
 | `pressure` | `hpa`           | QNH in `hpa` oder `inhg` |
@@ -47,11 +53,14 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `proxy`    | –               | Nur `off` oder der eigene Proxy erlaubt, siehe [Proxy](#proxy-cors) |
 | `public`   | `0`             | `1` erlaubt öffentliche CORS-Proxys und die Quellen airplanes.live/OpenSky (Datenschutz beachten) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`; `airplaneslive`, `opensky` nur mit `public=1` |
-| `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
-| `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht, `airport` zeigt die Flughafen-Ansicht (ohne Standort nutzbar) |
-| `airport` | `HAM`         | Flughafen der Flughafen-Ansicht (`view=airport`): `HAM`, `XFW`, `FRA`, `FMO` oder `CPH`; alles andere ergibt `HAM`, siehe [Flughafen-Ansicht](#flughafen-ansicht) |
-| `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
-| `boardsec` | `40`            | Sekunden Anzeigetafel, danach wieder Radar (bei `view=auto`) |
+| `view`     | `auto`          | `auto` wechselt nach `views` (Standard Radar und Tafel). `radar`, `board` oder `airport` zeigt nur diese eine Ansicht (`airport`: die Flughafen-Ansicht, ohne Standort nutzbar) |
+| `views`    | `radar,board`   | Reihenfolge der Wechsel-Ansichten bei `view=auto`, z. B. `radar,board,airport`. Eine Ansicht darf doppelt stehen, um sie zu gewichten (`radar,radar,board,airport`). Unbekannte Namen fallen weg; eine leere oder einelementige Liste ergibt die Voreinstellung `radar,board` |
+| `airport` | `HAM`         | Flughafen der Flughafen-Ansicht (`airport` in `views` oder `view=airport`): `HAM`, `XFW`, `FRA`, `FMO` oder `CPH`; alles andere ergibt `HAM`, siehe [Flughafen-Ansicht](#flughafen-ansicht) |
+| `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz); mit `wx=radar` auch simulierten Regen, gekennzeichnet als DEMO |
+| `wx`       | aus             | `radar` blendet das Wetterradar über der Karte ein (Niederschlag in Cockpit-Farben, nur Deutschland), siehe [Wetterradar](#wetterradar) |
+| `radarsec` | `240`           | Sekunden pro Radar-Abschnitt im Wechsel (10 bis 3600) |
+| `boardsec` | `40`            | Sekunden pro Tafel-Abschnitt im Wechsel (5 bis 600); eine Tafel wird übersprungen, solange noch kein Überflug da war |
+| `airportsec` | `60`          | Sekunden pro Flughafen-Abschnitt im Wechsel (10 bis 3600) |
 
 ## Stile und Optionen
 
@@ -77,9 +86,37 @@ Die Einrichtungsseite hat dafür die Abschnitte Theme, Anzeige, Einheiten und El
 
 Für die Lesbarkeit aus drei Metern Abstand sind Schriften größer (nichts Wichtiges unter etwa 1,6 vh) und alle Texte haben mindestens 4,5:1 Kontrast.
 
+## Wetterradar
+
+Mit `wx=radar` zeichnet die App den Niederschlag über die Karte, in den Farben eines Cockpit-Wetterradars: **grün** leicht, **gelb** mäßig, **orange** stark, **rot** sehr stark. Die Flugzeuge, Datenblöcke und Anflugachsen liegen darüber, der Regen ist durchscheinend gezeichnet. Standard ist aus; im Einrichtungs-Assistenten gibt es den Schalter unter **Elemente** („Wetterradar“). Die Legende unten links nennt die Stufen, die Quelle und das Alter der Daten, dazu Reichweite und Sektor (`RNG 25 km · 360°`).
+
+- **Stufen** (dBZ, Radarreflektivität): leicht 20 bis 34, mäßig 35 bis 44, stark 45 bis 54, sehr stark ab 55. Darunter wird nichts gezeichnet. Die Farben kommen aus den Stil-Rollen in `js/styles.js` (`ok`, `moderate`, `caution`, `warning`), in Hell und Dunkel passend.
+- **Daten:** Deutscher Wetterdienst (DWD), Radarkomposit WN, beobachteter Niederschlag im 5-Minuten-Takt, Raster etwa 2 km, nur Deutschland und das Radar-Umfeld. Lizenz: Datenlizenz Deutschland – Namensnennung – Version 2.0 (siehe [THIRD_PARTY.md](THIRD_PARTY.md)). Der Hinweis „Daten: DWD“ steht in der Legende.
+- **Wer sieht was:** Die App fragt `/api/radar` am eigenen Proxy ab (`api/radar.js`). Dieser holt die feste Datei von opendata.dwd.de, rechnet sie in ein Raster um und gibt es für alle gleich aus (Cache 2 Minuten, bei Fehlern bis 15 Minuten). Die Anfrage enthält **keine Position**, dein Standort verlässt den Browser nicht. Der DWD sieht nur den Server, nicht dich.
+- **Frische:** Die Legende zeigt die Beobachtungszeit in UTC und das Alter („vor 4 min“). Ist die Beobachtung älter als 15 Minuten, verschwindet der Regen und die Legende sagt „Radar veraltet“.
+- **Keine Vorhersage und keine Warnung:** Gezeigt wird nur, was der Radar gerade misst. Das ist kein Ersatz für Wetterwarnungen oder den Flugwetterbericht.
+- **Demo:** `?demo=1&wx=radar` zeigt drei synthetische Regenzellen mit der Kennzeichnung „DEMO“ in der Legende. Im Live-Betrieb gibt es keine simulierten Daten.
+- **Speicher:** Die Radardaten werden nicht im Browser gespeichert.
+
 ## Anzeigetafel
 
-Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil einer Abflugtafel ein: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
+Im Wechsel (`view=auto`, Standard `views=radar,board`) blendet die App nach `radarsec` Sekunden eine zweite Ansicht im Stil einer Abflugtafel ein, nach `boardsec` Sekunden wieder den Radar. Mit `views=radar,board,airport` kommt dazwischen die Flughafen-Ansicht (`airportsec`); die Reihenfolge ist frei wählbar. Die Tafel zeigt: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
+
+## Bewegung
+
+Die Animationen sind optional und sparsam, und jede Schleife ist auf der Showcase-Seite [`motion.html`](motion.html) mit Dauer und Kosten zu sehen (die Seite ist vom Fernseher aus nicht verlinkt). Die Stufe steuert der URL-Parameter `motion`:
+
+| Wert | Wirkung |
+|------|---------|
+| `motion=calm` | Standard. Radar-Sweep (eine Umdrehung je 6 s, sehr schwach), Ring bei Neuankunft im Radius (einmal, 1,6 s, das Symbol blendet ein), Piste in Betrieb atmet (4 s), neue Spuren wachsen in 1 s, Notfall-Rahmen pulsiert langsam (3 s), Split-Flap, neueste Zeile der Anzeigetafel wird einmal markiert. |
+| `motion=full` | Dasselbe, etwas deutlicher: Sweep mit kurzem Nachlauf, zweiter Ring, Notfall-Puls 2 s. |
+| `motion=off` | Nichts bewegt sich: Werte springen, Rahmen stehen, keine Markierung. |
+
+Ohne Parameter gilt `calm`, bei der Systemeinstellung „Bewegung reduzieren“ (`prefers-reduced-motion`) `off`. Ein ausdrücklicher Wert in der Adresse hat immer Vorrang. Ungültige Werte werden stillschweigend auf den Standard gesetzt. Die Stufe liegt in `js/config.js`, die Effekte in `js/motion.js` (reine Zeitkurven, getestet in `tools/tests/motion-test.cjs`), der Split-Flap in `js/board.js` und die Markierung der Anzeigetafel in `css/motion.css`.
+
+Die Kosten sind klein: alle Effekte zusammen sind einige Linien und Kreise je Bild, ohne Schatten, ohne Filter und ohne Speicher je Bild. Der Split-Flap läuft im Takt der Bildschleife (keine eigenen Intervalle), im verborgenen Tab läuft nichts. Gemessen mit `node tools/tests/motion-perf.cjs` (Demo, 1920×1080, Headless-Chromium): die Bildarbeit liegt mit `motion=off` bei rund 2,3 ms, mit `motion=full` ebenso (Unterschied im Mittel unter 0,1 ms; auf einem Fernseher mit schwacher Grafik ist das nicht gemessen).
+
+Einbrennschutz: Bewegte Teile sind auf OLED-Fernsehern ein Risiko. Deshalb gibt es keinen Blinker mehr, der dauerhaft läuft (der bisherige Ein-Sekunden-Blinker des Notfall-Rahmens ist ein langsamer Puls), und die Uhr blinkt nicht. Nicht umgesetzt: einfahrende Überflugzeilen und ein blinkender Doppelpunkt (auf OLED kritisch) sowie ein Steig- und Sinkpfeil, der flackert.
 
 ## Einrichtungs-Assistent
 
@@ -88,7 +125,7 @@ Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil ei
 1. **Willkommen**: was MyAirspace ist, mit einer Live-Vorschau (Demo-Verkehr).
 2. **Standort**: „Meinen Standort verwenden“, Ortssuche, Flughäfen mit Karte oder Koordinaten. Der Ort wird angezeigt, bevor es weitergeht.
 3. **Look**: Stil (Karte mit Mini-Vorschau), Hell/Dunkel/Automatisch, Akzentfarbe.
-4. **Inhalt**: Ansicht (Wechselnd, Radar, Tafel, Flughafen; für Flughafen die Wahl des Flughafens), welche Elemente zu sehen sind, Einheiten, Radius, Nachtdimmen.
+4. **Inhalt**: Ansicht (Radar, Tafel, Flughafen oder ein Wechsel aus Radar und Tafel, auch mit Flughafen; die Zeiten je Ansicht; für Flughafen die Wahl des Flughafens), welche Elemente zu sehen sind, Einheiten, Radius, Nachtdimmen.
 5. **Fernseher**: Adresse, QR-Code, „Testen“, dazu Schritte für Smart-TV, Apple TV (AirPlay), Computer und Handy oder iPad, „Link teilen“, wenn der Browser es kann.
 
 Am Ende stehen drei Tipps (Nachtdimmen, `style=` ändern, später wieder hier öffnen). Zurück behält alle Eingaben. Der Fortschritt steht nur in `sessionStorage` (dieser Tab, nach dem Schließen weg) und nichts davon geht an einen Server. Wer alles auf einmal sehen will, nutzt **Alle Einstellungen** (`setup.html?wizard=0` oder `#alle`), die Schritte springen direkt an: `#standort`, `#look`, `#inhalt`, `#fernseher`, `#fertig`. `?wizard=1` beginnt von vorn. Alle Texte stehen zentral im Objekt `MA.COPY` in `js/onboarding.js`.
@@ -102,6 +139,14 @@ Am Ende stehen drei Tipps (Nachtdimmen, `style=` ändern, später wieder hier ö
 ## Flugzeuge am Boden
 
 Flugzeuge am Boden werden an den Flughäfen der Karte (bis 4 km um den Flughafen) als kleine Quadrate mit Kursstrich angezeigt (`ground=0` blendet sie aus), die Kopfzeile nennt die Zahl („3 am Boden“). Sie erscheinen nie auf der Tafel.
+
+## Einstellungen im Dashboard
+
+Am Computer und auf dem Tablet sitzt unten links ein blasses Zahnrad (**Einstellungen**). Beim Laden ist es einige Sekunden deutlich zu sehen, danach wird es bei Mausbewegung oder Berührung kurz hell. Ein Klick oder Tipp öffnet den Dialog, die Taste **S** öffnet und schließt ihn, **Esc** schließt ihn. Solange er offen ist, bleibt die Tastatur darin, und beim Schließen geht der Fokus zurück aufs Zahnrad.
+
+Zur Wahl stehen **Stil**, **Thema**, **Helligkeit**, **Ansicht** (Wechselnd, Radar, Tafel, Flughafen), **Karte** (Luftfahrtkarte als Hintergrund) und **Ebenen** (Datenblöcke, Spuren, Ortsnamen, Wetter). Die meisten Änderungen wirken sofort. Die Ansicht **Flughafen** und jeder Wechsel dazu oder davon wirkt erst nach **Neu laden**; der Dialog zeigt dann „wirkt nach Neuladen“ und den Knopf.
+
+Die Werte stehen im Browser dieses Geräts (localStorage, ein Schlüssel `ma.settings`). Gespeichert wird nur, was in diesem Dialog gewählt wurde, nie ein Standort. **Werte in der Adresse haben Vorrang**: Steht etwa `style=` oder `show=` in der URL, gilt sie, und der Dialog zeigt „von der Adresse festgelegt“. Mit „Gespeicherte löschen“ werden die Werte entfernt. Das Zahnrad fehlt auf dem Fernseher ohne Zeiger oder Touch (Willkommensbild), in der Vorschau der Einrichtungsseite und wenn die Anzeigetafel oder die Uhr per `show=` oder `hide=` ausgeblendet sind.
 
 ## Vollbild am Computer
 
@@ -136,7 +181,7 @@ adsb.lol und die METAR-Quelle erlauben keine Abfragen direkt aus dem Browser (CO
 | `opensky-network.org` | `/api/states/all` |
 | `aviationweather.gov` | `/api/data/metar` |
 
-Weitere Schutzmaßnahmen: nur die Herkunft `kdniem.github.io`, `myairspace-nu.vercel.app` und `localhost`/`127.0.0.1` (Entwicklung); Weiterleitungen des Ziels werden nicht verfolgt; Antworten müssen gültiges JSON sein und werden immer als `application/json` mit `nosniff` und strenger CSP ausgeliefert (Fehler nie als HTML); Fehlerantworten enthalten keinen Inhalt des Ziels; Koordinaten in `/v2/point/` werden serverseitig auf 2 Nachkommastellen gerundet und der Radius auf 250 nm begrenzt. Die App schickt den Standort ohnehin nur auf etwa 1 km gerundet ab. Rechtliches: [LICENSE](LICENSE), [THIRD_PARTY.md](THIRD_PARTY.md), [datenschutz.html](datenschutz.html).
+Das Wetterradar (`wx=radar`) hat eine eigene Funktion, [`api/radar.js`](api/radar.js): sie nimmt **keine** Adresse aus der Anfrage entgegen, holt nur die feste DWD-Datei und gibt ein Raster aus. Sie ist deshalb keine Weiterleitung und steht nicht in der Tabelle oben. Weitere Schutzmaßnahmen: nur die Herkunft `kdniem.github.io`, `myairspace-nu.vercel.app` und `localhost`/`127.0.0.1` (Entwicklung); Weiterleitungen des Ziels werden nicht verfolgt; Antworten müssen gültiges JSON sein und werden immer als `application/json` mit `nosniff` und strenger CSP ausgeliefert (Fehler nie als HTML); Fehlerantworten enthalten keinen Inhalt des Ziels; Koordinaten in `/v2/point/` werden serverseitig auf 2 Nachkommastellen gerundet und der Radius auf 250 nm begrenzt. Die App schickt den Standort ohnehin nur auf etwa 1 km gerundet ab. Rechtliches: [LICENSE](LICENSE), [THIRD_PARTY.md](THIRD_PARTY.md), [datenschutz.html](datenschutz.html).
 
 ### Verbindung & Ausfälle
 
@@ -160,13 +205,20 @@ Die Pisten stammen aus [OurAirports](https://ourairports.com), Flüsse und Küst
 
 ### Flughafen-Ansicht
 
-`view=airport&airport=FRA` zeigt einen Flughafen als Fokus: das Vorfeld ist in die Mitte gezoomt (Vorfeld, Rollwege, Terminals, Hangars, Gates und Positionen mit Bezeichnung, wo sie kartiert sind), die Pisten mit Bezeichnern, die letzten 10 km der verlängerten Pistenachsen als kurze Anflug- und Abflugschneisen (die Piste in Betrieb in Grün). Flugzeuge im Umkreis von 12 km: in der Luft mit Flugzeugsymbol und Datenblock, wenn sie anfliegen oder abfliegen; am Boden an ihrer echten Position auf dem Vorfeld, nur das gewählte mit Rufzeichen. Oben stehen Flughafen, Ortszeit und UTC, „x im Anflug · y am Boden“, unten METAR und Piste in Betrieb. Die Anzeigetafel entfällt; wie bei jeder Ansicht folgen Stil und Theme. Der Standort wird dafür nicht gebraucht, die Daten kommen vom Flughafen aus. Ohne Standort und ohne `demo=1` läuft die Ansicht mit Live-Daten.
+`view=airport&airport=FRA` zeigt einen Flughafen als Fokus; `views=radar,board,airport&airport=FRA` wechselt im Rhythmus dorthin (1,2 s Überblendung, der Radar läuft im Hintergrund weiter). So sieht die Ansicht aus: das Vorfeld ist in die Mitte gezoomt (Vorfeld, Rollwege, Terminals, Hangars, Gates und Positionen mit Bezeichnung, wo sie kartiert sind), die Pisten mit Bezeichnern, die letzten 10 km der verlängerten Pistenachsen als kurze Anflug- und Abflugschneisen (die Piste in Betrieb in Grün). Flugzeuge im Umkreis von 12 km: in der Luft mit Flugzeugsymbol und Datenblock, wenn sie anfliegen oder abfliegen; am Boden an ihrer echten Position auf dem Vorfeld, nur das gewählte mit Rufzeichen. Oben stehen Flughafen, Ortszeit und UTC, „x im Anflug · y am Boden“, unten METAR und Piste in Betrieb. Die Anzeigetafel entfällt; wie bei jeder Ansicht folgen Stil und Theme. Der Standort wird dafür nicht gebraucht, die Daten kommen vom Flughafen aus. Ohne Standort und ohne `demo=1` läuft die Ansicht mit Live-Daten.
 
 Der Maßstab passt das Vorfeld (Box aus Vorfeld, Terminals und Gates, plus 0,6 km Rand) in den Bildschirm, nicht die ganze Pistenlänge: bei HAM sind das gut acht Kilometer, dann blieben Gates und Positionen unlesbar. Piste-Enden außerhalb des Bildes sieht man nicht, ihre Schneisen laufen aber vom Rand her hinein. Die Vorfeld-Daten stammen von OpenStreetMap (Abschnitt unten). Der Rest des Radars bleibt unverändert.
 
 ### Flughafen-Detaildaten
 
 `data/airport-detail.js` (ODbL, bleibt unter ODbL und ist nicht vom MIT-Lizenztext der App abgedeckt) enthält für HAM, XFW, FRA, FMO und CPH Vorfelder, Rollwege, Terminals, Hangars, Gates, Abstellpositionen, Hubschrauberlandeplätze und Pisten für eine vergrößerte Flughafenansicht (`MA.airportDetail`, Koordinaten als `[lat, lon]` mit 5 Nachkommastellen, auf etwa 2 m vereinfacht). Quelle ist OpenStreetMap, Daten © OpenStreetMap-Mitwirkende, [ODbL](https://www.openstreetmap.org/copyright). Neu erzeugen mit `python3 -I tools/build-airport-detail.py [cache_dir]`; das Skript lädt die Rohdaten kachelweise von der OSM-API (mit Pausen und User-Agent) und legt sie in `cache_dir` ab, weitere Läufe arbeiten offline. Größe: siehe Commit-Nachricht bzw. `ls -l data/airport-detail.js` (Ziel höchstens 120 KB je Flughafen). Wie vollständig ein Flughafen ist, hängt von den Mappern ab; nicht jeder hat Gates oder Rollwegnamen. Nicht zur Navigation geeignet.
+### Luftfahrtkarte als Hintergrund (`chartbg=1`)
+
+Optional, Standard aus. Mit `chartbg=1` (oder dem Schalter „Luftfahrtkarte“ auf der Einrichtungsseite) zeichnet der Radar im Hintergrund eine Karte im Stil einer Luftfahrtkarte aus Papier: ein feines Gradnetz mit Grad- und Minutenbeschriftung am Rand, Lufträume als Umrisse in Klassenfarben (Kontrollzonen und Terminal-Bereiche blau, Sperr- und Gefahrengebiete rot, Gefahrengebiete magenta, Fallschirmsprung und Übriges gedämpft), Funkfeuer (VOR als Sechseck, NDB als Kreis, DME als Quadrat, mit Kennung und Frequenz), Hindernisse ab 150 m Höhe als kleine Dreiecke und eine Marke für die magnetische Nordrichtung (`MAG`, aus der Missweisung des nächsten Flughafens). Im Stil `chart` ist der Hintergrund hell wie Papier, in den anderen Stilen gedämpft. Flugzeuge, Wetter und Anzeigetafel liegen weiterhin darüber.
+
+**Daten:** Lufträume und Hindernisse aus den offenen [OpenAIP](https://www.openaip.net)-Datenbeständen (Lizenz CC BY-NC 4.0, Namensnennung wird in der Fußzeile gezeigt). Funkfeuer und Flughäfen aus [OurAirports](https://ourairports.com) (gemeinfrei). Die Daten sind in `data/chart-features.js` festgeschrieben: Die App ruft dafür nichts ab. Abgedeckt ist ein Umkreis von etwa 75 km um HAM, FRA, FMO und CPH mit den Nachbarländern DE, DK, NL und SE, außerhalb davon bleibt der Hintergrund leer. Die Datei entsteht mit `python3 tools/build-chart.py` (Quellen werden zuerst in `tools/.cache/` geladen; sie bleibt unter 150 KB). Die Karte zeigt das Gradnetz und die Lufträume vereinfacht und ist **nicht zur Navigation** geeignet: maßgeblich sind die amtlichen Unterlagen. Es wird keine offizielle Luftfahrtkarte nachgebildet oder kopiert.
+
+Test: `tools/tests/chart-test.cjs` prüft die Datei und die Zeichenfunktionen (mit `chartbg=0` wird nichts gezeichnet).
 
 ### Routen
 
@@ -187,6 +239,17 @@ XYZ: ['XY', 'Beispiel Air', '#1d3c78'],   // ICAO: [IATA oder '', Anzeigename, L
 ### Tafel-Auswahl
 
 Welches Flugzeug unten auf der Tafel steht, entscheidet `js/pick.js` ruhig und nachvollziehbar: mindestens 12 s Anzeigedauer vor jedem Wechsel (Ausnahme: ein neuer Notfall-Squawk 7700/7600/7500 springt sofort), danach Wechsel nach `rotate` Sekunden zum am längsten nicht gezeigten der vier nächsten Flugzeuge (stabile Reihenfolge nach Hex-Code, kein Hin und Her A-B-A innerhalb von 30 s). Das angezeigte Flugzeug bleibt, solange es im Radius und unter den sechs nächsten ist; ein sehr naher Neuankömmling (unter 2 km) löst es nur ab, wenn es weiter als 6 km entfernt ist oder sich entfernt. Besondere Flugzeuge springen höchstens einmal je zwei Rotationsschritte vor. Getestet mit `tools/tests/pick-test.cjs`.
+
+## Diagnoseprotokoll
+
+Für Verbindungsabbrüche gibt es ein Protokoll, das nur im Browser des Geräts liegt (`js/diag.js`, Schlüssel `ma.diag` im `localStorage`):
+
+- **Was drinsteht:** fehlgeschlagene Abfragen je Quelle mit HTTP-Code und Dauer (`data`), Wechsel zwischen frisch, veraltet und offline mit dem Alter der Daten (`status`), Netz- und Tab-Wechsel (`net`), Bildhänger über 2 s (`stall`), Skriptfehler mit Datei und Zeile, ohne Stack (`error`), Service-Worker-Registrierung (`sw`), Start mit Version und Stil (`boot`) und Wake Lock (`wake`). Erfolgreiche Abfragen stehen nur am Ende einer Störung (mit der Lücke) und beim ersten Start, sonst wären die 500 Einträge nach gut einer halben Stunde voll.
+- **Begrenzt:** höchstens 500 Einträge, Einträge älter als 72 Stunden werden entfernt, Schreibzugriffe höchstens einmal pro Sekunde.
+- **Ausgeschlossen:** Standort, Koordinaten, Rufzeichen, IP-Adresse und Flugdaten. Texte werden vor dem Speichern bereinigt (URLs, Koordinaten, Rufzeichen-ähnliche Codes und Werte wie `lat=`, `lon=`, `label=`, `title=` entfallen). `tools/tests/diag-test.cjs` prüft das.
+- **Ansehen:** `?diag=1` an die Radar-Adresse hängen zeigt ein kleines Feld mit der Zusammenfassung der letzten 24 Stunden und den letzten 30 Einträgen (nur auf dem Bildschirm, nichts wird geschickt).
+- **Herunterladen oder leeren:** auf der Einrichtungsseite unter „Erweitert: Diagnoseprotokoll“ (`setup.html?diag=export` öffnet den Abschnitt). Der Download ist eine Textdatei, die der Browser nur auf Klick erzeugt; „Protokoll leeren“ löscht den Inhalt.
+- **Nichts wird übertragen:** das Protokoll verlässt das Gerät nicht, es gibt keinen Server dafür und keine zusätzlichen Drittanbieter-Anfragen.
 
 ## Veröffentlichen (GitHub Pages)
 
@@ -218,13 +281,16 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), proxy-test.mjs, motion-sim.js
+tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), diag-test.cjs (Diagnoseprotokoll), proxy-test.mjs, motion-sim.js, motion-test.cjs (Bewegung), motion-perf.cjs (Bildkosten, nicht in run-all)
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 data/airport-detail.js Vorfeld, Rollwege, Terminals, Gates der fünf Flughäfen (erzeugt von tools/build-airport-detail.py, OpenStreetMap)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)
 js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen; DEFAULT_PROXY
+js/diag.js             Diagnoseprotokoll (lokal im Browser, siehe oben): Ringpuffer, Zusammenfassung, Panel ?diag=1, Download auf der Einrichtungsseite
 js/styles.js           STYLES-Tabelle: Rollenfarben je Stil und Theme, Symbole, Schrift (Daten, keine Logik pro Stil)
+js/prefs.js            Gespeicherte Dashboard-Einstellungen (localStorage ma.settings), vor config.js geladen; die Adresse hat Vorrang
+js/settings.js         Einstellungs-Dialog am Zahnrad (unten links): Stil, Thema, Helligkeit, Ansicht, Karte, Ebenen
 js/config.js           URL-Parameter
 js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme und die Stil-Variablen vor dem ersten Bild
 js/hint.js             Willkommensbild auf der TV-Seite, wenn kein Standort in der URL steht
@@ -235,6 +301,8 @@ js/glyphs.js           Flugzeug-Silhouetten nach ICAO-Typ (Canvas-Pfade)
 js/pick.js             Auswahl des Flugzeugs auf der Tafel (reine Logik, getestet)
 js/radar.js            Canvas-Karte: Kompassrose, Pisten, Flugzeuge, Flugspuren, Datenblöcke
 js/airport.js          Flughafen-Ansicht (view=airport): Anpassung der Box, statische Vorfeldschicht, Korridore, Flugzeuge am Boden und in der Luft
+js/motion.js           Bewegung (motion=off|calm|full): Zeitkurven und Zeichenhilfen für Radar, Tafel und Showcase
+motion.html            Showcase der Bewegungen mit Dauer und Kosten (nicht vom Fernseher aus verlinkt)
 js/board.js            Tafel mit Split-Flap-Effekt
 js/main.js             Abfrage-Schleife, Glättung, Rotation, Dimmen, Wake Lock
 ```
