@@ -157,6 +157,35 @@ html, body {
 .wx b.n { text-transform: none; }
 .wx-gap { display: inline-block; width: 1.6em; }
 
+/* weather radar legend (js/wxradar.js): lower left, above the board; text on a panel, not on the map */
+.wx-legend {
+  position: absolute;
+  left: var(--safe-x);
+  bottom: calc(var(--safe-y) + 20.4vh);
+  padding: 0.9vh 1.1vw;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 0.3vh solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 1.7vh;
+  line-height: 1.35;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.wx-legend-head { font-weight: 600; letter-spacing: 0.06em; color: var(--accent); }
+.wx-steps { margin: 0.6vh 0; }
+.wx-steps span { display: inline-block; margin-right: 1.4vw; }
+.wx-steps span:last-child { margin-right: 0; }
+.wx-steps i { vertical-align: middle; }
+.wx-steps i { display: inline-block; width: 1.8vh; height: 1.8vh; margin-right: 0.5vw; border-radius: 0.2vh; }
+.wx-steps .s1 { background: var(--wx1); }
+.wx-steps .s2 { background: var(--wx2); }
+.wx-steps .s3 { background: var(--wx3); }
+.wx-steps .s4 { background: var(--wx4); }
+.wx-legend-foot { color: var(--sub); font-size: 1.5vh; text-transform: none; }
+.wx-legend.demo .wx-legend-foot { color: var(--caution); }
+
 .dot {
   display: inline-block;
   width: 0.8vh;

@@ -12,6 +12,11 @@ Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace
 
 **Als App:** Die Seite hat ein Web-App-Manifest. Auf iPad/iPhone in Safari *Teilen → Zum Home-Bildschirm*, auf Android *Zum Startbildschirm hinzufügen*. Die App startet im Vollbild mit deinen zuletzt geöffneten Einstellungen. Ein kleiner Service Worker (`sw.js`) hält nur die App-Dateien offline vor, nie Flugdaten.
 
+## Hinweise
+
+- **Keine Navigation:** MyAirspace ist eine Anzeige für Neugier und Ambiente. Es ist kein Navigations‑, Flugsicherungs‑ oder Sicherheitsinstrument und darf dafür nicht verwendet werden.
+- **Stilnamen:** Die Stile `airbus` und `boeing` sind nur optische Vorbilder. Sie stehen in keiner Verbindung zu Airbus oder Boeing, deren Namen und Marken gehören den jeweiligen Firmen.
+
 ## Aufrufen
 
 ```
@@ -48,10 +53,11 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `proxy`    | –               | Nur `off` oder der eigene Proxy erlaubt, siehe [Proxy](#proxy-cors) |
 | `public`   | `0`             | `1` erlaubt öffentliche CORS-Proxys und die Quellen airplanes.live/OpenSky (Datenschutz beachten) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`; `airplaneslive`, `opensky` nur mit `public=1` |
-| `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
 | `view`     | `auto`          | `auto` wechselt nach `views` (Standard Radar und Tafel). `radar`, `board` oder `airport` zeigt nur diese eine Ansicht (`airport`: die Flughafen-Ansicht, ohne Standort nutzbar) |
 | `views`    | `radar,board`   | Reihenfolge der Wechsel-Ansichten bei `view=auto`, z. B. `radar,board,airport`. Eine Ansicht darf doppelt stehen, um sie zu gewichten (`radar,radar,board,airport`). Unbekannte Namen fallen weg; eine leere oder einelementige Liste ergibt die Voreinstellung `radar,board` |
 | `airport` | `HAM`         | Flughafen der Flughafen-Ansicht (`airport` in `views` oder `view=airport`): `HAM`, `XFW`, `FRA`, `FMO` oder `CPH`; alles andere ergibt `HAM`, siehe [Flughafen-Ansicht](#flughafen-ansicht) |
+| `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz); mit `wx=radar` auch simulierten Regen, gekennzeichnet als DEMO |
+| `wx`       | aus             | `radar` blendet das Wetterradar über der Karte ein (Niederschlag in Cockpit-Farben, nur Deutschland), siehe [Wetterradar](#wetterradar) |
 | `radarsec` | `240`           | Sekunden pro Radar-Abschnitt im Wechsel (10 bis 3600) |
 | `boardsec` | `40`            | Sekunden pro Tafel-Abschnitt im Wechsel (5 bis 600); eine Tafel wird übersprungen, solange noch kein Überflug da war |
 | `airportsec` | `60`          | Sekunden pro Flughafen-Abschnitt im Wechsel (10 bis 3600) |
@@ -79,6 +85,18 @@ Alle Looks sind Daten: die Tabelle `STYLES` in `js/styles.js` hält je Stil Roll
 Die Einrichtungsseite hat dafür die Abschnitte Theme, Anzeige, Einheiten und Elemente mit Live-Vorschau (`setup.html?demo=1` zeigt in der Vorschau den Demo-Verkehr). Die Einstellungen stehen in der Adresse und werden von `js/pwa.js` wie alle Parameter für die Home-Bildschirm-App gemerkt.
 
 Für die Lesbarkeit aus drei Metern Abstand sind Schriften größer (nichts Wichtiges unter etwa 1,6 vh) und alle Texte haben mindestens 4,5:1 Kontrast.
+
+## Wetterradar
+
+Mit `wx=radar` zeichnet die App den Niederschlag über die Karte, in den Farben eines Cockpit-Wetterradars: **grün** leicht, **gelb** mäßig, **orange** stark, **rot** sehr stark. Die Flugzeuge, Datenblöcke und Anflugachsen liegen darüber, der Regen ist durchscheinend gezeichnet. Standard ist aus; im Einrichtungs-Assistenten gibt es den Schalter unter **Elemente** („Wetterradar“). Die Legende unten links nennt die Stufen, die Quelle und das Alter der Daten, dazu Reichweite und Sektor (`RNG 25 km · 360°`).
+
+- **Stufen** (dBZ, Radarreflektivität): leicht 20 bis 34, mäßig 35 bis 44, stark 45 bis 54, sehr stark ab 55. Darunter wird nichts gezeichnet. Die Farben kommen aus den Stil-Rollen in `js/styles.js` (`ok`, `moderate`, `caution`, `warning`), in Hell und Dunkel passend.
+- **Daten:** Deutscher Wetterdienst (DWD), Radarkomposit WN, beobachteter Niederschlag im 5-Minuten-Takt, Raster etwa 2 km, nur Deutschland und das Radar-Umfeld. Lizenz: Datenlizenz Deutschland – Namensnennung – Version 2.0 (siehe [THIRD_PARTY.md](THIRD_PARTY.md)). Der Hinweis „Daten: DWD“ steht in der Legende.
+- **Wer sieht was:** Die App fragt `/api/radar` am eigenen Proxy ab (`api/radar.js`). Dieser holt die feste Datei von opendata.dwd.de, rechnet sie in ein Raster um und gibt es für alle gleich aus (Cache 2 Minuten, bei Fehlern bis 15 Minuten). Die Anfrage enthält **keine Position**, dein Standort verlässt den Browser nicht. Der DWD sieht nur den Server, nicht dich.
+- **Frische:** Die Legende zeigt die Beobachtungszeit in UTC und das Alter („vor 4 min“). Ist die Beobachtung älter als 15 Minuten, verschwindet der Regen und die Legende sagt „Radar veraltet“.
+- **Keine Vorhersage und keine Warnung:** Gezeigt wird nur, was der Radar gerade misst. Das ist kein Ersatz für Wetterwarnungen oder den Flugwetterbericht.
+- **Demo:** `?demo=1&wx=radar` zeigt drei synthetische Regenzellen mit der Kennzeichnung „DEMO“ in der Legende. Im Live-Betrieb gibt es keine simulierten Daten.
+- **Speicher:** Die Radardaten werden nicht im Browser gespeichert.
 
 ## Anzeigetafel
 
@@ -139,7 +157,7 @@ adsb.lol und die METAR-Quelle erlauben keine Abfragen direkt aus dem Browser (CO
 | `opensky-network.org` | `/api/states/all` |
 | `aviationweather.gov` | `/api/data/metar` |
 
-Weitere Schutzmaßnahmen: nur die Herkunft `kdniem.github.io`, `myairspace-nu.vercel.app` und `localhost`/`127.0.0.1` (Entwicklung); Weiterleitungen des Ziels werden nicht verfolgt; Antworten müssen gültiges JSON sein und werden immer als `application/json` mit `nosniff` und strenger CSP ausgeliefert (Fehler nie als HTML); Fehlerantworten enthalten keinen Inhalt des Ziels; Koordinaten in `/v2/point/` werden serverseitig auf 2 Nachkommastellen gerundet und der Radius auf 250 nm begrenzt. Die App schickt den Standort ohnehin nur auf etwa 1 km gerundet ab. Rechtliches: [LICENSE](LICENSE), [THIRD_PARTY.md](THIRD_PARTY.md), [datenschutz.html](datenschutz.html).
+Das Wetterradar (`wx=radar`) hat eine eigene Funktion, [`api/radar.js`](api/radar.js): sie nimmt **keine** Adresse aus der Anfrage entgegen, holt nur die feste DWD-Datei und gibt ein Raster aus. Sie ist deshalb keine Weiterleitung und steht nicht in der Tabelle oben. Weitere Schutzmaßnahmen: nur die Herkunft `kdniem.github.io`, `myairspace-nu.vercel.app` und `localhost`/`127.0.0.1` (Entwicklung); Weiterleitungen des Ziels werden nicht verfolgt; Antworten müssen gültiges JSON sein und werden immer als `application/json` mit `nosniff` und strenger CSP ausgeliefert (Fehler nie als HTML); Fehlerantworten enthalten keinen Inhalt des Ziels; Koordinaten in `/v2/point/` werden serverseitig auf 2 Nachkommastellen gerundet und der Radius auf 250 nm begrenzt. Die App schickt den Standort ohnehin nur auf etwa 1 km gerundet ab. Rechtliches: [LICENSE](LICENSE), [THIRD_PARTY.md](THIRD_PARTY.md), [datenschutz.html](datenschutz.html).
 
 ### Verbindung & Ausfälle
 
@@ -198,6 +216,17 @@ XYZ: ['XY', 'Beispiel Air', '#1d3c78'],   // ICAO: [IATA oder '', Anzeigename, L
 
 Welches Flugzeug unten auf der Tafel steht, entscheidet `js/pick.js` ruhig und nachvollziehbar: mindestens 12 s Anzeigedauer vor jedem Wechsel (Ausnahme: ein neuer Notfall-Squawk 7700/7600/7500 springt sofort), danach Wechsel nach `rotate` Sekunden zum am längsten nicht gezeigten der vier nächsten Flugzeuge (stabile Reihenfolge nach Hex-Code, kein Hin und Her A-B-A innerhalb von 30 s). Das angezeigte Flugzeug bleibt, solange es im Radius und unter den sechs nächsten ist; ein sehr naher Neuankömmling (unter 2 km) löst es nur ab, wenn es weiter als 6 km entfernt ist oder sich entfernt. Besondere Flugzeuge springen höchstens einmal je zwei Rotationsschritte vor. Getestet mit `tools/tests/pick-test.cjs`.
 
+## Diagnoseprotokoll
+
+Für Verbindungsabbrüche gibt es ein Protokoll, das nur im Browser des Geräts liegt (`js/diag.js`, Schlüssel `ma.diag` im `localStorage`):
+
+- **Was drinsteht:** fehlgeschlagene Abfragen je Quelle mit HTTP-Code und Dauer (`data`), Wechsel zwischen frisch, veraltet und offline mit dem Alter der Daten (`status`), Netz- und Tab-Wechsel (`net`), Bildhänger über 2 s (`stall`), Skriptfehler mit Datei und Zeile, ohne Stack (`error`), Service-Worker-Registrierung (`sw`), Start mit Version und Stil (`boot`) und Wake Lock (`wake`). Erfolgreiche Abfragen stehen nur am Ende einer Störung (mit der Lücke) und beim ersten Start, sonst wären die 500 Einträge nach gut einer halben Stunde voll.
+- **Begrenzt:** höchstens 500 Einträge, Einträge älter als 72 Stunden werden entfernt, Schreibzugriffe höchstens einmal pro Sekunde.
+- **Ausgeschlossen:** Standort, Koordinaten, Rufzeichen, IP-Adresse und Flugdaten. Texte werden vor dem Speichern bereinigt (URLs, Koordinaten, Rufzeichen-ähnliche Codes und Werte wie `lat=`, `lon=`, `label=`, `title=` entfallen). `tools/tests/diag-test.cjs` prüft das.
+- **Ansehen:** `?diag=1` an die Radar-Adresse hängen zeigt ein kleines Feld mit der Zusammenfassung der letzten 24 Stunden und den letzten 30 Einträgen (nur auf dem Bildschirm, nichts wird geschickt).
+- **Herunterladen oder leeren:** auf der Einrichtungsseite unter „Erweitert: Diagnoseprotokoll“ (`setup.html?diag=export` öffnet den Abschnitt). Der Download ist eine Textdatei, die der Browser nur auf Klick erzeugt; „Protokoll leeren“ löscht den Inhalt.
+- **Nichts wird übertragen:** das Protokoll verlässt das Gerät nicht, es gibt keinen Server dafür und keine zusätzlichen Drittanbieter-Anfragen.
+
 ## Veröffentlichen (GitHub Pages)
 
 1. Im Repository unter **Settings → Pages → Build and deployment → Source** die Option **GitHub Actions** wählen.
@@ -228,12 +257,13 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), proxy-test.mjs, motion-sim.js
+tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), diag-test.cjs (Diagnoseprotokoll), proxy-test.mjs, motion-sim.js
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 data/airport-detail.js Vorfeld, Rollwege, Terminals, Gates der fünf Flughäfen (erzeugt von tools/build-airport-detail.py, OpenStreetMap)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function (Host-/Pfad-Allowlist)
 js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen; DEFAULT_PROXY
+js/diag.js             Diagnoseprotokoll (lokal im Browser, siehe oben): Ringpuffer, Zusammenfassung, Panel ?diag=1, Download auf der Einrichtungsseite
 js/styles.js           STYLES-Tabelle: Rollenfarben je Stil und Theme, Symbole, Schrift (Daten, keine Logik pro Stil)
 js/config.js           URL-Parameter
 js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme und die Stil-Variablen vor dem ersten Bild

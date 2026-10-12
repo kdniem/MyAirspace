@@ -551,6 +551,49 @@ async function chartCase(browser, vp) {
   } catch (e) { record(id, 'test crashed: ' + e.message); await shot(page, id); } finally { await ctx.close(); }
 }
 
+async function diagPanelCase(browser) {
+  const id = 'diag_panel';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?diag=1&demo=1', { waitUntil: 'load' });
+    await page.waitForTimeout(1500);
+    const info = await page.evaluate(() => {
+      const p = document.getElementById('diag-panel');
+      if (!p) return null;
+      const box = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+      return { panel: box(p), brand: box(document.querySelector('.brand')), meta: box(document.querySelector('#top .meta')),
+        board: box(document.getElementById('board')), text: p.textContent, display: getComputedStyle(p).display };
+    });
+    if (!info) problems.push('?diag=1 shows no diagnostics panel');
+    else {
+      if (!/\bboot\b/.test(info.text)) problems.push('diagnostics panel has no boot event');
+      const hit = (a, b) => a && b && Math.min(a.r, b.r) - Math.max(a.l, b.l) > 1 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 1;
+      if (hit(info.panel, info.brand) || hit(info.panel, info.meta)) problems.push('diagnostics panel overlaps the header');
+      if (hit(info.panel, info.board)) problems.push('diagnostics panel overlaps the board');
+      if (info.panel.r > 1280 || info.panel.b > 720 || info.panel.l < 0 || info.panel.t < 0) problems.push('diagnostics panel leaves the 1280x720 screen');
+    }
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); }
+    await shot(page, id + '_1280');
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
+}
+async function diagSetupCase(browser) {
+  const id = 'diag_setup';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 800 }, 'setup');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/setup.html?demo=1&wizard=0', { waitUntil: 'load' });
+    const btns = await page.evaluate(() => Array.from(document.querySelectorAll('#diag-box button')).map((b) => b.textContent));
+    if (!btns.some((t) => /Diagnoseprotokoll herunterladen/.test(t))) problems.push('setup page has no "Diagnoseprotokoll herunterladen" button');
+    if (!btns.some((t) => /Protokoll leeren/.test(t))) problems.push('setup page has no "Protokoll leeren" button');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -563,6 +606,7 @@ for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080
 jobs.push({ n: 'rotation_airport_1280', run: () => rotationCase(browser) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
+jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;
 await Promise.all(Array.from({ length: CONC }, async () => { while (next < filtered.length) await filtered[next++].run(); }));

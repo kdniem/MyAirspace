@@ -38,10 +38,13 @@ const cmd = (name, args, extra) => steps.push(Object.assign({
 cmd('URL options + ES2017 scan (options.cjs)', ['tools/tests/options.cjs', '.']);
 cmd('board selection (pick-test.cjs)', ['tools/tests/pick-test.cjs', '.']);
 cmd('view rotation (rotation-test.cjs)', ['tools/tests/rotation-test.cjs', '.']);
+cmd('diagnostics log (diag-test.cjs)', ['tools/tests/diag-test.cjs', '.']);
 cmd('old-browser guard (compat.mjs)', ['tools/tests/compat.mjs']);
 cmd('contrast', ['tools/contrast.mjs']);
 cmd('chart background (chart-test.cjs)', ['tools/tests/chart-test.cjs', '.']);
 cmd('proxy', ['tools/tests/proxy-test.mjs']);
+cmd('proxy (incl. /api/radar)', ['tools/tests/proxy-test.mjs']);
+cmd('weather radar decoding (wxradar-test.mjs)', ['tools/tests/wxradar-test.mjs']);
 if (!argv.includes('--no-browser')) cmd('browser suite', ['tools/tests/browser.mjs'].concat(argv.includes('--quick') ? ['--quick'] : []));
 
 const rows = [];

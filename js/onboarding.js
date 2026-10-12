@@ -123,7 +123,9 @@
       ['compass', 'Kompass', 'Gradskala rund um den Radar', true],
       ['labels', 'Datenblöcke', 'Rufzeichen, Höhe und Tempo am Flugzeug', false],
       ['rings', 'Entfernungsringe', 'Ringe mit km-Beschriftung', false],
-      ['places', 'Ortsnamen', 'Städte und Orte auf der Karte', false]
+      ['places', 'Ortsnamen', 'Städte und Orte auf der Karte', false],
+      // not a show= flag: on writes wx=radar (opt-in, see js/wxradar.js), off writes nothing
+      ['wxradar', 'Wetterradar', 'Niederschlag über der Karte in Cockpit-Farben (Daten DWD, Deutschland)', false]
     ],
     // the aeronautical-chart background (chartbg=1): one switch in the settings, off by default
     chartbg: {

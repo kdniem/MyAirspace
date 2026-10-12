@@ -83,7 +83,8 @@ window.MA = MA;
   }
   list('hide').forEach(function (k) { if (show.hasOwnProperty(k)) show[k] = false; });
   KEYS.forEach(function (k) { if (q.has(k)) show[k] = bool(k, show[k]); });
-  if (q.has('wx')) show.weather = bool('wx', show.weather);
+  // wx=radar is the weather radar overlay (below), not the weather box: only other values toggle the box
+  if (q.has('wx') && !/^radar$/i.test(q.get('wx'))) show.weather = bool('wx', show.weather);
 
   // datablock=callsign,fl,gs,type: fields and their order; datablock=0 switches the labels off
   var FIELDS = ['callsign', 'fl', 'gs', 'type', 'route', 'reg'];
@@ -140,6 +141,7 @@ window.MA = MA;
     boardSec: num('boardsec', 40, 5, 600),      // rotation: seconds on the Anzeigetafel
     radarSec: num('radarsec', 240, 10, 3600),   // rotation: seconds on the radar
     airportSec: num('airportsec', 60, 10, 3600), // rotation: seconds on the focus view
-    theme: /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (STY[style].theme || 'dark') // auto: light from sunrise to sunset
+    theme: /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (STY[style].theme || 'dark'), // auto: light from sunrise to sunset
+    wxRadar: str('wx', '').toLowerCase() === 'radar'   // weather radar overlay (js/wxradar.js), default off
   };
 })();

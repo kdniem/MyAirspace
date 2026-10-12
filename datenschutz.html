@@ -51,7 +51,7 @@
 
   <section>
     <h2>Proxy (Vercel)</h2>
-    <p>Flugdaten- und Wetter-Abfragen laufen über einen eigenen Proxy auf Vercel (Vercel Inc., USA; Funktion in der Region Frankfurt). Dabei werden verarbeitet: die angefragte Adresse mit der auf etwa 1 km gerundeten Position und dem Radius, deine IP-Adresse und technische Verbindungsdaten. Der Proxy leitet die Abfrage an die Datenquellen weiter und speichert selbst keine Daten; Vercel kann Anfragen kurzzeitig protokollieren. Antworten werden für wenige Sekunden zwischengespeichert, damit nicht jede Abfrage die Quelle belastet.</p>
+    <p>Flugdaten- und Wetter-Abfragen laufen über einen eigenen Proxy auf Vercel (Vercel Inc., USA; die Funktion läuft in der Region Frankfurt, die Zwischenspeicherung am Vercel-CDN ist weltweit verteilt). Dabei werden verarbeitet: die angefragte Adresse mit der auf etwa 1 km gerundeten Position und dem Radius, deine IP-Adresse und technische Verbindungsdaten. Der Proxy leitet die Abfrage an die Datenquellen weiter und speichert selbst keine Daten; Vercel kann Anfragen kurzzeitig protokollieren. Antworten werden für wenige Sekunden zwischengespeichert, damit nicht jede Abfrage die Quelle belastet.</p>
   </section>
 
   <section>
@@ -61,7 +61,10 @@
       <li><strong>adsb.lol</strong> (Flugzeugpositionen und Routen). Routen-Abfragen schickt dein Browser direkt an adsb.lol, dabei sieht adsb.lol deine IP-Adresse sowie Rufzeichen und Position des Flugzeugs.</li>
       <li><strong>aviationweather.gov</strong> (NOAA, METAR-Wetterberichte), über den Proxy.</li>
       <li>Nur wenn du ausdrücklich <code>?public=1</code> in der Adresse verwendest: <strong>airplanes.live</strong>, <strong>OpenSky Network</strong> sowie die öffentlichen Proxy-Dienste <strong>allorigins.win</strong> und <strong>codetabs.com</strong>. Diese Dritten sehen dann deine Abfragen und IP-Adresse. Ohne <code>public=1</code> werden sie nicht kontaktiert.</li>
+      <li>Nur wenn du <code>wx=radar</code> verwendest: <strong>Deutscher Wetterdienst (DWD)</strong>, Radarkomposit. Den Abruf macht der Server des Projekts (Vercel), nicht dein Browser, und er enthält keine Standortdaten. Der DWD sieht also nur die Server-Adresse von Vercel, nicht deine IP-Adresse und nicht deine Position.</li>
     </ul>
+    <h2>Wetterradar (nur mit wx=radar)</h2>
+    <p>Dein Browser fragt <code>/api/radar</code> beim eigenen Proxy ab. Die Anfrage enthält weder Standort noch Parameter; Vercel verarbeitet deine IP-Adresse und technische Verbindungsdaten wie bei jeder Anfrage an den Proxy. Der Server holt die DWD-Radardaten (Niederschlag, alle 5 Minuten) und gibt sie für alle Besucher gleich aus, für 2 Minuten zwischengespeichert. Die Radardaten werden nicht im Browser gespeichert und enthalten keine personenbezogenen Daten.</p>
   </section>
 
   <section>
@@ -80,6 +83,7 @@
   <section>
     <h2>Speicher im Browser</h2>
     <p>Die App nutzt den lokalen Speicher deines Browsers (<code>localStorage</code>) für deine Einstellungen (zuletzt geöffnete Adresse für die Home-Bildschirm-App) und Merker, dass die geführte Einrichtung bzw. der Willkommenshinweis schon gezeigt wurde (<code>ma.tvSeen</code>, enthält keine Standortdaten) und die zuletzt geöffnete Adresse (<code>ma.lastQuery</code>, enthält Standort und Einstellungen, damit die Home-Bildschirm-App sie wiederherstellt) und für ein Überflug-Protokoll der letzten zwei Tage für die Anzeigetafel. Diese Daten verlassen dein Gerät nicht. Die geführte Einrichtung merkt sich außerdem deinen Fortschritt im Tab (<code>sessionStorage</code>, <code>ma.wz</code>, mit Standort und Auswahl); er wird beim Schließen des Tabs gelöscht. Ein Service Worker legt die App-Dateien (nie Flugdaten) für den Offline-Start ab. Du kannst alles in den Browser-Einstellungen unter „Websitedaten“ löschen. Es werden keine Cookies gesetzt.</p>
+    <p><strong>Diagnoseprotokoll:</strong> Die App führt ein lokales Diagnoseprotokoll (<code>localStorage</code>, Schlüssel <code>ma.diag</code>, höchstens 500 Einträge aus den letzten 72 Stunden). Es hält Zeitpunkte, Verbindungsstatus, HTTP-Codes, Dauer und Fehlerarten fest, aber keinen Standort, keine Rufzeichen, keine IP-Adresse und keine Flugdaten. Das Protokoll wird nirgends übertragen. Auf der Einrichtungsseite (Abschnitt „Erweitert“) kannst du es als Textdatei herunterladen oder leeren; das Löschen der Websitedaten entfernt es ebenfalls.</p>
   </section>
 
   <section>

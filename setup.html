@@ -295,6 +295,11 @@
               </div>
             </div>
           </div>
+          <details class="more" id="diag-more">
+            <summary>Erweitert: Diagnoseprotokoll</summary>
+            <!-- js/diag.js fills this box: count, download (.txt, on click only), clear -->
+            <div id="diag-box" class="diag-box"></div>
+          </details>
         </div>
       </section>
 
@@ -358,13 +363,14 @@
     <p id="wz-hint" class="wz-hint" role="status"></p>
   </nav>
 
-  <footer class="foot">Ortssuche: © OpenStreetMap-Mitwirkende, Nominatim · <a href="datenschutz.html">Datenschutz</a></footer>
+  <footer class="foot">Keine Navigation. Die Stile „Airbus“ und „Boeing“ sind nur Vorbilder, ohne Verbindung zu den Firmen. Ortssuche: © OpenStreetMap-Mitwirkende, Nominatim · <a href="datenschutz.html">Datenschutz</a></footer>
 
   <script src="data/geo-features.js"></script>
   <script src="js/styles.js"></script>
   <script src="js/onboarding.js"></script>
   <script src="js/config.js"></script>
   <script src="js/qr.js"></script>
+  <script src="js/diag.js"></script>
   <script src="js/setup.js"></script>
 </body>
 </html>
