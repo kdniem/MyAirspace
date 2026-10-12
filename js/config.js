@@ -60,13 +60,14 @@ window.MA = MA;
   }
 
   /* ---- looks and options (js/styles.js holds the style table) ---- */
-  var STY = MA.STYLES || { atc: {} };
+  var STY = MA.STYLES || { tower: {} };
   function pick(name, re, def) {
     var v = (q.get(name) || '').toLowerCase();
     return re.test(v) ? v : def;
   }
-  var style = (q.get('style') || S.style || '').toLowerCase();
-  if (!STY.hasOwnProperty(style)) style = 'atc';
+  // old ids (atc, terminal, …) resolve to the new looks (js/styles.js ALIAS); anything unknown falls back
+  // saved look (overlay, js/prefs.js) counts when the address does not name one
+  var style = MA.style ? (MA.style.canonical((q.get('style') || S.style || '').toLowerCase()) || MA.style.defaultStyle) : 'tower';
   var accent = (q.get('accent') || '').toLowerCase().replace('#', '');
   if (!(MA.ACCENTS && MA.ACCENTS.hasOwnProperty(accent)) && !/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(accent)) accent = '';
   else if (/^[0-9a-f]{3,6}$/.test(accent) && !(MA.ACCENTS && MA.ACCENTS.hasOwnProperty(accent))) accent = '#' + accent;
@@ -135,7 +136,7 @@ window.MA = MA;
     labels: show.labels,                        // aircraft data blocks on the map
     places: show.places,                        // town names on the map
     title: str('title', '').slice(0, 32),       // optional second line under the place name
-    style: style,                               // atc | terminal | chart | airbus | boeing | night | military
+    style: style,                               // tower | fids | efis-airbus | eicam-boeing | chart-paper | nvg-night | tactical-olive
     chartbg: bool('chartbg', S.chartbg === true),            // aeronautical-chart background: airspaces, navaids, grid (js/chart.js), off by default
     accent: accent,                             // '' (style default) | preset name | '#rrggbb'
     font: pick('font', /^(mono|sans)$/, STY[style].font || 'mono'),

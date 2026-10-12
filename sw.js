@@ -1,7 +1,7 @@
 /* MyAirspace service worker: keeps the app shell available offline.
    Network-first for the shell only; flight APIs, proxies, search and fonts are never touched.
    Bump VERSION when the shell file list changes; every deploy is picked up anyway (network-first). */
-var VERSION = 'v16';
+var VERSION = 'v17';
 var CACHE = 'myairspace-shell-' + VERSION;
 var SHELL = [
   './', 'index.html', 'setup.html', 'datenschutz.html', 'manifest.webmanifest',

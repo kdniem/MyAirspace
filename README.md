@@ -1,6 +1,6 @@
 # MyAirspace
 
-Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als Flugzeug-Silhouetten mit auslaufender Flugspur und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (ATC, Terminal, Karte, Airbus, Boeing, Nacht, Militär) und viele Optionen machen die Anzeige persönlich.
+Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als Flugzeug-Silhouetten mit auslaufender Flugspur und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (Tower, FIDS, Airbus, Boeing, Karte, Nacht, Taktik) und viele Optionen machen die Anzeige persönlich.
 
 Die App ist zum Anschauen gedacht: URL öffnen, fertig. Am Computer und Tablet gibt es unten links ein Zahnrad für die häufigsten Einstellungen (siehe „Einstellungen im Dashboard“). Kein API-Key, kein Build-Schritt.
 
@@ -37,8 +37,8 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `night`    | `23-6`          | Zeitraum, in dem gedimmt wird (`off` schaltet das Dimmen aus) |
 | `dim`      | `0.45`          | Helligkeit während der Nachtzeit |
 | `title`    | –               | Zweite Zeile unter dem Ortsnamen, z. B. `Zuhause` |
-| `style`    | `atc`           | Stil: `atc`, `terminal`, `chart`, `airbus`, `boeing`, `night`, `military` (ungültig = `atc`), siehe [Stile](#stile-und-optionen) |
-| `theme`    | je Stil         | `dark`, `light` oder `auto` (hell von Sonnenauf- bis -untergang am Standort, sonst dunkel). Standard ist der Stil-Standard: `dark`, bei `chart` `light` |
+| `style`    | `tower`         | Stil: `tower`, `fids`, `efis-airbus`, `eicam-boeing`, `chart-paper`, `nvg-night`, `tactical-olive` (ungültig = `tower`; die alten Namen `atc`, `terminal`, `airbus`, `boeing`, `chart`, `night`, `military` funktionieren weiter), siehe [Stile](#stile-und-optionen) |
+| `theme`    | je Stil         | `dark`, `light` oder `auto` (hell von Sonnenauf- bis -untergang am Standort, sonst dunkel). Standard ist der Stil-Standard: `dark`, bei `chart-paper` `light`. Stile ohne helle Palette bleiben dunkel |
 | `accent`   | je Stil         | Akzentfarbe: `amber`, `green`, `cyan`, `white`, `red` oder Hex wie `ff8800` (wird bei Bedarf aufgehellt/abgedunkelt, damit es lesbar bleibt) |
 | `font`     | je Stil         | `mono` (IBM Plex Mono) oder `sans` (Helvetica/Arial), beide mit tabellarischen Ziffern |
 | `brightness` | `1`           | Helligkeit von Karte, Ringen und Wasser, 0,5 bis 1,2 |
@@ -68,13 +68,13 @@ Alle Looks sind Daten: die Tabelle `STYLES` in `js/styles.js` hält je Stil Roll
 
 | Stil | Look | Standard |
 |------|------|----------|
-| `atc` | Tower-Radarschirm: dunkles Phosphorgrün, Flugzeug-Silhouetten, auslaufende Spur | dunkel |
-| `terminal` | Anzeigetafel (FIDS): Dunkelblau mit Gelb, Sans, eckige Tafel | dunkel |
-| `chart` | Luftfahrtkarte: Papier und Tinte, dunkle Tinte, Flughäfen in Magenta | hell |
-| `airbus` | ND + ECAM: Schwarz, Grün für Werte, Cyan für Einheiten, dünne Linien | dunkel |
-| `boeing` | ND + EICAS: bläuliche Grautöne, kräftigere Schrift, runde Kacheln | dunkel |
-| `night` | Sehr dunkel, nur Rot und Dunkelgrün, blendfrei fürs abgedunkelte Wohnzimmer | nur dunkel |
-| `military` | Taktische Anzeige in gedämpftem Oliv | nur dunkel |
+| `tower` | Tower-Radarschirm: Phosphorgrün auf Schwarz, runder Schwenk, Punktspur, feine Linien, Ringsymbol | dunkel |
+| `fids` | Flughafen-Anzeigetafel: Holzkohle und Warmweiß mit Bernstein, Versalien, Zeilenbänder, Datenblöcke als Kacheln | dunkel (hell möglich) |
+| `efis-airbus` | Airbus-Navigationsdisplay: Schwarz mit Weiß, Grün, Cyan und Magenta, dünne Linien, Kompass nur als Bogen oben | dunkel (hell möglich) |
+| `eicam-boeing` | Boeing-Anzeigen: Blaugrau, Weiß und Cyan, eckige Module, kräftige Schrift, gestrichelte Spur | dunkel (hell möglich) |
+| `chart-paper` | Luftfahrtkarte auf Papier: Tinte in Blau, Luftraum in Magenta, Kreuze als Punkte, Versalien | hell (dunkel möglich) |
+| `nvg-night` | Nachtsicht: nur Rot und Dunkelgrün, sehr dunkel, ohne dunklen Schein um Text und Symbole | nur dunkel |
+| `tactical-olive` | Taktische Anzeige in Oliv: Raster, Rauten als Symbole, gerahmte Datenblöcke, Schablonen-Versalien | nur dunkel |
 
 **Radar:** Flugzeuge sind Silhouetten von oben (Schmalrumpf, Großraum, Jumbo, Regionaljet, Business-Jet, Turboprop, Leichtflugzeug, Hubschrauber, Kampfflugzeug; gewählt nach dem ICAO-Typ, `js/glyphs.js`), in Rollenfarbe gefüllt und mit dünner Kontur in der Kartenfarbe, in Flugrichtung gedreht. Dahinter läuft die Flugspur als durchgehende, sich verjüngende Linie aus, die zum Ende hin vollständig ausblendet (Länge: `trail`), und davor steht ein Datenblock an einer Hilfslinie: Rufzeichen, Höhe als Flugfläche (`FL120` ab 5000 ft) oder in Hundertfuß (`038`), Pfeil für Steigen/Sinken, Ground Speed in kt, Muster. Die Blöcke weichen einander aus. Besondere Flugzeuge (siehe unten) bekommen eine dezente Eckenklammer in Magenta (Notfall rot, blinkend), keinen Schein. Flugzeuge am Boden bleiben kleine Quadrate. Das gewählte Flugzeug ist cyan mit Rahmen, Peil- und Entfernungslinie und einer Marke auf der Kompassrose. Die Karte zeigt Pisten mit Bezeichnern (05/23), Schwellenstrichen und Anfluglinien (die Piste in Betrieb in Grün), den Flughafen als Kreis mit Pistenkreuz und ICAO-Code, Entfernungsringe und außen eine Kompassrose (Strich alle 5°, Beschriftung alle 30°, N/E/S/W, Nordpfeil).
 

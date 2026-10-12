@@ -43,6 +43,7 @@ cmd('diagnostics log (diag-test.cjs)', ['tools/tests/diag-test.cjs', '.']);
 cmd('saved settings (prefs-test.cjs)', ['tools/tests/prefs-test.cjs', '.']);
 cmd('old-browser guard (compat.mjs)', ['tools/tests/compat.mjs']);
 cmd('contrast', ['tools/contrast.mjs']);
+cmd('look distinctness (theme-distinct-test.cjs)', ['tools/tests/theme-distinct-test.cjs', '.']);
 cmd('chart background (chart-test.cjs)', ['tools/tests/chart-test.cjs', '.']);
 cmd('proxy', ['tools/tests/proxy-test.mjs']);
 cmd('proxy (incl. /api/radar)', ['tools/tests/proxy-test.mjs']);

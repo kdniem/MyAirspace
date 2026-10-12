@@ -206,7 +206,7 @@ async function setupCase(browser, vp) {
     await page.waitForTimeout(500);
     await page.fill('#lat', '53.55');
     await page.fill('#lon', '9.99');
-    await page.check('input[name=style][value=boeing]', { force: true });
+    await page.check('input[name=style][value=eicam-boeing]', { force: true });
     await page.check('input[name=accent][value=amber]', { force: true });
     await page.waitForTimeout(3000);
     const info = await page.evaluate(() => {
@@ -218,7 +218,7 @@ async function setupCase(browser, vp) {
     if (info.sw > info.iw) problems.push('horizontal scroll: scrollWidth ' + info.sw + ' > ' + info.iw);
     if (!/index\.html\?/.test(info.src)) problems.push('preview iframe has no src: ' + info.src);
     else if (!info.loaded) problems.push('preview iframe did not load the radar');
-    if (!/style=boeing/.test(info.url)) problems.push('generated URL lacks style=boeing: ' + info.url);
+    if (!/style=eicam-boeing/.test(info.url)) problems.push('generated URL lacks style=eicam-boeing: ' + info.url);
     if (!/accent=amber/.test(info.url)) problems.push('generated URL lacks accent=amber: ' + info.url);
     // focus view choice: the address gets view=airport and the airport, the airport row shows up
     await page.selectOption('#view-sel', 'airport');
@@ -298,7 +298,7 @@ async function journeyCase(browser, vp) {
     await page.waitForTimeout(800);
     const minis = await page.evaluate(() => Array.from(document.querySelectorAll('.stylecard canvas')).map((c) => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const seen = {}; for (let i = 0; i < d.length; i += 400) seen[d[i] + ',' + d[i + 1]] = 1; return Object.keys(seen).length; }));
     if (minis.length !== STYLE_NAMES.length || minis.some((n) => n < 6)) problems.push('style mini previews missing or blank: ' + minis.join(','));
-    await page.click('.stylecard[data-style=boeing]');
+    await page.click('.stylecard[data-style=eicam-boeing]');
     await page.click('input[name=accent][value=cyan]', { force: true });
     await noHScroll('look'); await snap('2_look');
     await page.click('#wz-next');
@@ -310,7 +310,7 @@ async function journeyCase(browser, vp) {
     await page.click('#wz-back');
     await page.waitForFunction(() => document.body.dataset.step === 'look', null, { timeout: 3000 }).catch(() => {});
     await stepIs('look', 'back');
-    if (!(await page.isChecked('input[name=style][value=boeing]'))) problems.push('Back lost the style choice');
+    if (!(await page.isChecked('input[name=style][value=eicam-boeing]'))) problems.push('Back lost the style choice');
     await page.click('#wz-back');
     await page.waitForFunction(() => document.body.dataset.step === 'standort', null, { timeout: 3000 }).catch(() => {});
     await stepIs('standort', 'back 2');
@@ -327,7 +327,7 @@ async function journeyCase(browser, vp) {
     await stepIs('fernseher', 'to fernseher');
     const url = await page.textContent('#url');
     if (!/lat=53\.5/.test(url) || !/lon=9\.9/.test(url)) problems.push('URL lacks the location: ' + url);
-    if (!/style=boeing/.test(url)) problems.push('URL lacks the style: ' + url);
+    if (!/style=eicam-boeing/.test(url)) problems.push('URL lacks the style: ' + url);
     if (!/trails=0/.test(url)) problems.push('URL lacks trails=0: ' + url);
     if (!/r=30/.test(url)) problems.push('URL lacks r=30: ' + url);
     if (!(await page.locator('#qr svg').count())) problems.push('QR code missing');
@@ -347,7 +347,7 @@ async function journeyCase(browser, vp) {
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(500);
     await stepIs('fertig', 'resume');
-    if (!/style=boeing/.test(await page.getAttribute('#wz-test', 'href'))) problems.push('resume lost the choices');
+    if (!/style=eicam-boeing/.test(await page.getAttribute('#wz-test', 'href'))) problems.push('resume lost the choices');
     if (/lat=/.test(await page.evaluate(() => location.search))) problems.push('resumed session left lat/lon in the address bar');
     // all settings, hostile label
     await page.click('#wz-all');
@@ -379,7 +379,7 @@ async function airportCase(browser, code, vp) {
   const { ctx, page, st } = await newPage(browser, { width: vp.width, height: vp.height }, 'demo');
   const problems = [];
   try {
-    await page.goto(BASE + '/index.html?demo=1&view=airport&airport=' + code + '&style=atc', { waitUntil: 'load' });
+    await page.goto(BASE + '/index.html?demo=1&view=airport&airport=' + code + '&style=tower', { waitUntil: 'load' });
     await page.waitForTimeout(3500);
     const r = await page.evaluate(PROBE);
     collect(st, problems);
@@ -557,7 +557,7 @@ async function chartCase(browser, vp) {
   const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
   const problems = [];
   try {
-    await page.goto(BASE + '/index.html?demo=1&chartbg=1&style=chart', { waitUntil: 'load' });
+    await page.goto(BASE + '/index.html?demo=1&chartbg=1&style=chart-paper', { waitUntil: 'load' });
     await page.waitForTimeout(3500);
     const r = await page.evaluate(PROBE);
     collect(st, problems);
@@ -646,11 +646,11 @@ async function settingsCase(browser) {
     const inside = await page.evaluate(() => document.getElementById('set-layer').contains(document.activeElement));
     if (!inside) problems.push('focus left the overlay while it was open (Tab)');
     // change Stil: applies live and is saved
-    await page.selectOption('#set-style', 'boeing');
+    await page.selectOption('#set-style', 'eicam-boeing');
     await page.waitForTimeout(300);
-    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'boeing') problems.push('Stil did not apply live');
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'eicam-boeing') problems.push('Stil did not apply live');
     const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('ma.settings')); } catch (e) { return null; } });
-    if (!saved || saved.style !== 'boeing') problems.push('Stil was not saved in localStorage ma.settings');
+    if (!saved || saved.style !== 'eicam-boeing') problems.push('Stil was not saved in localStorage ma.settings');
     if (saved && ('lat' in saved || 'lon' in saved)) problems.push('localStorage ma.settings holds a location');
     // Ansicht = Flughafen waits for a reload and says so
     await page.selectOption('#set-view', 'airport');
@@ -676,10 +676,10 @@ async function settingsCase(browser) {
     // persistence: after reload the saved Stil applies, and an address parameter still wins
     await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
     await page.waitForTimeout(800);
-    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'boeing') problems.push('saved Stil did not survive a reload');
-    await page.goto(BASE + '/index.html?demo=1&style=atc', { waitUntil: 'load' });
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'eicam-boeing') problems.push('saved Stil did not survive a reload');
+    await page.goto(BASE + '/index.html?demo=1&style=tower', { waitUntil: 'load' });
     await page.waitForTimeout(800);
-    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'atc') problems.push('address parameter style=atc did not win over the saved style');
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'tower') problems.push('address parameter style=tower did not win over the saved style');
     // show= hides the board: no gear
     await page.goto(BASE + '/index.html?demo=1&hide=board', { waitUntil: 'load' });
     await page.waitForTimeout(600);
