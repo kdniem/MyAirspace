@@ -32,7 +32,10 @@
     { hex: '4b1814', cs: 'SWR1057', r: 'HB-JCS', t: 'BCS3', kt: 250, off: 0.85, route: ['HAM', 'ZRH'],
       path: [from(HAM, 233, 1.6, 0), from(HAM, 233, 9, 3500), from(HAM, 200, 30, 11000), from(HAM, 180, 70, 26000)] },
     { hex: '4d2273', cs: 'WZZ1BQ', r: '9H-WDC', t: 'A21N', kt: 470, off: 0.3, route: ['GDN', 'LTN'],
-      path: [from(HAM, 95, 90, 35000), from(HAM, 265, 90, 35000)] }
+      path: [from(HAM, 95, 90, 35000), from(HAM, 265, 90, 35000)] },
+    // emergency (squawk 7700) returning to HAM: shows the red special-aircraft highlight
+    { hex: '3c66b3', cs: 'DLH4CK', r: 'D-AIZR', t: 'A320', sq: '7700', kt: 190, off: 0.15, route: null,
+      path: [from(HAM, 100, 40, 9000), from(HAM, 53, 18, 3500), from(HAM, 53, 1.6, 50)] }
   ];
 
   function prep(f) {
@@ -64,6 +67,7 @@
           alt_baro: alt < 30 ? 'ground' : Math.round(alt),
           gs: f.kt, track: s.brg,
           baro_rate: Math.round((s.b.alt - s.a.alt) / minutes),
+          squawk: f.sq || '',
           seen_pos: 0.4
         };
       }
@@ -79,6 +83,18 @@
     route: function (callsign) {
       for (var i = 0; i < FLIGHTS.length; i++) if (FLIGHTS[i].cs === callsign) return FLIGHTS[i].route;
       return null;
+    },
+    // static weather in the aviationweather.gov shape (south-west wind, matching the 23 arrivals)
+    metar: function () {
+      var t = Math.floor(Date.now() / 1000) - 12 * 60;
+      return [
+        { icaoId: 'EDDH', obsTime: t, wdir: 230, wspd: 12, wgst: 22, visib: '6+', temp: 14, dewp: 8, altim: 1013,
+          clouds: [{ cover: 'FEW', base: 2500 }, { cover: 'BKN', base: 4200 }], fltCat: 'VFR',
+          rawOb: 'METAR EDDH 120820Z 23012G22KT 9999 FEW025 BKN042 14/08 Q1013 NOSIG' },
+        { icaoId: 'EDHI', obsTime: t, wdir: 230, wspd: 11, visib: '6+', temp: 14, dewp: 8, altim: 1013,
+          clouds: [{ cover: 'FEW', base: 2500 }], fltCat: 'VFR',
+          rawOb: 'METAR EDHI 120820Z 23011KT 9999 FEW025 14/08 Q1013' }
+      ];
     }
   };
 })(window.MA);

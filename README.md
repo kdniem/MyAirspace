@@ -4,6 +4,14 @@ Ein ruhiges, dunkles Live-Flugradar für den Fernseher. Dein Standort ist in der
 
 Die App ist nur zum Anschauen gedacht: URL öffnen, fertig. Es gibt keine Bedienung, keinen API-Key und keinen Build-Schritt.
 
+## Einrichten
+
+Am einfachsten auf dem Handy: **[setup.html](https://kdniem.github.io/MyAirspace/setup.html)** öffnen. Dort wählst du deinen Standort (per GPS, Ortssuche oder einen der Flughäfen mit Karte), stellst Radius, Einheiten, Spuren und Nachtdimmen ein und siehst sofort eine Vorschau. Am Ende bekommst du die fertige Adresse für den Fernseher zum Kopieren, Öffnen oder als QR-Code. Der Standort wird standardmäßig auf etwa 1 km gerundet. Die Seite speichert nichts; die Ortssuche nutzt Nominatim von OpenStreetMap.
+
+Öffnest du die TV-Seite ohne Standort, zeigt sie unten links für 20 Sekunden einen kleinen Hinweis auf die Einrichtungsseite.
+
+**Als App:** Die Seite hat ein Web-App-Manifest. Auf iPad/iPhone in Safari *Teilen → Zum Home-Bildschirm*, auf Android *Zum Startbildschirm hinzufügen*. Die App startet im Vollbild mit deinen zuletzt geöffneten Einstellungen. Ein kleiner Service Worker (`sw.js`) hält nur die App-Dateien offline vor, nie Flugdaten.
+
 ## Aufrufen
 
 ```
@@ -28,6 +36,13 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `proxy`    | –               | Eigener CORS-Proxy, siehe [Proxy](#proxy-cors) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`, `airplaneslive`, `opensky` |
 | `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
+| `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht |
+| `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
+| `boardsec` | `40`            | Sekunden Anzeigetafel, danach wieder Radar (bei `view=auto`) |
+
+## Anzeigetafel
+
+Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil einer Abflugtafel ein: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
 
 ## Auf dem Fernseher
 
@@ -87,11 +102,16 @@ python3 -m http.server 8000
 
 ```
 index.html             Layout (Karte, Kopfzeile, LED-Tafel)
+setup.html             Einrichtungsseite (css/setup.css, js/setup.js, js/qr.js)
+manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
+sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Dark Theme, Dot-Matrix-Optik, TV-Sicherheitsrand
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function
+js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen
 js/config.js           URL-Parameter
+js/hint.js             Hinweis auf setup.html, wenn kein Standort in der URL steht
 js/data.js             Datenquellen, Fallback, Routen-Cache
 js/demo.js             Simulierter Verkehr für ?demo=1
 js/radar.js            Canvas-Karte
