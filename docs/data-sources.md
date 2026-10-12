@@ -19,7 +19,7 @@ Rate-Limits sind nur benannt, wenn sie im Repo stehen (App-Konstanten oder Proxy
   2. `provider=<name>` und die Quelle ist `usable`: nur diese eine Quelle, kein Fallback.
   3. sonst: mit `public=1` die ganze `ORDER`, ohne `public=1` nur `adsblol`.
 - Ein Fehler springt zur nächsten Quelle in der Liste. Nach 5 Minuten (`PRIMARY_RETRY_MS`) wird wieder die erste Quelle probiert.
-- Das Diagnoseprotokoll (`js/diag.js`) loggt Fehlschläge je Abfrage und den Übergang zurück zu "Daten frisch". Ein Wechsel auf eine Ausweichquelle wird nicht protokolliert (siehe `docs/uptime-report-template.md`).
+- Das Diagnoseprotokoll (`js/diag.js`) loggt Fehlschläge je Abfrage, den Übergang zurück zu "Daten frisch" sowie die Wechsel auf eine Ausweichquelle (`fb`) und zurück (`pri`). Siehe `docs/uptime-report-template.md`.
 
 ## Routen je Anbieter
 
@@ -48,4 +48,4 @@ Wenn der eigene Proxy 5xx, Netzwerkfehler oder Zeitüberschreitung liefert, wird
 ## Offene Punkte
 
 - Alle Rate-Limits der Anbieter sind unverifiziert. Vor einer Aussage dazu müssten die Nutzungsbedingungen der einzelnen Dienste gelesen werden.
-- Ein Wechsel der Quelle ist im Log nur als Fehler sichtbar, nicht als Ereignis. Siehe `docs/uptime-report-template.md`.
+- Das Protokoll hält höchstens 500 Einträge aus 72 Stunden. Für einen Wochenbericht sind mehrere Exporte nötig (siehe `docs/uptime-report-template.md`).
