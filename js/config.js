@@ -29,6 +29,17 @@ window.MA = MA;
     return /^[A-Z]{3}$/.test(up) ? up : 'HAM';
   }
 
+  // views=radar,board,airport: the rotation order (duplicates weight a view); invalid entries are dropped silently
+  var VIEW_NAMES = ['radar', 'board', 'airport'];
+  function viewList(name) {
+    var out = [];
+    String(q.get(name) || '').toLowerCase().split(',').forEach(function (x) {
+      x = x.trim();
+      if (VIEW_NAMES.indexOf(x) >= 0) out.push(x);
+    });
+    return out;
+  }
+
   // "23-6" -> {from: 23, to: 6}; "off" -> null
   function hours(name, def) {
     var v = str(name, def);
@@ -97,7 +108,7 @@ window.MA = MA;
     if (f.length) fields = f.slice(0, 5);
   }
 
-  var VIEW = /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : (S.view || 'auto');
+  var view = /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : (S.view || 'auto');
   var THEME = /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (S.theme || (STY[style].theme || 'dark'));
 
   MA.config = {
@@ -111,7 +122,7 @@ window.MA = MA;
     proxy: proxy(),                             // own CORS proxy, see api/proxy.js
     public: q.get('public') === '1',            // opt-in: public CORS proxies and the other providers
     // no location in the address = the empty state: simulated traffic behind the welcome overlay (js/hint.js)
-    demo: bool('demo', !(q.has('lat') && q.has('lon')) && VIEW !== 'airport'),   // the focus view needs no home location
+    demo: bool('demo', !(q.has('lat') && q.has('lon')) && view !== 'airport'),   // the focus view needs no home location
     rotateSec: num('rotate', 20, 3, 120),       // seconds per aircraft on the board
     trailMin: show.trails ? num('trail', 4, 0, 30) : 0, // trail length in minutes
     night: hours('night', '23-6'),              // dim the screen at night
@@ -130,10 +141,14 @@ window.MA = MA;
     timeMode: pick('time', /^(utc|local|both)$/, 'both'),
     brightness: num('brightness', typeof S.brightness === 'number' ? S.brightness : 1, 0.5, 1.2),
     orient: 'north',                            // track-up is not built: north-up only
-    view: VIEW, // radar | board | auto | airport (focus view, js/airport.js)
+    view: view,                                 // radar | board | airport: one fixed view; auto: the rotation below
+    // the rotation, in order: views=radar,board,airport (view=auto). A fixed view is a one-entry list. An empty or
+    // one-entry views= falls back to the old rotation radar,board.
+    views: view !== 'auto' ? [view] : (viewList('views').length >= 2 ? viewList('views') : ['radar', 'board']),
     airport: airportCode(str('airport', 'HAM')),  // focus view: HAM | XFW | FRA | FMO | CPH, checked against MA.features in js/airport.js (unknown = HAM)
-    boardSec: num('boardsec', 40, 5, 600),      // auto: seconds on the Anzeigetafel
-    radarSec: num('radarsec', 240, 10, 3600),   // auto: seconds on the radar
+    boardSec: num('boardsec', 40, 5, 600),      // rotation: seconds on the Anzeigetafel
+    radarSec: num('radarsec', 240, 10, 3600),   // rotation: seconds on the radar
+    airportSec: num('airportsec', 60, 10, 3600), // rotation: seconds on the focus view
     theme: THEME, // auto: light from sunrise to sunset
     wxRadar: str('wx', '').toLowerCase() === 'radar'   // weather radar overlay (js/wxradar.js), default off
   };

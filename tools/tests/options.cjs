@@ -57,6 +57,31 @@ ok(cfg('?airport=XYZW').config.airport === 'HAM' && cfg('?airport=__proto__').co
 ok(cfg('?view=airport').config.demo === false && cfg('?view=airport&demo=1').config.demo === true, 'focus view has no demo traffic by default');
 ok(cfg('?orient=track').config.orient === 'north', 'track-up is not built: north');
 
+// rotation (views=, the durations): order, duplicates, silent drops, fallbacks, fixed views and clamped seconds
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const DEFAULT_ROT = ['radar', 'board'];
+ok(same(cfg('').config.views, DEFAULT_ROT) && same(cfg('?view=auto').config.views, DEFAULT_ROT), 'default rotation is radar,board');
+ok(same(cfg('?views=radar,board,airport').config.views, ['radar', 'board', 'airport']), 'views= keeps the order');
+ok(same(cfg('?views=airport,radar').config.views, ['airport', 'radar']), 'views= in any order');
+ok(same(cfg('?views=board,radar,board').config.views, ['board', 'radar', 'board']), 'views= duplicates weight a view');
+ok(same(cfg('?views=RADAR,%20airport%20').config.views, ['radar', 'airport']), 'views= case and spaces');
+ok(same(cfg('?views=radar,foo,airport,,xyz').config.views, ['radar', 'airport']), 'views= invalid entries dropped silently');
+ok(same(cfg('?views=__proto__,airport,constructor,board').config.views, ['airport', 'board']), 'views= prototype names are not views');
+ok(same(cfg('?views=').config.views, DEFAULT_ROT) && same(cfg('?views=radar').config.views, DEFAULT_ROT), 'empty and single-entry views= fall back to radar,board');
+ok(same(cfg('?views=foo,bar').config.views, DEFAULT_ROT), 'all-invalid views= falls back to radar,board');
+ok(same(cfg('?view=nonsense&views=airport,radar').config.views, ['airport', 'radar']), 'invalid view= is auto, so views= applies');
+ok(same(cfg('?view=airport&views=radar,board').config.views, ['airport']), 'fixed view=airport ignores views=');
+ok(same(cfg('?view=radar&views=board,airport').config.views, ['radar']), 'fixed view=radar ignores views=');
+ok(same(cfg('?view=board').config.views, ['board']), 'fixed view=board is a one-entry list');
+ok(cfg('?views=radar,airport&view=auto').config.view === 'auto', 'view stays auto with a rotation');
+ok(cfg('').config.radarSec === 240 && cfg('').config.boardSec === 40 && cfg('').config.airportSec === 60, 'duration defaults 240 / 40 / 60');
+ok(cfg('?radarsec=120&boardsec=20&airportsec=90').config.radarSec === 120 && cfg('?radarsec=120&boardsec=20&airportsec=90').config.airportSec === 90, 'durations as given');
+ok(cfg('?airportsec=5').config.airportSec === 10 && cfg('?airportsec=99999').config.airportSec === 3600, 'airportsec clamped to 10..3600');
+ok(cfg('?airportsec=abc').config.airportSec === 60 && cfg('?airportsec=NaN').config.airportSec === 60, 'airportsec junk is the default');
+ok(cfg('?radarsec=5').config.radarSec === 10 && cfg('?radarsec=-3').config.radarSec === 10 && cfg('?radarsec=99999').config.radarSec === 3600, 'radarsec clamped to 10..3600');
+ok(cfg('?boardsec=2').config.boardSec === 5 && cfg('?boardsec=9999').config.boardSec === 600, 'boardsec clamped to 5..600');
+ok(cfg('?radarsec=x&boardsec=y').config.radarSec === 240 && cfg('?radarsec=x&boardsec=y').config.boardSec === 40, 'radarsec and boardsec junk are the defaults');
+
 // style table: every style resolves for both themes with all tokens, and unknown names fall back
 const MA = cfg('');
 MA.style.names().forEach((n) => ['dark', 'light'].forEach((t) => {
@@ -67,7 +92,7 @@ MA.style.names().forEach((n) => ['dark', 'light'].forEach((t) => {
 ok(MA.style.resolve('zzz', 'dark').style === 'atc', 'resolve fallback');
 
 // ES2017 only on the TV page: no optional chaining, nullish coalescing, class fields, modules
-const TV = ['pwa', 'styles', 'prefs', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'chart', 'radar', 'airport', 'board', 'log', 'views', 'settings', 'main', 'fullscreen', 'qr'];
+const TV = ['pwa', 'styles', 'prefs', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'chart', 'radar', 'airport', 'board', 'log', 'rotation', 'views', 'settings', 'main', 'fullscreen', 'qr'];
 TV.forEach((n) => {
   const src = fs.readFileSync(ROOT + '/js/' + n + '.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''").replace(/\/\/.*$/gm, '');

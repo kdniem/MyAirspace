@@ -6,6 +6,10 @@
 
   // Must match the defaults in js/config.js: only differing values go into the URL.
   const DEF = { r: 25, label: 'Hamburg', units: 'ft', trail: 4, night: '23-6', speed: 'kt', pressure: 'hpa', time: 'both', style: 'atc' };
+  // Ansicht presets: a fixed view (view=radar|board|airport) or a rotation (views=…, the defaults of js/config.js)
+  const ROT = { rot2: ['radar', 'board'], rot3: ['radar', 'board', 'airport'] };
+  const DEF_SEC = { radar: 240, board: 40, airport: 60 };
+  const AIRPORTS = ['HAM', 'XFW', 'FRA', 'FMO', 'CPH'];
   const PASSTHROUGH = ['poll', 'rotate', 'dim', 'provider', 'orient'];  // advanced, kept if present
   const MAc = window.MA || {};
   const STY = MAc.STYLES || { atc: { name: 'ATC', info: '', font: 'mono', theme: 'dark' } };
@@ -33,7 +37,10 @@
     copyStatus: $('copy-status'), previewNote: $('preview-note'),
     night: $('night'), nightHours: $('night-hours'), nightFrom: $('night-from'), nightTo: $('night-to'),
     preview: $('preview'), frame: $('frame'),
-    url: $('url'), urlEmpty: $('url-empty'), copy: $('copy'), open: $('open'), qr: $('qr')
+    url: $('url'), urlEmpty: $('url-empty'), copy: $('copy'), open: $('open'), qr: $('qr'),
+    viewSel: $('view-sel'), rotField: $('rot-field'), airportField: $('airport-field'), airportSel: $('airport-sel'),
+    radarSec: $('radarsec'), radarSecOut: $('radarsec-out'), boardSec: $('boardsec'), boardSecOut: $('boardsec-out'),
+    airportSec: $('airportsec'), airportSecOut: $('airportsec-out'), airportSecRow: $('airportsec-row')
   };
 
   // sentences that live in the HTML but are edited in MA.COPY
@@ -165,10 +172,14 @@
     const lat = parseFloat(q.get('lat')), lon = parseFloat(q.get('lon'));
     if (validLat(lat) && validLon(lon)) { el.lat.value = lat; el.lon.value = lon; }
     if (q.get('label')) { el.label.value = q.get('label'); labelTouched = true; }
-    const view = q.get('view');
-    pick('view', ['auto', 'radar', 'board', 'airport'].indexOf(view) >= 0 ? view : 'auto');
-    const ap = (q.get('airport') || 'HAM').toUpperCase();
-    pick('airport', ['HAM', 'XFW', 'FRA', 'FMO', 'CPH'].indexOf(ap) >= 0 ? ap : 'HAM');
+    // a fixed view, or the rotation as preset: a list other than radar,board is shown as the nearest preset
+    // (with the airport: rot3, without: rot2); the durations and the airport come from the validated config
+    const preset = cfg0.view !== 'auto' ? cfg0.view : ((cfg0.views || []).indexOf('airport') >= 0 ? 'rot3' : 'rot2');
+    el.viewSel.value = preset;
+    el.radarSec.value = cfg0.radarSec;
+    el.boardSec.value = cfg0.boardSec;
+    el.airportSec.value = cfg0.airportSec;
+    el.airportSel.value = AIRPORTS.indexOf(cfg0.airport) >= 0 ? cfg0.airport : 'HAM';
     const r = parseFloat(q.get('r'));
     el.radius.value = isNaN(r) ? DEF.r : Math.min(80, Math.max(5, r));
     const t = parseFloat(q.get('trail'));
@@ -356,8 +367,10 @@
   [el.radius, el.trail, el.round, el.night, el.nightFrom, el.nightTo, el.brightness]
     .forEach((inp) => inp.addEventListener(inp.type === 'range' ? 'input' : 'change', update));
   el.title.addEventListener('input', update);
-  document.querySelectorAll('input[name="view"], input[name="airport"], input[name="units"], input[name="theme"], input[name="font"], input[name="speed"], input[name="pressure"], input[name="time"], input[name="accent"]')
+  document.querySelectorAll('input[name="units"], input[name="theme"], input[name="font"], input[name="speed"], input[name="pressure"], input[name="time"], input[name="accent"]')
     .forEach((r) => r.addEventListener('change', update));
+  [el.viewSel, el.airportSel].forEach((s) => s.addEventListener('change', update));
+  [el.radarSec, el.boardSec, el.airportSec].forEach((r) => r.addEventListener('input', update));
   // a style brings its own default look: switch theme and font along (theme unless set to automatic)
   document.querySelectorAll('input[name="style"]').forEach((r) => r.addEventListener('change', () => {
     if (checked('theme') !== 'auto') pick('theme', defTheme(r.value));
@@ -427,9 +440,17 @@
     if (fieldsSel.join() !== DEF_FIELDS.join()) p.set('datablock', fieldsSel.join(','));
     const trail = +el.trail.value;
     if (trail !== DEF.trail) p.set('trail', trail);
-    const view = checked('view');
-    if (view !== 'auto') p.set('view', view);
-    if (view === 'airport' && checked('airport') !== 'HAM') p.set('airport', checked('airport'));
+    const view = el.viewSel.value, rot = ROT[view];
+    if (rot) {   // the rotation: views= only when not the default radar,board; durations only when they differ
+      if (rot.join() !== ROT.rot2.join()) p.set('views', rot.join(','));
+      if (+el.radarSec.value !== DEF_SEC.radar) p.set('radarsec', +el.radarSec.value);
+      if (+el.boardSec.value !== DEF_SEC.board) p.set('boardsec', +el.boardSec.value);
+      if (rot.indexOf('airport') >= 0 && +el.airportSec.value !== DEF_SEC.airport) p.set('airportsec', +el.airportSec.value);
+    } else {
+      p.set('view', view);
+    }
+    const usesAirport = view === 'airport' || (!!rot && rot.indexOf('airport') >= 0);
+    if (usesAirport && el.airportSel.value !== 'HAM') p.set('airport', el.airportSel.value);
     const night = el.night.checked ? el.nightFrom.value + '-' + el.nightTo.value : 'off';
     if (night !== DEF.night) p.set('night', night);
     Object.keys(extra).forEach((k) => p.set(k, extra[k]));
@@ -447,8 +468,14 @@
   let lastParams = new URLSearchParams();
 
   function update() {
-    const view = checked('view');
-    document.getElementById('airport-field').style.display = view === 'airport' ? '' : 'none';
+    const view = el.viewSel.value, rot = ROT[view];
+    const usesAirport = view === 'airport' || (!!rot && rot.indexOf('airport') >= 0);
+    el.airportField.style.display = usesAirport ? '' : 'none';
+    el.rotField.style.display = rot ? '' : 'none';
+    el.airportSecRow.style.display = rot && rot.indexOf('airport') >= 0 ? '' : 'none';
+    el.radarSecOut.textContent = el.radarSec.value + ' s';
+    el.boardSecOut.textContent = el.boardSec.value + ' s';
+    el.airportSecOut.textContent = el.airportSec.value + ' s';
     document.getElementById('view-hint').textContent = COPY.viewHint[view] || '';
     el.radiusOut.textContent = el.radius.value + ' km';
     el.trailOut.textContent = +el.trail.value === 0 ? 'aus' : el.trail.value + ' min';

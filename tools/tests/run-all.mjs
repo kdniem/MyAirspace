@@ -1,6 +1,6 @@
 /* Runs the whole safety net in order and exits non-zero on any failure.
    Run: node tools/tests/run-all.mjs [--no-browser] [--quick]     (npm test)
-   Steps: syntax check, URL options + ES2017 scan (options.cjs), old-browser guard (compat.mjs),
+   Steps: syntax check, URL options + ES2017 scan (options.cjs), view rotation (rotation-test.cjs), old-browser guard (compat.mjs),
    contrast, chart background (chart-test.cjs), proxy, browser suite (needs Playwright + Chromium; PLAYWRIGHT_PATH points at the package). */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -37,6 +37,7 @@ const cmd = (name, args, extra) => steps.push(Object.assign({
 
 cmd('URL options + ES2017 scan (options.cjs)', ['tools/tests/options.cjs', '.']);
 cmd('board selection (pick-test.cjs)', ['tools/tests/pick-test.cjs', '.']);
+cmd('view rotation (rotation-test.cjs)', ['tools/tests/rotation-test.cjs', '.']);
 cmd('diagnostics log (diag-test.cjs)', ['tools/tests/diag-test.cjs', '.']);
 cmd('saved settings (prefs-test.cjs)', ['tools/tests/prefs-test.cjs', '.']);
 cmd('old-browser guard (compat.mjs)', ['tools/tests/compat.mjs']);

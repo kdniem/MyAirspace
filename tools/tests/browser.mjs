@@ -221,12 +221,24 @@ async function setupCase(browser, vp) {
     if (!/style=boeing/.test(info.url)) problems.push('generated URL lacks style=boeing: ' + info.url);
     if (!/accent=amber/.test(info.url)) problems.push('generated URL lacks accent=amber: ' + info.url);
     // focus view choice: the address gets view=airport and the airport, the airport row shows up
-    await page.check('input[name=view][value=airport]', { force: true });
-    await page.check('input[name=airport][value=FRA]', { force: true });
+    await page.selectOption('#view-sel', 'airport');
+    await page.selectOption('#airport-sel', 'FRA');
     await page.waitForTimeout(300);
     const u2 = await page.textContent('#url');
     if (!/view=airport/.test(u2) || !/airport=FRA/.test(u2)) problems.push('generated URL lacks the focus view: ' + u2);
     if (!(await page.locator('#airport-field').isVisible())) problems.push('airport choice hidden in the focus view');
+    // the rotation with the focus view: views= and the airport, the duration sliders show up
+    await page.selectOption('#view-sel', 'rot3');
+    await page.waitForTimeout(300);
+    const u3 = await page.textContent('#url');
+    if (!/views=radar(%2C|,)board(%2C|,)airport/.test(u3) || !/airport=FRA/.test(u3)) problems.push('generated URL lacks the rotation: ' + u3);
+    if (!(await page.locator('#rot-field').isVisible())) problems.push('rotation durations hidden in a rotation preset');
+    if (!(await page.locator('#airportsec-row').isVisible())) problems.push('airport duration hidden in the rotation with the airport');
+    await page.selectOption('#view-sel', 'rot2');
+    await page.waitForTimeout(300);
+    const u4 = await page.textContent('#url');
+    if (/views=|airport=|airportsec=/.test(u4)) problems.push('default rotation writes non-default options: ' + u4);
+    if (!/lat=53\.5/.test(u4)) problems.push('default rotation URL lost its location: ' + u4);
     if (!/lat=53\.5/.test(info.url) || !/lon=9\.9/.test(info.url)) problems.push('generated URL lacks the location: ' + info.url);
     checked.pages++;
     if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
@@ -400,6 +412,36 @@ async function airportCase(browser, code, vp) {
     if (!/^\d+ im Anflug · \d+ am Boden$/.test(s.sum)) problems.push('summary lacks the counts: ' + s.sum);
     if (!s.place) problems.push('airport name missing');
     s.bad.forEach((m) => problems.push('header: ' + m));
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
+// ---------- rotation with the focus view: the canvas switches after radarsec, the body gets view-airport ----------
+async function rotationCase(browser) {
+  const id = 'rotation_airport_1280x720';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&views=radar,airport&radarsec=10&airportsec=10', { waitUntil: 'load' });
+    await page.waitForTimeout(1000);
+    if (await page.evaluate(() => document.body.classList.contains('view-airport'))) problems.push('focus view on before the first switch');
+    await page.waitForTimeout(12500);   // radar 10 s, then the 1.2 s fade to the focus view
+    const s = await page.evaluate(() => ({
+      view: document.body.classList.contains('view-airport'),
+      board: getComputedStyle(document.getElementById('board')).display,
+      opacity: getComputedStyle(document.getElementById('radar')).opacity,
+      place: document.getElementById('place').textContent,
+      attrib: document.getElementById('attrib').textContent
+    }));
+    collect(st, problems);
+    if (!s.view) problems.push('body has no view-airport after the switch');
+    if (s.board !== 'none') problems.push('board visible in the focus view');
+    if (s.opacity !== '1') problems.push('canvas not back at full opacity after the fade: ' + s.opacity);
+    if (s.place !== 'HAMBURG') problems.push('header does not show the airport: ' + s.place);
+    if (!/OpenStreetMap/.test(s.attrib)) problems.push('attribution lacks the OpenStreetMap credit in the focus view');
     checked.pages++;
     if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
   } catch (e) {
@@ -675,6 +717,7 @@ for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 
   for (const vp of VPS) for (const view of ['radar', 'board']) jobs.push({ n: [style, theme, vp.w, view].join('_'), run: () => matrixCase(browser, { style, theme, vp, view }) });
 for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }])
   jobs.push({ n: 'airport_' + code + '_' + vp.width, run: () => airportCase(browser, code, vp) });
+jobs.push({ n: 'rotation_airport_1280', run: () => rotationCase(browser) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });

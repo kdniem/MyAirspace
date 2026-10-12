@@ -53,9 +53,9 @@
   }
   FLIGHTS.forEach(prep);
 
-  // focus view (view=airport): the same traffic, moved to the chosen airport (ground traffic keeps its offsets)
+  // focus view: the same traffic, moved to the chosen airport (ground traffic keeps its offsets); null = back to HAM
   function anchor(a) {
-    anchorPt = { lat: a.lat, lon: a.lon };
+    anchorPt = a ? { lat: a.lat, lon: a.lon } : HAM;
     FLIGHTS = flights(anchorPt, anchorPt);
     FLIGHTS.forEach(prep);
   }

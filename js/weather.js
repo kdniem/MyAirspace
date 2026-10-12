@@ -1,4 +1,4 @@
-/* Weather and runway in use ("Betriebsrichtung") for the airports near home.
+/* Weather and runway in use ("Betriebsrichtung") for the airports near home, or for the focus view's airport.
    METAR from aviationweather.gov (no CORS headers, so via the proxy routes in data.js);
    the landing/departure direction is inferred from low traffic that climbs or descends
    along a runway, with the METAR wind as fallback. Optional: fails silently. */
@@ -16,7 +16,8 @@
   var APPROACH_KM = 18;                // same length as the centrelines in radar.js
 
   var cfg = null;
-  var airports = [];                   // within NEAR_KM, nearest first: {ap, runways}
+  var focusCode = null;                // focus view (js/airport.js): only this airport's runway line; null = all nearby
+  var airports = [];                   // within NEAR_KM of the origin, nearest first: {ap, runways}
   var metars = {};                     // icao -> METAR object
   var votes = {};                      // airport code -> { hex|kind: {end, kind, t} }
   var results = [];                    // last inferred state per airport
@@ -38,18 +39,23 @@
     };
   }
 
+  // the airports within NEAR_KM of a point, nearest first
+  function setNear(lat, lon) {
+    airports = [];
+    MA.features.airports.forEach(function (ap) {
+      var d = g.distKm(lat, lon, ap.lat, ap.lon);
+      if (d <= NEAR_KM) airports.push({ ap: ap, dist: d, runways: ap.runways.map(prepRunway) });
+    });
+    airports.sort(function (x, y) { return x.dist - y.dist; });
+  }
+
   function init(c) {
     cfg = c;
-    airports = [];
     votes = {};
     metars = {};
     results = [];
     active = [];
-    MA.features.airports.forEach(function (ap) {
-      var d = g.distKm(c.lat, c.lon, ap.lat, ap.lon);
-      if (d <= NEAR_KM) airports.push({ ap: ap, dist: d, runways: ap.runways.map(prepRunway) });
-    });
-    airports.sort(function (x, y) { return x.dist - y.dist; });
+    setNear(c.lat, c.lon);
   }
 
   /* ---------- runway inference ---------- */
@@ -220,7 +226,8 @@
 
   function fetchMetar() {
     if (cfg.demo) { store(MA.demo.metar()); return; } // offline, like the demo routes
-    var ids = airports.map(function (n) { return n.ap.icao; }).join(',');
+    // all mapped airports in one request: the radar and the focus view can both use it
+    var ids = MA.features.airports.map(function (ap) { return ap.icao; }).join(',');
     MA.data.getJson('https://aviationweather.gov/api/data/metar?ids=' + ids + '&format=json',
       undefined, 10000, validMetar).then(function (list) {
       store(list);
@@ -235,7 +242,7 @@
 
   // QNH and runway line as [text, bold] pieces; null marks a gap.
   function rwyPieces() {
-    var out = [], focus = cfg && cfg.view === 'airport' ? cfg.airportCode : null;   // focus view: the chosen airport only
+    var out = [], focus = focusCode;   // focus view: the chosen airport only
     var qm = airports.length && metars[airports[0].ap.icao];
     if (qm && typeof qm.altim === 'number') out.push(['QNH ', false], [MA.fmt.qnh(qm.altim, cfg.pressure), true, true]);
     results.forEach(function (r) {
@@ -274,13 +281,21 @@
   MA.weather = {
     start: function (c) {
       init(c);
-      if (!airports.length) return; // no airport near home: weather UI stays hidden
+      // no airport near home and no focus view in the rotation: no weather requests, the UI stays hidden
+      if (!airports.length && (c.views || []).indexOf('airport') < 0) return;
       els = {
         box: document.getElementById('wx'),
         metar: document.getElementById('wx-metar'),
         rwy: document.getElementById('wx-rwy')
       };
       fetchMetar();
+    },
+    // the origin follows the view on screen: the location (code null) or the focus airport (its position and code)
+    origin: function (lat, lon, code) {
+      if (!cfg) return;
+      focusCode = code || null;
+      setNear(lat, lon);
+      update(Date.now());
     },
     observe: observe,
     // approach centrelines of the runways in use: [{thr, far, rev, est}]
