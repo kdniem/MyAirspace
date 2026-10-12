@@ -50,7 +50,11 @@ nav a:hover { color: var(--accent); }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; }
 .card h3 { margin: 0 0 8px; font-size: 16px; color: var(--accent); }
 .card p { margin: 0; color: var(--sub); font-size: 15px; }
-section { padding: 24px 0 40px; border-top: 1px solid var(--line); }
+section { padding: 16px 0 28px; border-top: 1px solid var(--line); }
+.shot { margin: 28px 0 0; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+.shot figcaption { color: var(--dim); font-size: 13px; margin-top: 8px; }
+@media (max-width: 600px) { nav .nav-extra { display: none; } }
 section h2 { font-size: 22px; margin: 0 0 16px; font-weight: 600; }
 ol.steps { padding-left: 20px; margin: 0; color: var(--sub); }
 ol.steps li { margin-bottom: 10px; }
@@ -60,7 +64,7 @@ ul.plain li::before { content: "–"; color: var(--accent); position: absolute; 
 details { border-bottom: 1px solid var(--line); padding: 12px 0; }
 summary { cursor: pointer; color: var(--ink); font-weight: 600; }
 details p { color: var(--sub); margin: 8px 0 0; font-size: 15px; }
-footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--dim); font-size: 13px; }
+footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--dim); font-size: 14px; }
 footer p { margin: 0 0 10px; }
 .skip-link-hint { color: var(--dim); }
 </style>
@@ -72,9 +76,10 @@ footer p { margin: 0 0 10px; }
   <header class="top">
     <a class="brand" href="./">MyAirspace</a>
     <nav aria-label="Hauptnavigation">
-      <a href="#funktionen">Funktionen</a>
-      <a href="#so-gehts">So geht’s</a>
+      <a class="nav-extra" href="#funktionen">Funktionen</a>
+      <a class="nav-extra" href="#so-gehts">So geht’s</a>
       <a href="#faq">Fragen</a>
+      <a href="../?demo=1">Ausprobieren</a>
     </nav>
   </header>
 
@@ -86,6 +91,10 @@ footer p { margin: 0 0 10px; }
         <a class="btn primary" href="../?demo=1">Jetzt ausprobieren</a>
         <a class="btn ghost" href="../setup.html">Einrichtung starten</a>
       </div>
+      <figure class="shot">
+        <img src="radar.jpg" width="1280" height="720" alt="Radaransicht der Demo: Flugzeuge als Silhouetten mit Flugspur und Datenblock um einen Standort in Hamburg">
+        <figcaption>Demo-Ansicht, Stil „Tower“. Simulierte Daten.</figcaption>
+      </figure>
     </div>
 
     <section id="funktionen" aria-labelledby="funktionen-h">
@@ -115,11 +124,6 @@ footer p { margin: 0 0 10px; }
       </ol>
     </section>
 
-    <section aria-labelledby="ebenen-h">
-      <h2 id="ebenen-h">Optionale Ebenen</h2>
-      <p style="color: var(--sub); margin: 0;">Luftfahrtkarte im Hintergrund und Wetterradar sind standardmäßig aus und lassen sich in den Einstellungen einschalten. Quellen und Lizenzen stehen in der App und in THIRD_PARTY.md.</p>
-    </section>
-
     <section aria-labelledby="datenschutz-h">
       <h2 id="datenschutz-h">Datenschutz in einfachen Worten</h2>
       <ul class="plain">
@@ -144,6 +148,10 @@ footer p { margin: 0 0 10px; }
       <details>
         <summary>Ist es kostenlos?</summary>
         <p>Ja. Kostenlos und nicht kommerziell.</p>
+      </details>
+      <details>
+        <summary>Was ist optional?</summary>
+        <p>Luftfahrtkarte im Hintergrund und Wetterradar sind standardmäßig aus und lassen sich in den Einstellungen einschalten. Quellen und Lizenzen stehen in der App und in THIRD_PARTY.md.</p>
       </details>
       <details>
         <summary>Funktioniert es auf Monitor, Tablet oder Smart-TV?</summary>
