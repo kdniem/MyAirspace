@@ -15,6 +15,7 @@
   var radar = new MA.Radar(document.getElementById('radar'), cfg);
   radar.wxOn = !!cfg.wxRadar;    // weather radar overlay, opt-in with wx=radar (js/wxradar.js)
   if (MA.wxradar) MA.wxradar.start(cfg);
+  MA.radar = radar;                // the settings overlay (js/settings.js) rebuilds the palette and base layer through it
   var board = new MA.Board(cfg);
   var feed = new MA.data.Feed(cfg);
 

@@ -91,7 +91,11 @@ const ROWS = [
   ['Focus view apron edge', 'c.apronEdge', 'c.bg', 3],
   ['Focus view stand dot', 'c.stand', 'c.bg', 3],
   ['Focus view gate label', 'c.gateLabel', 'c.bg', 4.5],
-  ['Focus view terminal label', 'c.placeMajor', 'c.bg', 4.5]
+  ['Focus view terminal label', 'c.placeMajor', 'c.bg', 4.5],
+  ['Settings overlay text', '--ink', '--panel', 4.5],
+  ['Settings overlay note and hint', '--sub', '--panel', 4.5],
+  ['Settings overlay select text', '--ink', '--bg', 4.5],
+  ['Settings overlay focus ring', '--accent', '--panel', 3]
 ];
 
 function table(style, theme, opts) {
