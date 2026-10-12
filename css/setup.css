@@ -4,7 +4,7 @@
   --bg: #050607;
   --panel: #0a0b0d;
   --ink: #e9e4d8;
-  --dim: #6d7176;
+  --dim: #8d9196;
   --faint: #2a2e33;
   --line: #16191c;
   --field: #0e1013;
@@ -334,4 +334,4 @@ input[type="range"] { width: 100%; margin: 6px 0 0; accent-color: var(--amber); 
   .qr { width: 200px; height: 200px; }
 }
 
-.foot { max-width: 1240px; margin: 28px auto 0; font-size: 11px; letter-spacing: 0.12em; color: #3d4146; }
+.foot { max-width: 1240px; margin: 28px auto 0; font-size: 11px; letter-spacing: 0.12em; color: #7a7e83; }

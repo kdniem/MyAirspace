@@ -227,13 +227,13 @@
   }
 
   // OLED burn-in protection: drift the whole stage a few pixels; dim at night.
-  var stage = document.getElementById('stage');
+  var stage = document.getElementById('stage'), dimEl = document.getElementById('dim');
   function ambient() {
     var dx = Math.round(Math.random() * 12 - 6), dy = Math.round(Math.random() * 12 - 6);
     stage.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
     var h = new Date().getHours(), n = cfg.night, night = false;
     if (n) night = n.from > n.to ? (h >= n.from || h < n.to) : (h >= n.from && h < n.to);
-    stage.style.opacity = night ? cfg.nightLevel : 1;
+    dimEl.style.opacity = night ? (1 - cfg.nightLevel).toFixed(2) : 0;   // black veil: dims both themes
   }
 
   // Keep the screen awake where supported (Safari 16.4+, Chrome 84+).

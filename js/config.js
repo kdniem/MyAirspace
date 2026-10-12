@@ -54,6 +54,7 @@ window.MA = MA;
     places: bool('places', true),               // town names on the map
     view: /^(radar|board|auto)$/.test(str('view', '')) ? str('view', '') : 'auto', // radar | board | auto
     boardSec: num('boardsec', 40, 5, 600),      // auto: seconds on the Anzeigetafel
-    radarSec: num('radarsec', 240, 10, 3600)    // auto: seconds on the radar
+    radarSec: num('radarsec', 240, 10, 3600),   // auto: seconds on the radar
+    theme: /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : 'dark' // auto: light from sunrise to sunset
   };
 })();
