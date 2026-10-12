@@ -99,7 +99,10 @@
     flap(e.route, leg ? leg[0].code + ' → ' + leg[1].code : '--- → ---');
     var badge = '', local = localAirports(cfg);
     if (leg) {
-      if (local[leg[1].code]) badge = 'Anflug ' + esc(leg[1].code);
+      // round trips (e.g. Airbus test flights XFW → XFW): the phase decides
+      if (leg[0].code === leg[1].code && local[leg[0].code]) {
+        badge = (ac.vrate > 300 ? 'Abflug ' : 'Anflug ') + esc(leg[0].code);
+      } else if (local[leg[1].code]) badge = 'Anflug ' + esc(leg[1].code);
       else if (local[leg[0].code]) badge = 'Abflug ' + esc(leg[0].code);
       else badge = 'Überflug';
     }

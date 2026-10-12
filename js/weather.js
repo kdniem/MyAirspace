@@ -223,7 +223,7 @@
       if (i) out.push(null);
       out.push([r.code + ' \u25B8 ', false]);
       if (r.est) { out.push([r.land.join('/'), true], [' laut Wind', false]); return; }
-      if (r.land.join() === r.start.join()) { out.push([r.land.join('/'), true]); return; }
+      if (r.land.join() === r.start.join()) { out.push([r.land.join('/'), true], [' Landung & Start', false]); return; }
       if (r.land.length) out.push([r.land.join('/'), true], [' Landung', false]);
       if (r.land.length && r.start.length) out.push([' \u00B7 ', false]);
       if (r.start.length) out.push([r.start.join('/'), true], [' Start', false]);

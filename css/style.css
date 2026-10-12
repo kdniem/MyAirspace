@@ -98,6 +98,8 @@ html, body {
   opacity: 0.85;
   text-transform: uppercase;
   white-space: nowrap;
+  /* keeps the line readable where it overlaps aircraft labels on the map */
+  text-shadow: 0 0 0.6vh var(--bg), 0 0 0.6vh var(--bg), 0 0 1.2vh var(--bg);
 }
 .wx b { font-weight: 500; color: var(--ink); opacity: 0.8; }
 .wx-gap { display: inline-block; width: 2em; }
@@ -287,6 +289,9 @@ html, body {
 #top { z-index: 3; }
 .brand { transition: opacity 1.2s ease; }
 .view-board .brand { opacity: 0; }
+/* the weather lines would run into the board's header row */
+.wx { transition: opacity 1.2s ease; }
+.view-board .wx { opacity: 0; }
 
 #logview {
   position: absolute;
