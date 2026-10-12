@@ -53,14 +53,14 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `proxy`    | –               | Nur `off` oder der eigene Proxy erlaubt, siehe [Proxy](#proxy-cors) |
 | `public`   | `0`             | `1` erlaubt öffentliche CORS-Proxys und die Quellen airplanes.live/OpenSky (Datenschutz beachten) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`; `airplaneslive`, `opensky` nur mit `public=1` |
-| `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
-| `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht, `airport` zeigt die Flughafen-Ansicht (ohne Standort nutzbar) |
-| `airport` | `HAM`         | Flughafen der Flughafen-Ansicht (`view=airport`): `HAM`, `XFW`, `FRA`, `FMO` oder `CPH`; alles andere ergibt `HAM`, siehe [Flughafen-Ansicht](#flughafen-ansicht) |
+| `view`     | `auto`          | `auto` wechselt nach `views` (Standard Radar und Tafel). `radar`, `board` oder `airport` zeigt nur diese eine Ansicht (`airport`: die Flughafen-Ansicht, ohne Standort nutzbar) |
+| `views`    | `radar,board`   | Reihenfolge der Wechsel-Ansichten bei `view=auto`, z. B. `radar,board,airport`. Eine Ansicht darf doppelt stehen, um sie zu gewichten (`radar,radar,board,airport`). Unbekannte Namen fallen weg; eine leere oder einelementige Liste ergibt die Voreinstellung `radar,board` |
+| `airport` | `HAM`         | Flughafen der Flughafen-Ansicht (`airport` in `views` oder `view=airport`): `HAM`, `XFW`, `FRA`, `FMO` oder `CPH`; alles andere ergibt `HAM`, siehe [Flughafen-Ansicht](#flughafen-ansicht) |
 | `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz); mit `wx=radar` auch simulierten Regen, gekennzeichnet als DEMO |
 | `wx`       | aus             | `radar` blendet das Wetterradar über der Karte ein (Niederschlag in Cockpit-Farben, nur Deutschland), siehe [Wetterradar](#wetterradar) |
-| `view`     | `auto`          | `auto` wechselt zwischen Radar und Anzeigetafel, `radar` bzw. `board` zeigt nur eine Ansicht |
-| `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
-| `boardsec` | `40`            | Sekunden Anzeigetafel, danach wieder Radar (bei `view=auto`) |
+| `radarsec` | `240`           | Sekunden pro Radar-Abschnitt im Wechsel (10 bis 3600) |
+| `boardsec` | `40`            | Sekunden pro Tafel-Abschnitt im Wechsel (5 bis 600); eine Tafel wird übersprungen, solange noch kein Überflug da war |
+| `airportsec` | `60`          | Sekunden pro Flughafen-Abschnitt im Wechsel (10 bis 3600) |
 
 ## Stile und Optionen
 
@@ -100,7 +100,7 @@ Mit `wx=radar` zeichnet die App den Niederschlag über die Karte, in den Farben 
 
 ## Anzeigetafel
 
-Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil einer Abflugtafel ein: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
+Im Wechsel (`view=auto`, Standard `views=radar,board`) blendet die App nach `radarsec` Sekunden eine zweite Ansicht im Stil einer Abflugtafel ein, nach `boardsec` Sekunden wieder den Radar. Mit `views=radar,board,airport` kommt dazwischen die Flughafen-Ansicht (`airportsec`); die Reihenfolge ist frei wählbar. Die Tafel zeigt: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
 
 ## Einrichtungs-Assistent
 
@@ -109,7 +109,7 @@ Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil ei
 1. **Willkommen**: was MyAirspace ist, mit einer Live-Vorschau (Demo-Verkehr).
 2. **Standort**: „Meinen Standort verwenden“, Ortssuche, Flughäfen mit Karte oder Koordinaten. Der Ort wird angezeigt, bevor es weitergeht.
 3. **Look**: Stil (Karte mit Mini-Vorschau), Hell/Dunkel/Automatisch, Akzentfarbe.
-4. **Inhalt**: Ansicht (Wechselnd, Radar, Tafel, Flughafen; für Flughafen die Wahl des Flughafens), welche Elemente zu sehen sind, Einheiten, Radius, Nachtdimmen.
+4. **Inhalt**: Ansicht (Radar, Tafel, Flughafen oder ein Wechsel aus Radar und Tafel, auch mit Flughafen; die Zeiten je Ansicht; für Flughafen die Wahl des Flughafens), welche Elemente zu sehen sind, Einheiten, Radius, Nachtdimmen.
 5. **Fernseher**: Adresse, QR-Code, „Testen“, dazu Schritte für Smart-TV, Apple TV (AirPlay), Computer und Handy oder iPad, „Link teilen“, wenn der Browser es kann.
 
 Am Ende stehen drei Tipps (Nachtdimmen, `style=` ändern, später wieder hier öffnen). Zurück behält alle Eingaben. Der Fortschritt steht nur in `sessionStorage` (dieser Tab, nach dem Schließen weg) und nichts davon geht an einen Server. Wer alles auf einmal sehen will, nutzt **Alle Einstellungen** (`setup.html?wizard=0` oder `#alle`), die Schritte springen direkt an: `#standort`, `#look`, `#inhalt`, `#fernseher`, `#fertig`. `?wizard=1` beginnt von vorn. Alle Texte stehen zentral im Objekt `MA.COPY` in `js/onboarding.js`.
@@ -181,7 +181,7 @@ Die Pisten stammen aus [OurAirports](https://ourairports.com), Flüsse und Küst
 
 ### Flughafen-Ansicht
 
-`view=airport&airport=FRA` zeigt einen Flughafen als Fokus: das Vorfeld ist in die Mitte gezoomt (Vorfeld, Rollwege, Terminals, Hangars, Gates und Positionen mit Bezeichnung, wo sie kartiert sind), die Pisten mit Bezeichnern, die letzten 10 km der verlängerten Pistenachsen als kurze Anflug- und Abflugschneisen (die Piste in Betrieb in Grün). Flugzeuge im Umkreis von 12 km: in der Luft mit Flugzeugsymbol und Datenblock, wenn sie anfliegen oder abfliegen; am Boden an ihrer echten Position auf dem Vorfeld, nur das gewählte mit Rufzeichen. Oben stehen Flughafen, Ortszeit und UTC, „x im Anflug · y am Boden“, unten METAR und Piste in Betrieb. Die Anzeigetafel entfällt; wie bei jeder Ansicht folgen Stil und Theme. Der Standort wird dafür nicht gebraucht, die Daten kommen vom Flughafen aus. Ohne Standort und ohne `demo=1` läuft die Ansicht mit Live-Daten.
+`view=airport&airport=FRA` zeigt einen Flughafen als Fokus; `views=radar,board,airport&airport=FRA` wechselt im Rhythmus dorthin (1,2 s Überblendung, der Radar läuft im Hintergrund weiter). So sieht die Ansicht aus: das Vorfeld ist in die Mitte gezoomt (Vorfeld, Rollwege, Terminals, Hangars, Gates und Positionen mit Bezeichnung, wo sie kartiert sind), die Pisten mit Bezeichnern, die letzten 10 km der verlängerten Pistenachsen als kurze Anflug- und Abflugschneisen (die Piste in Betrieb in Grün). Flugzeuge im Umkreis von 12 km: in der Luft mit Flugzeugsymbol und Datenblock, wenn sie anfliegen oder abfliegen; am Boden an ihrer echten Position auf dem Vorfeld, nur das gewählte mit Rufzeichen. Oben stehen Flughafen, Ortszeit und UTC, „x im Anflug · y am Boden“, unten METAR und Piste in Betrieb. Die Anzeigetafel entfällt; wie bei jeder Ansicht folgen Stil und Theme. Der Standort wird dafür nicht gebraucht, die Daten kommen vom Flughafen aus. Ohne Standort und ohne `demo=1` läuft die Ansicht mit Live-Daten.
 
 Der Maßstab passt das Vorfeld (Box aus Vorfeld, Terminals und Gates, plus 0,6 km Rand) in den Bildschirm, nicht die ganze Pistenlänge: bei HAM sind das gut acht Kilometer, dann blieben Gates und Positionen unlesbar. Piste-Enden außerhalb des Bildes sieht man nicht, ihre Schneisen laufen aber vom Rand her hinein. Die Vorfeld-Daten stammen von OpenStreetMap (Abschnitt unten). Der Rest des Radars bleibt unverändert.
 

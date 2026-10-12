@@ -27,6 +27,17 @@ window.MA = MA;
     return /^[A-Z]{3}$/.test(up) ? up : 'HAM';
   }
 
+  // views=radar,board,airport: the rotation order (duplicates weight a view); invalid entries are dropped silently
+  var VIEW_NAMES = ['radar', 'board', 'airport'];
+  function viewList(name) {
+    var out = [];
+    String(q.get(name) || '').toLowerCase().split(',').forEach(function (x) {
+      x = x.trim();
+      if (VIEW_NAMES.indexOf(x) >= 0) out.push(x);
+    });
+    return out;
+  }
+
   // "23-6" -> {from: 23, to: 6}; "off" -> null
   function hours(name, def) {
     var v = str(name, def);
@@ -90,6 +101,8 @@ window.MA = MA;
     if (f.length) fields = f.slice(0, 5);
   }
 
+  var view = /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : 'auto';
+
   MA.config = {
     lat: num('lat', 53.5511, -90, 90),          // default: Hamburg city centre
     lon: num('lon', 9.9937, -180, 180),
@@ -120,10 +133,14 @@ window.MA = MA;
     timeMode: pick('time', /^(utc|local|both)$/, 'both'),
     brightness: num('brightness', 1, 0.5, 1.2),
     orient: 'north',                            // track-up is not built: north-up only
-    view: /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : 'auto', // radar | board | auto | airport (focus view, js/airport.js)
+    view: view,                                 // radar | board | airport: one fixed view; auto: the rotation below
+    // the rotation, in order: views=radar,board,airport (view=auto). A fixed view is a one-entry list. An empty or
+    // one-entry views= falls back to the old rotation radar,board.
+    views: view !== 'auto' ? [view] : (viewList('views').length >= 2 ? viewList('views') : ['radar', 'board']),
     airport: airportCode(str('airport', 'HAM')),  // focus view: HAM | XFW | FRA | FMO | CPH, checked against MA.features in js/airport.js (unknown = HAM)
-    boardSec: num('boardsec', 40, 5, 600),      // auto: seconds on the Anzeigetafel
-    radarSec: num('radarsec', 240, 10, 3600),   // auto: seconds on the radar
+    boardSec: num('boardsec', 40, 5, 600),      // rotation: seconds on the Anzeigetafel
+    radarSec: num('radarsec', 240, 10, 3600),   // rotation: seconds on the radar
+    airportSec: num('airportsec', 60, 10, 3600), // rotation: seconds on the focus view
     theme: /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (STY[style].theme || 'dark'), // auto: light from sunrise to sunset
     wxRadar: str('wx', '').toLowerCase() === 'radar'   // weather radar overlay (js/wxradar.js), default off
   };

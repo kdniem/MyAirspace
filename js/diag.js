@@ -14,7 +14,7 @@
    (section Erweitert) the log can be downloaded as .txt (user click only) or cleared; ?diag=export opens that section. */
 (function () {
   var MA = window.MA = window.MA || {};
-  var VERSION = 'v13';            // must match VERSION in sw.js (tools/tests/diag-test.cjs checks it)
+  var VERSION = 'v14';          // must match VERSION in sw.js (tools/tests/diag-test.cjs checks it)
   var KEY = 'ma.diag';
   var MAX_EVENTS = 500;
   var KEEP_MS = 72 * 3600 * 1000;
@@ -257,8 +257,8 @@
     // top-left under the brand block, above the board; the last 30 events in two columns of 15
     var panel = el('div');
     panel.id = 'diag-panel';
-    // right edge stays left of the header's meta column (METAR line starts near 62 % of the width)
-    panel.style.cssText = 'position:fixed;left:2.4vw;top:84px;width:min(720px,56vw);z-index:40;' +
+    // right edge stays left of the header's meta column: its left edge follows the widest header line (METAR, runway), about 58 % of the width at 1280 px
+    panel.style.cssText = 'position:fixed;left:2.4vw;top:84px;width:min(720px,50vw);z-index:40;' +
       'pointer-events:none;background:rgba(5,6,7,0.9);color:#cfd8cc;border:1px solid #2b3530;border-radius:6px;' +
       'padding:10px 14px;box-sizing:border-box;font:13px/1.4 "IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;';
     var head = el('div', '', 'DIAGNOSE · lokal, nicht übertragen · Zeit Ortszeit');

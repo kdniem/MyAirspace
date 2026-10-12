@@ -14,13 +14,24 @@
     this.show = cfg.show || { rings: true, compass: true, places: true, ground: true, labels: true, trails: true };
     this.org = { lat: cfg.lat, lon: cfg.lon };   // projection origin (the airport focus view moves it to the bbox centre)
     this.cosLat = Math.cos(cfg.lat * PI / 180);
-    // focus view (view=airport, js/airport.js): layout and base layer come from there; set before the first resize
-    this.airport = cfg.view === 'airport' && MA.airport ? MA.airport.target(cfg) : null;
+    // focus view (js/airport.js): layout and base layer come from there; set by setAirport() (main.js, per view)
+    this.airport = null;
     this.setTheme(MA.theme ? MA.theme.current() : 'dark', false);
     this.resize();
     var self = this;
     if (MA.theme) MA.theme.onChange(function (name, fade) { self.setTheme(name, fade); });
   }
+
+  // Switch between the radar layout (cfg holds the location) and the focus view (cfg holds the airport, see
+  // MA.airport.enter). Called by js/main.js while the canvas is faded out.
+  Radar.prototype.setAirport = function (on) {
+    this.airport = on && MA.airport ? MA.airport.target(this.cfg) : null;
+    this.org = { lat: this.cfg.lat, lon: this.cfg.lon };   // the radar projects around the location (layoutAirport overrides)
+    this.cosLat = Math.cos(this.cfg.lat * PI / 180);
+    this._base = null;
+    this._prev = null;
+    this.resize();
+  };
 
   // Switch the palette; with `fade` the old base layer is crossfaded out (see render).
   Radar.prototype.setTheme = function (name, fade) {
