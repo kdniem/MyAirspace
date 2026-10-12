@@ -201,8 +201,8 @@ html, body {
 }
 .cell:first-child { border-left: 0; padding-left: 0; }
 
-.cell-flight { flex: 1.5 1 0; }
-.cell-route  { flex: 1.7 1 0; }
+.cell-flight { flex: 1.8 1 0; }
+.cell-route  { flex: 1.9 1 0; }
 .cell-type   { flex: 1.1 1 0; }
 .cell-alt    { flex: 1.25 1 0; }
 .cell-spd    { flex: 0.9 1 0; }
@@ -216,7 +216,7 @@ html, body {
 }
 
 .val {
-  font-size: 5vh;
+  font-size: 4.6vh;
   line-height: 1;
   font-weight: var(--weight);
   white-space: nowrap;
@@ -226,7 +226,7 @@ html, body {
   color: var(--val-color);
   letter-spacing: 0.02em;
 }
-.cell-flight .led { font-size: 5.8vh; color: var(--call-color); }
+.cell-flight .led { font-size: 5.2vh; color: var(--call-color); }
 .led.idle { color: var(--idle); }
 
 .sub {

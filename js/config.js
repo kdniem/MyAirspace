@@ -31,10 +31,12 @@ window.MA = MA;
   // Own proxy (api/proxy.js on Vercel), DEFAULT_PROXY and the validation rule are in js/pwa.js.
   // ?proxy=off: no proxy, direct requests only (fails for most APIs because of CORS).
   // Any ?proxy= value that is not the default, 'off' or the own project's URL is ignored.
-  var DEFAULT_PROXY = MA.DEFAULT_PROXY;
+  // setup.html does not load pwa.js (it would restore saved settings), so fall back to a plain rule
+  var DEFAULT_PROXY = MA.DEFAULT_PROXY || 'https://myairspace-nu.vercel.app/api/proxy';
+  var proxyOk = MA.proxyOk || function (v) { return v === DEFAULT_PROXY || v === 'off'; };
   function proxy() {
     var v = str('proxy', DEFAULT_PROXY);
-    if (!MA.proxyOk(v)) v = DEFAULT_PROXY;
+    if (!proxyOk(v)) v = DEFAULT_PROXY;
     return v === 'off' ? '' : v;
   }
 
