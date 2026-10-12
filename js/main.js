@@ -274,6 +274,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
 
   function updateSummary(now) {
     if (MA.diag) MA.diag.status(status, now);
+    if (MA.nodata) MA.nodata.apply(document.getElementById('nodata'), status);
     var d = new Date(now);
     var local = pad(d.getHours()) + ':' + pad(d.getMinutes());
     var utc = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());

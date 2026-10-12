@@ -27,6 +27,8 @@
 <body>
   <div id="stage">
     <canvas id="radar"></canvas>
+    <!-- degraded data: every source failed (js/nodata.js, text set there); hidden otherwise -->
+    <div id="nodata" class="nodata" role="status" hidden></div>
 
     <header id="top">
       <div class="brand">
@@ -142,6 +144,7 @@
   <script src="js/airport.js"></script>
   <script src="js/board.js"></script>
   <script src="js/log.js"></script>
+  <script src="js/nodata.js"></script>
   <script src="js/rotation.js"></script>
   <script src="js/views.js"></script>
   <script src="js/settings.js"></script>

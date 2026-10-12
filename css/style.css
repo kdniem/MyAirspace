@@ -335,6 +335,18 @@ html, body {
 }
 .pager span.on { background: var(--accent); }
 
+/* degraded data (js/nodata.js): small, centred, no panel; --dim on --bg is in the contrast check */
+.nodata {
+  position: absolute;
+  left: 0; right: 0;
+  top: 46%;
+  text-align: center;
+  font-size: 1.9vh;
+  letter-spacing: 0.06em;
+  color: var(--dim);
+  pointer-events: none;
+}
+
 #attrib {
   position: absolute;
   right: var(--safe-x);
