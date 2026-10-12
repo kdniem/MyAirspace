@@ -34,13 +34,13 @@ Gesamt: 14 Schritte, 0 Fehlschläge. Hinweis: Der Proxy-Test läuft in `run-all.
 
 ## Ergebnis Browser-Suite (`tools/tests/browser.mjs`, vollständig)
 
-- Letzter Lauf am Branch-Ende (vom vorherigen Agenten ausgeführt, in dieser Sitzung nicht erneut ausgeführt): `browser: 128 page loads in 138.1 s (concurrency 4), 0 failing check(s), 0 known issue(s)`, Exit 0.
+- **Unverifiziert.** Der vorherige Agent meldete einen grünen Lauf (`128 page loads, 0 failing, 0 known issues`, Exit 0). Das Log dieses Laufs liegt nicht vor. Das Log `browser-final.log` (Stand 20:06) zeigt dagegen einen Absturz: `browserContext.close: Target page, context or browser has been closed` in `matrixCase`, kein `EXIT`. Ob der grüne Lauf vor oder nach dem Absturz lag, ist nicht belegt. Der Absturz ist offen.
 - Known issues aus `tools/tests/known-issues.json`: keine aktiv.
 - Der Baseline-Lauf vor den Plan-Änderungen ergab 127 Seitenläufe, 0 Fehlschläge, 0 known issues. Der 128. Fall ist `nodata_notice`.
 
 ## Nicht ausgeführt
 
-- Browser-Suite in dieser Sitzung nicht erneut gelaufen (Code seit dem letzten grünen Lauf nicht geändert; Ergebnis oben stammt vom letzten Lauf).
+- Eine vollständige, belegte Browser-Suite gibt es nicht. Der Lauf vom 20:06 ist abgestürzt (siehe oben).
 - `npm run test:quick` nicht ausgeführt.
 
 ## Fehlschläge
@@ -57,5 +57,5 @@ Keine. Im Baseline-Stand gibt es weder Fehlschläge noch bekannte Ausnahmen.
 ## Schlusslauf am Branch-Ende
 
 - `run-all.mjs --no-browser`: 14 Schritte, alle bestanden (inkl. neuer Schritte glyph-test und nodata-test).
-- `browser.mjs` (vollständig): 128 page loads, 0 failing, 0 known issues (letzter Lauf, siehe oben).
+- `browser.mjs` (vollständig): nicht belegt. Letzter protokollierter Lauf ist abgestürzt (Chromium geschlossen); ein grüner Lauf wurde gemeldet, ist aber ohne Log.
 - Kontrast: 140 Kombinationen, 7153 Prüfungen, alle über dem Ziel.
