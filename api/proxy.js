@@ -16,8 +16,11 @@ const ALLOWED_ORIGINS = [
 const MAX_RADIUS_NM = 250;
 const POINT_PATH = /^\/v2\/point\/(-?\d{1,3}(?:\.\d+)?)\/(-?\d{1,3}(?:\.\d+)?)\/(\d{1,5})$/;
 
-function fail(res, status, error) {
+// errors are never cacheable: the CDN must not store them (and a failed revalidation must not
+// replace the last good answer that stale-while-revalidate / stale-if-error keep serving)
+function fail(res, status, error, retryAfterSec) {
   res.setHeader('Cache-Control', 'no-store');
+  if (retryAfterSec) res.setHeader('Retry-After', String(retryAfterSec));
   return res.status(status).json({ error });
 }
 
@@ -44,6 +47,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', origin || '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Expose-Headers', 'Retry-After');
   res.setHeader('Access-Control-Max-Age', '86400');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return fail(res, 405, 'GET only');
@@ -69,17 +73,24 @@ export default async function handler(req, res) {
       redirect: 'manual',
       signal: AbortSignal.timeout(8000)
     });
-    if (upstream.status === 429) return fail(res, 429, 'rate limited');
+    if (upstream.status === 429) {
+      // pass a plain seconds value of Retry-After on (bounded), so the app can back off accordingly
+      const ra = upstream.headers && upstream.headers.get ? upstream.headers.get('retry-after') : null;
+      const sec = typeof ra === 'string' && /^\d{1,6}$/.test(ra) ? Math.min(120, Math.max(1, parseInt(ra, 10))) : 0;
+      return fail(res, 429, 'rate limited', sec);
+    }
     if (!upstream.ok) return fail(res, 502, 'upstream error');   // includes 3xx (redirects are not followed)
     const text = await upstream.text();
     try { JSON.parse(text); } catch (e) { return fail(res, 502, 'bad upstream'); }
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
-    // a short CDN cache keeps several screens from multiplying upstream requests
-    // (METAR changes at most every 30 min: cache it for 5 min)
-    const maxAge = url.hostname === 'aviationweather.gov' ? 300 : 3;
-    // stale-while-revalidate: if the upstream throttles us (429 from the shared Vercel address),
-    // clients still get the last good answer; the app reads the real age from the server timestamps
-    res.setHeader('Cache-Control', 'public, s-maxage=' + maxAge + ', stale-while-revalidate=' + (maxAge === 3 ? 20 : 600));
+    // A short CDN cache keeps several screens from multiplying upstream requests. Past s-maxage the CDN
+    // still serves the last good answer while it revalidates (stale-while-revalidate), and for a while
+    // longer if the revalidation fails, e.g. 429 from the shared Vercel address (stale-if-error). The
+    // app reads the real age of the data from the server timestamps in the answer.
+    // METAR changes at most every 30 min: 5 min fresh, stale up to 10 min, 1 h on errors.
+    const metar = url.hostname === 'aviationweather.gov';
+    res.setHeader('Cache-Control', 'public, s-maxage=' + (metar ? 300 : 3) +
+      ', stale-while-revalidate=' + (metar ? 600 : 30) + ', stale-if-error=' + (metar ? 3600 : 120));
     return res.status(200).send(text);
   } catch (e) {
     return fail(res, 502, 'upstream error');

@@ -7,6 +7,31 @@
 
   function trim(s) { return s ? String(s).trim() : ''; }
 
+  /* Retry-After as milliseconds: only the delta-seconds form (the proxy sends that), capped at
+     two minutes; anything else counts as "not given" (0). */
+  function parseRetryAfter(v) {
+    if (typeof v !== 'string' || !/^\s*\d{1,6}\s*$/.test(v)) return 0;
+    return Math.min(120, parseInt(v, 10)) * 1000;
+  }
+
+  /* Delay before the next poll (ms), a pure function so it can be tested (tools/tests/poll-test.cjs).
+     baseMs: normal interval; failures: failed polls in a row; recover: polls still to be taken
+     gently after a recovery; retryAfterMs: the server's Retry-After (0 = none); jitter: 0..1 (0.5 = none).
+     Failing: exponential back-off up to 60 s, never sooner than Retry-After (up to 120 s).
+     Recovering: back to the normal interval step by step (+50 % per remaining step), so a feed that
+     was just throttled is not hit at full rate right away. Normal: exactly baseMs. */
+  function pollDelay(o) {
+    var base = o.baseMs, d = base;
+    var jitter = typeof o.jitter === 'number' ? o.jitter : 0.5;
+    if (o.failures > 0) {
+      d = Math.min(60000, base * Math.pow(1.6, o.failures));
+      if (o.retryAfterMs > 0) d = Math.max(d, Math.min(o.retryAfterMs, 120000));
+    } else if (o.recover > 0) {
+      d = base * (1 + 0.5 * o.recover);
+    }
+    return Math.round(d * (1 + 0.2 * (jitter - 0.5)));
+  }
+
   function fetchJson(url, opts, timeoutMs) {
     return new Promise(function (resolve, reject) {
       var done = false;
@@ -14,7 +39,12 @@
         if (!done) { done = true; reject(new Error('timeout')); }
       }, timeoutMs || 8000);
       fetch(url, opts).then(function (res) {
-        if (!res.ok) { var e = new Error('HTTP ' + res.status); e.status = res.status; throw e; }
+        if (!res.ok) {
+          var e = new Error('HTTP ' + res.status);
+          e.status = res.status;
+          e.retryAfter = parseRetryAfter(res.headers && res.headers.get && res.headers.get('Retry-After'));
+          throw e;
+        }
         return res.json();
       }).then(function (json) {
         if (!done) { done = true; clearTimeout(timer); resolve(json); }
@@ -56,7 +86,7 @@
     var host = url.split('/').slice(2, 5).join('/') + (post ? ' post' : '');
     var list = proxyRoutes(post, directFirst);
     var start = Math.min(preferred[host] || 0, list.length - 1);
-    var n = 0, retried = false;
+    var n = 0, retried = false, retryAfter = 0;
     function attempt() {
       var i = (start + n) % list.length;
       var via = list[i]('').split('/')[2] || 'direct';
@@ -68,14 +98,16 @@
         preferred[host] = i;
         return json;
       }, function (err) {
-        // own proxy hiccup (429, 5xx, network, timeout): one more try after a short pause
-        if (list[i].own && !retried && (!err.status || err.status === 429 || err.status >= 500)) {
+        if (err && err.retryAfter) retryAfter = Math.max(retryAfter, err.retryAfter);
+        // own proxy hiccup (5xx, network, timeout): one more try after a short pause. Not after a 429:
+        // the next regular poll is the retry, and an immediate second request only adds load
+        if (list[i].own && !retried && (!err.status || err.status >= 500)) {
           retried = true;
           return new Promise(function (r) { setTimeout(r, 1500); }).then(attempt);
         }
         retried = false;
         n++;
-        if (n >= list.length) throw err;
+        if (n >= list.length) { if (retryAfter && !err.retryAfter) err.retryAfter = retryAfter; throw err; }
         return attempt();
       });
     }
@@ -345,6 +377,8 @@
     Feed: Feed,
     providers: PROVIDERS,
     getJson: getJson,           // also used by js/weather.js
+    pollDelay: pollDelay,
+    parseRetryAfter: parseRetryAfter,
     lookupRoutes: lookupRoutes,
     route: function (callsign) {
       var c = routes[callsign];
