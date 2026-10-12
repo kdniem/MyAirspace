@@ -880,7 +880,8 @@ body.view-airport #set-btn { bottom: calc(var(--safe-y) + 5.5vh); }   /* focus v
 .set-primary { border-color: var(--accent); }
 
 @media (max-width: 520px) {
-  #set-btn { left: 16px; }
+  /* phones: 6 px above the default, so the gear keeps clear of the board at the largest burn-in drift (js/main.js ambient) */
+  #set-btn { left: 16px; bottom: calc(var(--safe-y) + 21vh + 6px); }
   .set-lbl { flex: 0 0 100%; margin: 0 0 4px; }
   .set-ctl { flex: 1 1 100%; }
   .set-panel { padding: 16px; }
