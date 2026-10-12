@@ -229,14 +229,16 @@
         var c1 = MA.geo.dest(rw.b[0], rw.b[1], hdg, 18), c2 = MA.geo.dest(rw.a[0], rw.a[1], hdg + 180, 18);
         var p1 = self.project(rw.b[0], rw.b[1]), p2 = self.project(rw.a[0], rw.a[1]);
         var q1 = self.project(c1[0], c1[1]), q2 = self.project(c2[0], c2[1]);
-        ctx.strokeStyle = C.centerline;
         ctx.lineWidth = 1.5 * u;
         ctx.lineCap = 'butt';
         if (ctx.setLineDash) ctx.setLineDash([6 * u, 6 * u]);
-        ctx.beginPath();
-        ctx.moveTo(q1[0], q1[1]); ctx.lineTo(p1[0], p1[1]);
-        ctx.moveTo(p2[0], p2[1]); ctx.lineTo(q2[0], q2[1]);
-        ctx.stroke();
+        // centrelines fade out with distance from the runway end
+        [[p1, q1], [p2, q2]].forEach(function (seg) {
+          ctx.strokeStyle = fadeLine(ctx, C.centerline, seg[0], seg[1]);
+          ctx.beginPath();
+          ctx.moveTo(seg[0][0], seg[0][1]); ctx.lineTo(seg[1][0], seg[1][1]);
+          ctx.stroke();
+        });
         if (ctx.setLineDash) ctx.setLineDash([]);
         ctx.strokeStyle = C.runway;
         ctx.lineWidth = Math.max(4 * u, 0.08 * self.pxPerKm);
@@ -270,6 +272,14 @@
     return off;
   };
 
+  // 'rgba(r, g, b, a)' string -> gradient from p (full) to q (transparent)
+  function fadeLine(ctx, css, p, q) {
+    var m = css.match(/[\d.]+/g);
+    var g = ctx.createLinearGradient(p[0], p[1], q[0], q[1]);
+    g.addColorStop(0, 'rgba(' + m[0] + ',' + m[1] + ',' + m[2] + ',' + m[3] + ')');
+    g.addColorStop(1, 'rgba(' + m[0] + ',' + m[1] + ',' + m[2] + ',0)');
+    return g;
+  }
   function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a.toFixed(3) + ')'; }
 
   Radar.prototype.drawPlane = function (x, y, hdg, size, color, rotor) {
@@ -418,15 +428,20 @@
         var head = (featured ? 3 : 2.2) * u;
         var cur = self.project(ac.dlat, ac.dlon);
         ctx.lineCap = 'round';
-        for (var i = 0; i < tr.length; i++) {
-          var a = self.project(tr[i][0], tr[i][1]);
-          var b = i + 1 < tr.length ? self.project(tr[i + 1][0], tr[i + 1][1]) : cur;
+        // samples are joined by quadratic curves through segment midpoints: no visible corners
+        var pts = [];
+        for (var i = 0; i < tr.length; i++) pts.push(self.project(tr[i][0], tr[i][1]));
+        pts.push(cur);
+        var last = pts.length - 1;
+        for (i = 0; i < last; i++) {
+          var a = i === 0 ? pts[0] : [(pts[i - 1][0] + pts[i][0]) / 2, (pts[i - 1][1] + pts[i][1]) / 2];
+          var b = i === last - 1 ? pts[last] : [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
           var fresh = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
           ctx.lineWidth = Math.max(0.6 * u, head * (0.35 + 0.65 * fresh));
-          ctx.strokeStyle = rgba(col, 0.7 * fresh * fresh * baseA);
+          ctx.strokeStyle = rgba(col, 0.85 * Math.pow(fresh, 1.6) * baseA);
           ctx.beginPath();
           ctx.moveTo(a[0], a[1]);
-          ctx.lineTo(b[0], b[1]);
+          ctx.quadraticCurveTo(pts[i][0], pts[i][1], b[0], b[1]);
           ctx.stroke();
         }
       }
