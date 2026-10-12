@@ -28,6 +28,7 @@
     this.theme = name;
     C = MA.style.resolve(this.cfg.style, name, { accent: this.cfg.accent, font: this.cfg.font, brightness: this.cfg.brightness }).c;
     this.pal = C;
+    this.palette = C;
     this._prev = fade && this._base ? this._base : null;
     this._fadeAt = Date.now();
     this._base = null;
@@ -665,6 +666,11 @@
         ctx.drawImage(this._prev, 0, 0, this.w, this.h);
         ctx.globalAlpha = 1;
       } else this._prev = null;
+    }
+    // weather radar (js/wxradar.js, wx=radar): over the map, under the approach lines, aircraft and labels
+    if (this.wxOn && MA.wxradar) {
+      var wxl = MA.wxradar.layer(this);
+      if (wxl) { ctx.globalAlpha = C.wxAlpha; ctx.drawImage(wxl, 0, 0, this.w, this.h); ctx.globalAlpha = 1; }
     }
     if (active && active.length) this.drawActive(active);
     if (show.ground !== false && ground && ground.length) this.drawGround(ground);

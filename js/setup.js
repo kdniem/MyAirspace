@@ -139,7 +139,7 @@
     l.className = 'switch';
     l.innerHTML = '<input type="checkbox"><span class="track" aria-hidden="true"></span><span><b></b><small></small></span>';
     const inp = l.querySelector('input');
-    inp.checked = !cfg0.show || cfg0.show[e[0]] !== false;
+    inp.checked = e[0] === 'wxradar' ? !!cfg0.wxRadar : (!cfg0.show || cfg0.show[e[0]] !== false);
     l.querySelector('b').textContent = e[1];
     l.querySelector('small').textContent = e[2];
     inp.addEventListener('change', update);
@@ -419,7 +419,10 @@
     ['speed', 'pressure', 'time'].forEach((k) => { const v = checked(k); if (v !== DEF[k]) p.set(k, v); });
     const title = el.title.value.trim();
     if (title) p.set('title', title);
-    ELEMENTS.forEach((e) => { if (!toggles[e[0]].checked) p.set(e[0], '0'); });
+    ELEMENTS.forEach((e) => {
+      if (e[0] === 'wxradar') { if (toggles.wxradar.checked) p.set('wx', 'radar'); }   // opt-in, default off
+      else if (!toggles[e[0]].checked) p.set(e[0], '0');
+    });
     if (toggles.chartbg.checked) p.set('chartbg', '1');
     if (fieldsSel.join() !== DEF_FIELDS.join()) p.set('datablock', fieldsSel.join(','));
     const trail = +el.trail.value;
