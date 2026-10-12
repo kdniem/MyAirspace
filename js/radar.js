@@ -12,6 +12,7 @@
     this.ctx = canvas.getContext('2d');
     this.cfg = cfg;
     this.show = cfg.show || { rings: true, compass: true, places: true, ground: true, labels: true, trails: true };
+    this._ver = 0;                     // layout / palette version: keys the per-aircraft caches (trails, labels)
     this.org = { lat: cfg.lat, lon: cfg.lon };   // projection origin (the airport focus view moves it to the bbox centre)
     this.cosLat = Math.cos(cfg.lat * PI / 180);
     // focus view (js/airport.js): layout and base layer come from there; set by setAirport() (main.js, per view)
@@ -43,6 +44,7 @@
     this._prev = fade && this._base ? this._base : null;
     this._fadeAt = Date.now();
     this._base = null;
+    this._ver++;   // cached label measures and trail projections depend on the palette and font
   };
 
   // settings overlay (js/settings.js): style or brightness changed, so the palette and the cached base are rebuilt
@@ -56,14 +58,34 @@
     return (weight || '') + ' ' + Math.round(px * this.unit) + 'px ' + C.font;
   };
 
+  // Backing store at `scale` device pixels per CSS pixel (js/render-scale.js). Drawing stays in CSS units:
+  // the transform maps them onto the real size. Any failure (memory, a browser that clamps the size) gives 1x.
+  Radar.prototype.setBacking = function (scale) {
+    var w = this.w, h = this.h, s = scale, W = Math.round(w * s), H = Math.round(h * s), ok = false;
+    try {
+      this.canvas.width = W;
+      this.canvas.height = H;
+      ok = this.canvas.width === W && this.canvas.height === H;
+    } catch (e) { ok = false; }
+    if (!ok) {
+      s = 1;
+      try { this.canvas.width = w; this.canvas.height = h; } catch (e2) { /* keep what the browser has */ }
+      if (!this._warnedSafe && window.console) { this._warnedSafe = true; console.info('[MyAirspace] Canvas mit 1x gezeichnet (Größe nicht verfügbar)'); }
+    }
+    this.scale = s;
+    this.ctx.setTransform(this.canvas.width / w, 0, 0, this.canvas.height / h, 0, 0);
+    this._base = null;
+    this._prev = null;
+  };
+
   Radar.prototype.resize = function () {
-    var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var w = window.innerWidth, h = window.innerHeight;
-    this.canvas.width = Math.round(w * dpr);
-    this.canvas.height = Math.round(h * dpr);
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.w = w;
     this.h = h;
+    this.dpr = window.devicePixelRatio || 1;
+    this._ver++;   // new layout: cached projections and label measures are stale
+    this.target = MA.renderScale.choose({ cssW: w, cssH: h, dpr: this.dpr, res: this.cfg.res });
+    this.setBacking(this.target);
     if (this.airport) return this.layoutAirport();
     // radar area: everything above the board (bottom ~22% of the screen); full height without a board
     var areaBottom = this.show.board === false ? h * 0.93 : h * 0.765;
@@ -366,7 +388,7 @@
 
   // Cache static layers in an offscreen canvas (per size and theme).
   Radar.prototype.base = function () {
-    var key = this.w + 'x' + this.h + ':' + this.theme + (this.airport ? ':' + this.airport.code : '');
+    var key = this.w + 'x' + this.h + ':' + this.scale + ':' + this.theme + (this.airport ? ':' + this.airport.code : '');
     if (this._baseKey === key && this._base) return this._base;
     var off = document.createElement('canvas');
     off.width = this.canvas.width;
@@ -484,42 +506,85 @@
     if (ctx.setLineDash) ctx.setLineDash([]);
   };
 
-  // history: one smooth line that tapers and fades to nothing at its tail, ends at the symbol
-  // trail looks: 'taper' (fading line), 'dots' (persistence blips), 'dash' (dashed line), 'none'
-  Radar.prototype.drawTrail = function (ac, col, baseA, now) {
-    var self = this, ctx = this.ctx, u = this.unit, lw = C.lw;
-    var tr = ac.trail;
-    if (tr.length && this.show.trails !== false && C.trail !== 'none') {
-      var maxAge = self.cfg.trailMin * 60000 || 1, i;
-      var cur = self.project(ac.dlat, ac.dlon), head = 2 * u * lw * C.trailW;
-      ctx.lineCap = 'butt';
-      var pp = [];
-      for (i = 0; i < tr.length; i++) pp.push(self.project(tr[i][0], tr[i][1]));
-      pp.push(cur);
-      MA.motion.growTrail(pp, cur, now, ac.trailT0);   // a new trail draws on (js/motion.js)
-      var last = pp.length - 1, dash = C.trail === 'dash' && ctx.setLineDash;
-      if (dash) ctx.setLineDash([4 * u * C.trailW, 4 * u * C.trailW]);
-      for (i = 0; i < last; i++) {
-        var fr = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
-        if (fr < 0.02) continue;
-        if (C.trail === 'dots') {
-          ctx.fillStyle = rgba(col, 0.9 * Math.pow(fr, 1.2) * baseA);
-          ctx.beginPath();
-          ctx.arc(pp[i][0], pp[i][1], Math.max(0.9 * u, head * 0.42 * (0.3 + 0.7 * fr)), 0, PI * 2);
-          ctx.fill();
-          continue;
-        }
-        var a = i === 0 ? pp[0] : [(pp[i - 1][0] + pp[i][0]) / 2, (pp[i - 1][1] + pp[i][1]) / 2];
-        var b = i === last - 1 ? pp[last] : [(pp[i][0] + pp[i + 1][0]) / 2, (pp[i][1] + pp[i + 1][1]) / 2];
-        ctx.lineWidth = Math.max(0.5 * u, head * (0.12 + 0.88 * fr));
-        ctx.strokeStyle = rgba(col, 0.85 * Math.pow(fr, 1.35) * baseA);
-        ctx.beginPath();
-        ctx.moveTo(a[0], a[1]);
-        ctx.quadraticCurveTo(pp[i][0], pp[i][1], b[0], b[1]);
-        ctx.stroke();
+  // Projected trail points of an aircraft, flat [x0, y0, x1, y1, ...]; cached until the layout or the trail
+  // changes (a trail gets one sample per 2 s), so the projection is not repeated every frame.
+  // The slot after the last sample is left for the current position (see drawTrail).
+  Radar.prototype.trailXY = function (ac) {
+    var tr = ac.trail, n = tr.length, xy = ac._tx;
+    if (!xy || ac._txV !== this._ver || ac._txN !== n || ac._txA !== tr[0][2] || ac._txB !== tr[n - 1][2]) {
+      if (!xy || xy.length !== 2 * (n + 1)) xy = ac._tx = new Float64Array(2 * (n + 1));
+      for (var i = 0; i < n; i++) {
+        var q = this.project(tr[i][0], tr[i][1]);
+        xy[2 * i] = q[0]; xy[2 * i + 1] = q[1];
       }
-      if (dash) ctx.setLineDash([]);
+      ac._txV = this._ver; ac._txN = n; ac._txA = tr[0][2]; ac._txB = tr[n - 1][2];
     }
+    return xy;
+  };
+
+  var TRAIL_BUCKETS = 16;   // age buckets: one stroke per bucket instead of one per segment (same look, see README)
+
+  /* history: one smooth line that tapers and fades to nothing at its tail, ends at the symbol.
+     Segments are quadratic curves through the samples (midpoints as joins), grouped into age buckets:
+     neighbours in the same bucket share one path and one stroke. Width and opacity are taken at the
+     bucket centre: at most about 0.1 px of width and 3 % of opacity off the per-segment values.
+     Trail looks (C.trail): 'taper' (the fading line above), 'dash' (the same line dashed), 'dots'
+     (persistence blips, one per sample), 'none' (no trail). A new trail draws on from the symbol
+     (js/motion.js trailGrowth): the projected points are scaled towards it in a scratch copy, so the
+     cache keeps the true projection. */
+  Radar.prototype.drawTrail = function (ac, col, baseA, now) {
+    var ctx = this.ctx, u = this.unit, lw = C.lw, tr = ac.trail, n = tr.length;
+    if (!n || this.show.trails === false || C.trail === 'none') return;
+    var maxAge = this.cfg.trailMin * 60000 || 1, NB = TRAIL_BUCKETS;
+    var cur = this.project(ac.dlat, ac.dlon), head = 2 * u * lw * C.trailW;
+    var X = this.trailXY(ac), i, fr, b, bk = -1, open = false, frm, ax, ay, bx, by;
+    var g = MA.motion.trailGrowth(now, ac.trailT0);
+    if (g < 1) {
+      var G = this._grown;
+      if (!G || G.length < X.length) G = this._grown = new Float64Array(X.length);
+      for (i = 0; i < n; i++) {
+        G[2 * i] = cur[0] + (X[2 * i] - cur[0]) * g;
+        G[2 * i + 1] = cur[1] + (X[2 * i + 1] - cur[1]) * g;
+      }
+      X = G;
+    }
+    X[2 * n] = cur[0]; X[2 * n + 1] = cur[1];
+    ctx.lineCap = 'butt';
+    ctx.lineJoin = 'round';
+    if (C.trail === 'dots') {
+      for (i = 0; i < n; i++) {
+        fr = Math.max(0, 1 - (now - tr[i][2]) / maxAge);
+        if (fr < 0.02) continue;
+        ctx.fillStyle = rgba(col, 0.9 * Math.pow(fr, 1.2) * baseA);
+        ctx.beginPath();
+        ctx.arc(X[2 * i], X[2 * i + 1], Math.max(0.9 * u, head * 0.42 * (0.3 + 0.7 * fr)), 0, PI * 2);
+        ctx.fill();
+      }
+      return;
+    }
+    var dash = C.trail === 'dash' && ctx.setLineDash;
+    if (dash) ctx.setLineDash([4 * u * C.trailW, 4 * u * C.trailW]);
+    for (i = 0; i < n; i++) {
+      fr = 1 - (now - tr[i][2]) / maxAge;
+      if (fr < 0.02) continue;                       // older than the visible tail
+      b = Math.min(NB - 1, Math.floor(fr * NB));
+      if (b !== bk) {
+        if (open) ctx.stroke();
+        bk = b; open = true;
+        frm = (b + 0.5) / NB;
+        ctx.lineWidth = Math.max(0.5 * u, head * (0.12 + 0.88 * frm));
+        ctx.strokeStyle = rgba(col, 0.85 * Math.pow(frm, 1.35) * baseA);
+        ctx.beginPath();
+        if (i === 0) { ax = X[0]; ay = X[1]; }
+        else { ax = (X[2 * i - 2] + X[2 * i]) / 2; ay = (X[2 * i - 1] + X[2 * i + 1]) / 2; }
+        ctx.moveTo(ax, ay);
+      }
+      if (i === n - 1) { bx = X[2 * n]; by = X[2 * n + 1]; }   // the last segment ends at the symbol
+      else { bx = (X[2 * i] + X[2 * i + 2]) / 2; by = (X[2 * i + 1] + X[2 * i + 3]) / 2; }
+      ctx.quadraticCurveTo(X[2 * i], X[2 * i + 1], bx, by);
+    }
+    if (open) ctx.stroke();
+    if (dash) ctx.setLineDash([]);
   };
 
   // radar sweep (tower look): a fading wedge turning clockwise, one turn in 6 s, under the aircraft
@@ -637,6 +702,26 @@
       neutralBg: C.badgeBg, neutralFg: C.badgeFg, alpha: dim ? 0.7 : undefined };
   };
 
+  /* Data block of an aircraft, cached on the aircraft: lines and their measures are rebuilt only when a shown
+     value changes (callsign, altitude, speed, type, phase, special label, route) or the layout does. Returns the
+     measure with .lines attached; big = the featured block (larger type). */
+  Radar.prototype.blockFor = function (ac, phase, big) {
+    var legTxt = '';
+    if (this.cfg.fields.indexOf('route') >= 0 && MA.data && MA.data.leg) {
+      var leg = MA.data.leg(ac);
+      if (leg) legTxt = leg[0].code + '-' + leg[1].code;
+    }
+    var sp = ac.special ? ac.special.label : null, c = ac._lb;
+    if (!c || c.v !== this._ver || c.hex !== ac.hex || c.cs !== ac.callsign || c.reg !== ac.reg || c.type !== ac.type ||
+        c.alt !== ac.alt || c.gs !== ac.gs || c.ph !== phase || c.sp !== sp || c.leg !== legTxt) {
+      c = ac._lb = { v: this._ver, hex: ac.hex, cs: ac.callsign, reg: ac.reg, type: ac.type, alt: ac.alt, gs: ac.gs,
+        ph: phase, sp: sp, leg: legTxt, lines: this.blockLines(ac, phase), m: [null, null] };
+    }
+    var k = big ? 1 : 0;
+    if (!c.m[k]) { c.m[k] = this.measureBlock(c.lines, big); c.m[k].lines = c.lines; }
+    return c.m[k];
+  };
+
   Radar.prototype.measureBlock = function (lines, big) {
     var ctx = this.ctx, u = this.unit, w = 0, wt = String(C.weight), self = this;
     var bh = (big ? 17 : 15) * u;
@@ -671,6 +756,14 @@
       var x0 = sx > 0 ? ex + pd : ex - pd - m.w, y0 = sy < 0 ? ey - m.h + 5 * u : ey - 5 * u;
       return { ex: ex, ey: ey, rect: [x0 - 3 * u, y0 - 2 * u, m.w + 6 * u, m.h + 4 * u], x0: x0, y0: y0, sx: sx, sy: sy };
     }
+    // overlap of a rect with the 24 u square around an aircraft point: overlap(a, [x-12u, y-12u, 24u, 24u]) without the array
+    function overlapPt(a, x, y) {
+      var k = 12 * u, bx = x - k, by = y - k;
+      var ox = Math.min(a[0] + a[2], bx + 2 * k) - Math.max(a[0], bx);
+      var oy = Math.min(a[1] + a[3], by + 2 * k) - Math.max(a[1], by);
+      return ox > 0 && oy > 0 ? ox * oy : 0;
+    }
+    var hd = self.headerRects();   // the same for every candidate of this block
     function score(r, q) {
       var s = q * 0.5, i;
       for (i = 0; i < placed.length; i++) s += overlap(r.rect, placed[i]) * 4;
@@ -678,11 +771,10 @@
       for (i = 0; i < av.length; i++) s += overlap(r.rect, av[i]) * 3;
       for (i = 0; i < pts.length; i++) {
         if (pts[i] === it.p) continue;
-        s += overlap(r.rect, [pts[i][0] - 12 * u, pts[i][1] - 12 * u, 24 * u, 24 * u]) * 6;
+        s += overlapPt(r.rect, pts[i][0], pts[i][1]) * 6;
       }
       if (r.rect[0] < 4 * u || r.rect[0] + r.rect[2] > self.w - 4 * u || r.rect[1] < 4 * u ||
         r.rect[1] + r.rect[3] > self.areaBottom + self.h * 0.02) s += 5000;
-      var hd = self.headerRects();
       for (i = 0; i < hd.length; i++) if (overlap(r.rect, hd[i])) s += 2500;
       return s;
     }
@@ -865,8 +957,8 @@
 
       var onScreen = p[0] > 0 && p[0] < self.w && p[1] > 0 && p[1] < self.areaBottom + self.h * 0.02;
       if ((self.cfg.labels || featured) && onScreen) {
-        var lines = self.blockLines(ac, phase);
-        if (lines.length) items.push({ ac: ac, p: p, size: reach, high: high, featured: featured, sp: sp, spCol: spCol, lines: lines });
+        var bm = self.blockFor(ac, phase, featured);
+        if (bm.lines.length) items.push({ ac: ac, p: p, size: reach, high: high, featured: featured, sp: sp, spCol: spCol, lines: bm.lines, m: bm });
       }
       pts.push(p);
       var bi = self.badgeFor(ac);
@@ -881,11 +973,11 @@
     var bRects = this.badgeRects(badges);
     var placed = bRects.slice();
     order.forEach(function (it) {
-      var m = self.measureBlock(it.lines, it.featured);
+      var m = it.m;
       var r = self.placeBlock(it, m, placed, pts);
       if (r.bad && !it.featured) { it.skip = true; return; }   // no room: the symbol stays, the block is left out
       placed.push(r.rect);
-      it.m = m; it.r = r;
+      it.r = r;
     });
     this.drawBadges(badges);
     items.forEach(function (it) {

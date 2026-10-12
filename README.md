@@ -61,6 +61,7 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `radarsec` | `240`           | Sekunden pro Radar-Abschnitt im Wechsel (10 bis 3600) |
 | `boardsec` | `40`            | Sekunden pro Tafel-Abschnitt im Wechsel (5 bis 600); eine Tafel wird übersprungen, solange noch kein Überflug da war |
 | `airportsec` | `60`          | Sekunden pro Flughafen-Abschnitt im Wechsel (10 bis 3600) |
+| `res`      | `auto`          | Zeichenauflösung der Karte: `auto`, `1` (einfach) oder `2` (doppelt). Mehr dazu unter [Schärfe und Bildrate](#schärfe-und-bildrate) |
 
 ## Stile und Optionen
 
@@ -135,6 +136,17 @@ Am Ende stehen drei Tipps (Nachtdimmen, `style=` ändern, später wieder hier ö
 - **Smart-TV (Samsung, LG, Android TV, Fire TV):** Die URL im eingebauten Browser öffnen und als Lesezeichen speichern. Mit Vollbild bzw. ausgeblendeter Adressleiste sieht es am besten aus.
 - **Apple TV:** tvOS hat keinen Webbrowser. Öffne die URL in Safari auf dem Mac, iPad oder iPhone, schalte Safari auf Vollbild und spiegle den Bildschirm per AirPlay auf den Apple TV. Auf dem iPhone/iPad kannst du die Seite auch über *Teilen → Zum Home-Bildschirm* als Vollbild-App speichern.
 - Wo der Browser es kann (Wake Lock API), verhindert die Seite, dass der Bildschirm ausgeht. Gegen Einbrennen auf OLED-Fernsehern verschiebt sich das ganze Bild alle zwei Minuten um ein paar Pixel.
+
+## Schärfe und Bildrate
+
+Die Karte wird in einer Auflösung gezeichnet, die sich nach dem Bildschirm richtet. Mit `res=auto` (Standard) hat sie mindestens die Pixeldichte des Geräts und bei Bildschirmen bis 1920 Pixel Breite das Doppelte, damit sie auch auf einem 1x-Bildschirm und im AirPlay-Spiegelbild scharf bleibt. Die Obergrenze liegt bei 3840 Pixeln Breite und 8,3 Millionen Pixeln insgesamt, damit ältere Fernseher und Tablets nicht überlastet werden. Schrift, Layout und Farben bleiben gleich, nur die Kanten werden glatter.
+
+- `res=1`: einfache Auflösung, weniger Rechenarbeit. `res=2`: immer doppelt. Andere Werte gelten wie `auto`.
+- **Schutz für schwache Geräte:** Liegt die Zeit zwischen zwei Bildern (p95) für 10 Sekunden über 40 ms, verringert die Seite die Auflösung um einen Schritt (25 % weniger, nie unter 1x) und meldet das einmal in der Browser-Konsole (`console.info`). Erholt sich das Bild (p95 unter 25 ms für 30 Sekunden), wird wieder schrittweise hochgeschaltet. Bei `res=1` gibt es nichts zu verringern.
+- Die Flugspuren werden nach ihrem Alter in Gruppen gezeichnet statt Segment für Segment. Das sieht gleich aus, kostet aber deutlich weniger Rechenzeit. Beschriftungen werden nur neu berechnet, wenn sich ein angezeigter Wert ändert.
+- Der Einbrennschutz verschiebt das Bild in ganzen Pixeln und springt dabei, statt sich langsam zu bewegen, damit die Schrift nicht für Sekunden unscharf wird.
+
+Ob AirPlay auf deinem Fernseher ruckelfrei und scharf ankommt, lässt sich nicht von hier aus prüfen. Ein kurzer Test: Die Seite per AirPlay öffnen, einmal mit `res=auto` und einmal mit `res=1` laufen lassen und vergleichen.
 
 ## Flugzeuge am Boden
 
@@ -281,7 +293,7 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), diag-test.cjs (Diagnoseprotokoll), proxy-test.mjs, motion-sim.js, motion-test.cjs (Bewegung), motion-perf.cjs (Bildkosten, nicht in run-all)
+tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), diag-test.cjs (Diagnoseprotokoll), proxy-test.mjs, motion-sim.js, motion-test.cjs (Bewegung), motion-perf.cjs (Bildkosten, nicht in run-all), render-scale-test.cjs (Auflösung und Frame-Schutz)
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 data/airport-detail.js Vorfeld, Rollwege, Terminals, Gates der fünf Flughäfen (erzeugt von tools/build-airport-detail.py, OpenStreetMap)
 tools/build-geo.py     Generator für die Kartendaten
@@ -299,6 +311,7 @@ js/demo.js             Simulierter Verkehr für ?demo=1
 js/airlines.js         Tabelle MA.airlines und Abzeichen (Kacheln) für Tafel und Karte
 js/glyphs.js           Flugzeug-Silhouetten nach ICAO-Typ (Canvas-Pfade)
 js/pick.js             Auswahl des Flugzeugs auf der Tafel (reine Logik, getestet)
+js/render-scale.js     Zeichenauflösung der Karte (res=auto|1|2) und Frame-Zeit-Schutz, reine Funktionen
 js/radar.js            Canvas-Karte: Kompassrose, Pisten, Flugzeuge, Flugspuren, Datenblöcke
 js/airport.js          Flughafen-Ansicht (view=airport): Anpassung der Box, statische Vorfeldschicht, Korridore, Flugzeuge am Boden und in der Luft
 js/motion.js           Bewegung (motion=off|calm|full): Zeitkurven und Zeichenhilfen für Radar, Tafel und Showcase

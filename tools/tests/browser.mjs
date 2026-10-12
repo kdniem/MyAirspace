@@ -474,6 +474,32 @@ async function hintCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- canvas resolution: backing store vs CSS size (js/render-scale.js) ----------
+async function resCase(browser) {
+  const id = 'canvas_res';
+  const problems = [];
+  const measure = async (qs, dpr) => {
+    const { ctx, page, st } = await newPage(browser, { width: 1920, height: 1080 }, 'demo', false, { deviceScaleFactor: dpr });
+    try {
+      await page.goto(BASE + '/index.html?demo=1' + qs, { waitUntil: 'load' });
+      await page.waitForTimeout(600);
+      const r = await page.evaluate(() => { const c = document.getElementById('radar'); return { w: c.width, h: c.height, cw: c.clientWidth, ch: c.clientHeight }; });
+      collect(st, problems);
+      checked.pages++;
+      return r;
+    } finally { await ctx.close(); }
+  };
+  try {
+    const d2 = await measure('', 2);   // devicePixelRatio 2, auto
+    if (d2.w < 2 * d2.cw || d2.h < 2 * d2.ch) problems.push('devicePixelRatio 2: canvas ' + d2.w + 'x' + d2.h + ' for CSS ' + d2.cw + 'x' + d2.ch + ' (need at least 2x)');
+    const r1 = await measure('&res=1', 2);   // res=1 wins over the screen
+    if (r1.w !== r1.cw || r1.h !== r1.ch) problems.push('res=1 at devicePixelRatio 2: canvas ' + r1.w + 'x' + r1.h + ' for CSS ' + r1.cw + 'x' + r1.ch + ' (expected 1x)');
+    const d1 = await measure('', 1);   // auto on a 1x screen is 2x as well (AirPlay mirror)
+    if (d1.w < 2 * d1.cw) problems.push('auto at devicePixelRatio 1: canvas ' + d1.w + 'x' + d1.h + ' for CSS ' + d1.cw + 'x' + d1.ch + ' (expected 2x)');
+  } catch (e) { problems.push('test crashed: ' + e.message); }
+  problems.forEach((p) => record(id, p));
+}
+
 // ---------- hostile parameters ----------
 const HOSTILE = [
   'title=' + encodeURIComponent('<img src=x onerror="window.__pwn=1;alert(1)">'),
@@ -743,6 +769,7 @@ for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080
 jobs.push({ n: 'rotation_airport_1280', run: () => rotationCase(browser) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
 jobs.push({ n: 'motion_off', run: () => motionCase(browser, 'off') }, { n: 'motion_full', run: () => motionCase(browser, 'full') });
+jobs.push({ n: 'canvas_res', run: () => resCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });
 jobs.push({ n: 'settings_1280', run: () => settingsCase(browser) }, { n: 'settings_touch_390', run: () => settingsTouchCase(browser) });

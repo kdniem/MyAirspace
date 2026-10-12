@@ -1,7 +1,7 @@
 /* MyAirspace service worker: keeps the app shell available offline.
    Network-first for the shell only; flight APIs, proxies, search and fonts are never touched.
    Bump VERSION when the shell file list changes; every deploy is picked up anyway (network-first). */
-var VERSION = 'v17';
+var VERSION = 'v18';
 var CACHE = 'myairspace-shell-' + VERSION;
 var SHELL = [
   './', 'index.html', 'setup.html', 'datenschutz.html', 'manifest.webmanifest',
@@ -9,7 +9,7 @@ var SHELL = [
   'data/geo-features.js', 'data/airport-detail.js', 'data/chart-features.js',
   'fonts/fonts.css', 'fonts/ibm-plex-mono-400.woff2', 'fonts/ibm-plex-mono-500.woff2', 'fonts/ibm-plex-mono-600.woff2',
   'js/pwa.js', 'js/diag.js', 'js/styles.js', 'js/config.js', 'js/theme.js', 'js/hint.js', 'js/geo.js', 'js/format.js', 'js/airlines.js', 'js/special.js', 'js/pick.js', 'js/demo.js',
-  'js/data.js', 'js/weather.js', 'js/glyphs.js', 'js/motion.js', 'js/chart.js', 'js/radar.js', 'js/airport.js', 'js/board.js', 'js/log.js', 'js/rotation.js', 'js/views.js', 'js/main.js', 'js/fullscreen.js',
+  'js/data.js', 'js/weather.js', 'js/glyphs.js', 'js/motion.js', 'js/chart.js', 'js/render-scale.js', 'js/radar.js', 'js/airport.js', 'js/board.js', 'js/log.js', 'js/rotation.js', 'js/views.js', 'js/main.js', 'js/fullscreen.js',
   'js/qr.js', 'js/setup.js', 'js/onboarding.js', 'js/wxradar.js', 'js/prefs.js', 'js/settings.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/icon.svg', 'icons/apple-touch-icon.png', 'icons/favicon.svg'
 ];

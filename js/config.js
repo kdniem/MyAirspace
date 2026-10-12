@@ -116,8 +116,11 @@ window.MA = MA;
   var motion = /^(off|calm|full)$/.test(motionArg) ? motionArg : (reducedMotion ? 'off' : 'calm');
   var view = /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : (S.view || 'auto');
   var THEME = /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (S.theme || (STY[style].theme || 'dark'));
+  // res=auto|1|2: drawing resolution of the radar canvas (js/render-scale.js); any other value is auto
+  var res = (q.get('res') || '').toLowerCase();
 
   MA.config = {
+    res: res === '1' || res === '2' ? res : 'auto',
     lat: num('lat', 53.5511, -90, 90),          // default: Hamburg city centre
     lon: num('lon', 9.9937, -180, 180),
     radiusKm: num('r', 25, 3, 200),             // radius of the main ring

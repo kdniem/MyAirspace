@@ -91,6 +91,12 @@ ok(cfg('?radarsec=5').config.radarSec === 10 && cfg('?radarsec=-3').config.radar
 ok(cfg('?boardsec=2').config.boardSec === 5 && cfg('?boardsec=9999').config.boardSec === 600, 'boardsec clamped to 5..600');
 ok(cfg('?radarsec=x&boardsec=y').config.radarSec === 240 && cfg('?radarsec=x&boardsec=y').config.boardSec === 40, 'radarsec and boardsec junk are the defaults');
 
+// res= (drawing resolution of the radar canvas): auto | 1 | 2, any other value silently means auto
+ok(cfg('').config.res === 'auto', 'res defaults to auto');
+ok(cfg('?res=1').config.res === '1' && cfg('?res=2').config.res === '2' && cfg('?res=auto').config.res === 'auto', 'res=1, res=2, res=auto');
+ok(cfg('?res=RES').config.res === 'auto' && cfg('?res=2').config.res === '2', 'res is case-insensitive for the valid values');
+['3', '2x', '0', '1.5', '', 'high'].forEach((v) => ok(cfg('?res=' + v).config.res === 'auto', 'res=' + v + ' falls back to auto'));
+
 // style table: every style resolves for both themes with all tokens, and unknown names fall back
 const MA = cfg('');
 MA.style.names().forEach((n) => ['dark', 'light'].forEach((t) => {
@@ -111,7 +117,7 @@ MA.style.names().forEach((n) => {
 });
 
 // ES2017 only on the TV page: no optional chaining, nullish coalescing, class fields, modules
-const TV = ['pwa', 'styles', 'prefs', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'motion', 'chart', 'radar', 'airport', 'board', 'log', 'rotation', 'views', 'settings', 'main', 'fullscreen', 'qr'];
+const TV = ['pwa', 'styles', 'prefs', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'render-scale', 'motion', 'chart', 'radar', 'airport', 'board', 'log', 'rotation', 'views', 'settings', 'main', 'fullscreen', 'qr'];
 TV.forEach((n) => {
   const src = fs.readFileSync(ROOT + '/js/' + n + '.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''").replace(/\/\/.*$/gm, '');

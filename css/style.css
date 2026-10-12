@@ -56,10 +56,12 @@ html, body {
   user-select: none;
 }
 
+/* the burn-in shift (js/main.js ambient) moves in whole CSS px and jumps: an animated transform would
+   resample the text and the canvas at fractional offsets for several seconds (blur) */
 #stage {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  transition: transform 6s ease-in-out, opacity 4s ease;
+  transition: opacity 4s ease;
 }
 
 #radar {
