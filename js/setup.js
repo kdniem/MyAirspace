@@ -4,8 +4,27 @@
   'use strict';
 
   // Must match the defaults in js/config.js: only differing values go into the URL.
-  const DEF = { r: 25, label: 'Hamburg', units: 'ft', theme: 'dark', trail: 4, night: '23-6', labels: true, places: true };
-  const PASSTHROUGH = ['poll', 'rotate', 'dim', 'provider', 'proxy'];  // advanced, kept if present
+  const DEF = { r: 25, label: 'Hamburg', units: 'ft', trail: 4, night: '23-6', speed: 'kt', pressure: 'hpa', time: 'both', style: 'atc' };
+  const PASSTHROUGH = ['poll', 'rotate', 'dim', 'provider', 'proxy', 'orient'];  // advanced, kept if present
+  const MAc = window.MA || {};
+  const STY = MAc.STYLES || { atc: { name: 'ATC', info: '', font: 'mono', theme: 'dark' } };
+  const cfg0 = MAc.config || {};          // js/config.js parsed this page's own query: validated options
+  const defTheme = (s) => (STY[s] && STY[s].theme) || 'dark';
+  const defFont = (s) => (STY[s] && STY[s].font) || 'mono';
+  const ELEMENTS = [
+    ['weather', 'Wetter', 'Kompakter METAR, QNH und Betriebsrichtung'],
+    ['labels', 'Datenblöcke', 'Rufzeichen, Höhe und Speed an jedem Flugzeug'],
+    ['trails', 'Flugspuren', 'Verlauf hinter den Flugzeugen'],
+    ['rings', 'Entfernungsringe', 'Ringe mit km-Beschriftung'],
+    ['compass', 'Kompassrose', 'Gradskala und Nordpfeil am Außenring'],
+    ['places', 'Ortsnamen', 'Städte und Orte auf der Karte'],
+    ['ground', 'Flugzeuge am Boden', 'Kleine Quadrate an den Flughäfen'],
+    ['board', 'Tafel unten', 'Das nächste Flugzeug als Anzeigetafel'],
+    ['clock', 'Uhr', 'Lokalzeit und UTC']
+  ];
+  const FIELDS = [['callsign', 'Rufzeichen'], ['fl', 'Höhe'], ['gs', 'Speed'], ['type', 'Muster'], ['route', 'Route'], ['reg', 'Kennz.']];
+  const DEF_FIELDS = ['callsign', 'fl', 'gs', 'type'];
+  const ACCENT_NAMES = [['', 'Stil'], ['amber', 'Bernstein'], ['green', 'Grün'], ['cyan', 'Cyan'], ['white', 'Weiß'], ['red', 'Rot']];
   const NOMINATIM = 'https://nominatim.openstreetmap.org/';
   const PREVIEW_W = 1280;
 
@@ -16,7 +35,8 @@
     airports: $('airports'), lat: $('lat'), lon: $('lon'), round: $('round'),
     label: $('label'), radius: $('radius'), radiusOut: $('radius-out'),
     trail: $('trail'), trailOut: $('trail-out'),
-    labels: $('labels'), places: $('places'),
+    title: $('title'), brightness: $('brightness'), brightnessOut: $('brightness-out'),
+    styles: $('styles'), accents: $('accents'), accentOut: $('accent-out'), fields: $('fields'), elements: $('elements'),
     night: $('night'), nightHours: $('night-hours'), nightFrom: $('night-from'), nightTo: $('night-to'),
     preview: $('preview'), frame: $('frame'),
     url: $('url'), urlEmpty: $('url-empty'), copy: $('copy'), open: $('open'), qr: $('qr')
@@ -50,6 +70,87 @@
     el.airports.appendChild(b);
   });
 
+  /* ---------- data-driven controls: styles, accents, data block fields, element toggles ---------- */
+
+  const fieldsSel = (cfg0.fields || DEF_FIELDS).slice();
+
+  function radio(name, value, checked, cls) {
+    const l = document.createElement('label');
+    l.className = cls;
+    l.innerHTML = '<input type="radio" name="' + name + '" value="' + value + '"' + (checked ? ' checked' : '') + '>';
+    return l;
+  }
+
+  Object.keys(STY).forEach((key) => {
+    const l = radio('style', key, key === (cfg0.style || DEF.style), 'stylecard');
+    let sw = '';
+    if (MAc.style) {
+      const c = MAc.style.resolve(key, defTheme(key)).css;
+      sw = '<span class="sw" style="background:' + c['--bg'] + ';border-color:' + c['--line'] + '">' +
+        '<i style="background:' + c['--ink'] + '"></i><i style="background:' + c['--accent'] + '"></i>' +
+        '<i style="background:' + c['--target'] + '"></i><i style="background:' + c['--special'] + '"></i></span>';
+    }
+    l.insertAdjacentHTML('beforeend', sw + '<b></b><small></small>');
+    l.querySelector('b').textContent = STY[key].name;
+    l.querySelector('small').textContent = STY[key].info;
+    el.styles.appendChild(l);
+  });
+
+  ACCENT_NAMES.forEach((a) => {
+    const l = radio('accent', a[0], a[0] === (cfg0.accent && /^#/.test(cfg0.accent) ? '#' : (cfg0.accent || '')), 'swatch');
+    const col = a[0] ? MAc.ACCENTS[a[0]][0] : 'transparent';
+    l.insertAdjacentHTML('beforeend', '<span class="dotc' + (a[0] ? '' : ' auto') + '" style="background:' + col + '"></span><small></small>');
+    l.querySelector('small').textContent = a[1];
+    l.title = a[1];
+    el.accents.appendChild(l);
+  });
+  (function customSwatch() {
+    const l = radio('accent', '#', false, 'swatch swatch-custom');
+    l.insertAdjacentHTML('beforeend', '<span class="dotc" id="accent-dot"></span><input id="accent-hex" type="text" maxlength="7" placeholder="#RRGGBB" autocomplete="off" spellcheck="false" aria-label="Eigene Akzentfarbe als Hex-Wert">');
+    el.accents.appendChild(l);
+  })();
+
+  function renderFields() {
+    el.fields.textContent = '';
+    FIELDS.forEach((f) => {
+      const i = fieldsSel.indexOf(f[0]);
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip chip-field' + (i >= 0 ? ' on' : '');
+      b.setAttribute('aria-pressed', i >= 0 ? 'true' : 'false');
+      b.innerHTML = '<em></em><span></span>';
+      b.firstChild.textContent = i >= 0 ? String(i + 1) : '';
+      b.lastChild.textContent = f[1];
+      b.addEventListener('click', () => {
+        const k = fieldsSel.indexOf(f[0]);
+        if (k >= 0) { if (fieldsSel.length > 1) fieldsSel.splice(k, 1); } else fieldsSel.push(f[0]);
+        renderFields();
+        update();
+      });
+      el.fields.appendChild(b);
+    });
+  }
+  renderFields();
+
+  const toggles = {};
+  ELEMENTS.forEach((e) => {
+    const l = document.createElement('label');
+    l.className = 'switch';
+    l.innerHTML = '<input type="checkbox"><span class="track" aria-hidden="true"></span><span><b></b><small></small></span>';
+    const inp = l.querySelector('input');
+    inp.checked = !cfg0.show || cfg0.show[e[0]] !== false;
+    l.querySelector('b').textContent = e[1];
+    l.querySelector('small').textContent = e[2];
+    inp.addEventListener('change', update);
+    toggles[e[0]] = inp;
+    el.elements.appendChild(l);
+  });
+
+  function pick(name, val) {
+    const r = document.querySelector('input[name="' + name + '"][value="' + val + '"]');
+    if (r) r.checked = true;
+  }
+
   // Prefill from setup.html?lat=…&… so an existing TV URL can be edited.
   (function prefill() {
     const q = new URLSearchParams(location.search);
@@ -62,10 +163,17 @@
     el.trail.value = isNaN(t) ? DEF.trail : Math.min(30, Math.max(0, t));
     const units = q.get('units') === 'm' ? 'm' : 'ft';
     document.querySelector('input[name="units"][value="' + units + '"]').checked = true;
-    const theme = /^(light|auto)$/.test(q.get('theme')) ? q.get('theme') : 'dark';
-    document.querySelector('input[name="theme"][value="' + theme + '"]').checked = true;
-    el.labels.checked = !isOff(q.get('labels'));
-    el.places.checked = !isOff(q.get('places'));
+    pick('theme', cfg0.theme || 'dark');
+    pick('font', cfg0.font || defFont(cfg0.style || DEF.style));
+    pick('speed', cfg0.speedUnit || DEF.speed);
+    pick('pressure', cfg0.pressure || DEF.pressure);
+    pick('time', cfg0.timeMode || DEF.time);
+    el.title.value = cfg0.title || '';
+    el.brightness.value = Math.round((cfg0.brightness || 1) * 100);
+    if (cfg0.accent && /^#/.test(cfg0.accent)) {
+      pick('accent', '#');
+      $('accent-hex').value = cfg0.accent;
+    }
     const night = q.get('night') || DEF.night;
     const m = /^(\d{1,2})-(\d{1,2})$/.exec(night);
     el.night.checked = !!m;
@@ -233,9 +341,19 @@
     labelTouched = el.label.value.trim() !== '';
     update();
   });
-  [el.radius, el.trail, el.round, el.labels, el.places, el.night, el.nightFrom, el.nightTo]
+  [el.radius, el.trail, el.round, el.night, el.nightFrom, el.nightTo, el.brightness]
     .forEach((inp) => inp.addEventListener(inp.type === 'range' ? 'input' : 'change', update));
-  document.querySelectorAll('input[name="units"], input[name="theme"]').forEach((r) => r.addEventListener('change', update));
+  el.title.addEventListener('input', update);
+  document.querySelectorAll('input[name="units"], input[name="theme"], input[name="font"], input[name="speed"], input[name="pressure"], input[name="time"], input[name="accent"]')
+    .forEach((r) => r.addEventListener('change', update));
+  // a style brings its own default look: switch theme and font along (theme unless set to automatic)
+  document.querySelectorAll('input[name="style"]').forEach((r) => r.addEventListener('change', () => {
+    if (checked('theme') !== 'auto') pick('theme', defTheme(r.value));
+    pick('font', defFont(r.value));
+    update();
+  }));
+  $('accent-hex').addEventListener('input', () => { pick('accent', '#'); update(); });
+  $('accent-hex').addEventListener('focus', () => { pick('accent', '#'); update(); });
 
   /* ---------- URL ---------- */
 
@@ -251,6 +369,19 @@
     return String(+v.toFixed(el.round.checked ? 2 : 4));
   }
 
+  function checked(name) {
+    const r = document.querySelector('input[name="' + name + '"]:checked');
+    return r ? r.value : '';
+  }
+
+  // accent=<name> or a typed hex value without '#'; '' = the style's own accent
+  function accentValue() {
+    const v = checked('accent');
+    if (v !== '#') return v;
+    const h = $('accent-hex').value.trim().replace('#', '').toLowerCase();
+    return /^([0-9a-f]{3}|[0-9a-f]{6})$/.test(h) ? h : '';
+  }
+
   function buildParams(loc) {
     const p = new URLSearchParams();
     if (loc) {
@@ -263,14 +394,25 @@
     if (label && label.toLowerCase() !== DEF.label.toLowerCase()) p.set('label', label);
     const units = document.querySelector('input[name="units"]:checked').value;
     if (units !== DEF.units) p.set('units', units);
-    const theme = document.querySelector('input[name="theme"]:checked').value;
-    if (theme !== DEF.theme) p.set('theme', theme);
+    const style = checked('style');
+    if (style !== DEF.style) p.set('style', style);
+    const theme = checked('theme');
+    if (theme !== defTheme(style)) p.set('theme', theme);
+    const acc = accentValue();
+    if (acc) p.set('accent', acc);
+    const br = +el.brightness.value;
+    if (br !== 100) p.set('brightness', +(br / 100).toFixed(2));
+    const font = checked('font');
+    if (font !== defFont(style)) p.set('font', font);
+    ['speed', 'pressure', 'time'].forEach((k) => { const v = checked(k); if (v !== DEF[k]) p.set(k, v); });
+    const title = el.title.value.trim();
+    if (title) p.set('title', title);
+    ELEMENTS.forEach((e) => { if (!toggles[e[0]].checked) p.set(e[0], '0'); });
+    if (fieldsSel.join() !== DEF_FIELDS.join()) p.set('datablock', fieldsSel.join(','));
     const trail = +el.trail.value;
     if (trail !== DEF.trail) p.set('trail', trail);
     const night = el.night.checked ? el.nightFrom.value + '-' + el.nightTo.value : 'off';
     if (night !== DEF.night) p.set('night', night);
-    if (!el.labels.checked) p.set('labels', '0');
-    if (!el.places.checked) p.set('places', '0');
     Object.keys(extra).forEach((k) => p.set(k, extra[k]));
     return p;
   }
@@ -287,6 +429,10 @@
     el.radiusOut.textContent = el.radius.value + ' km';
     el.trailOut.textContent = +el.trail.value === 0 ? 'aus' : el.trail.value + ' min';
     el.nightHours.classList.toggle('off', !el.night.checked);
+    el.brightnessOut.textContent = el.brightness.value + ' %';
+    const av = checked('accent'), ac = ACCENT_NAMES.filter((a) => a[0] === av)[0];
+    el.accentOut.textContent = ac ? ac[1] : (accentValue() ? '#' + accentValue() : 'Eigene');
+    $('accent-dot').style.background = accentValue() ? '#' + accentValue() : 'transparent';
 
     const loc = readLocation();
     const params = buildParams(loc);
@@ -364,7 +510,7 @@
 
   function schedulePreview(params) {
     const p = new URLSearchParams(params);
-    p.set('demo', '0');
+    p.set('demo', new URLSearchParams(location.search).get('demo') === '1' ? '1' : '0');
     const url = 'index.html?' + p.toString();
     clearTimeout(pvTimer);
     if (url === pvUrl) return;

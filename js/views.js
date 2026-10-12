@@ -19,7 +19,7 @@
   }
 
   var el = { heading: $('lv-heading'), date: $('lv-date'), rows: $('lv-rows'), stats: $('lv-stats') };
-  if (cfg.units === 'm') $('lv-h-alt').textContent = 'HÖHE M';
+  $('lv-h-alt').textContent = cfg.units === 'm' ? 'ALT M' : 'ALT FT';
   var rows = [];
   for (var i = 0; i < ROWS; i++) {
     var row = document.createElement('div');

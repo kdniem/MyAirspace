@@ -22,7 +22,12 @@
   var status = { ok: false, lastOk: 0, failures: 0 };
 
   document.getElementById('place').textContent = cfg.label;
-  MA.weather.start(cfg);         // METAR + runway in use, see js/weather.js
+  document.getElementById('title').textContent = cfg.title;
+  // element toggles (config show=…): classes hide the parts in CSS
+  ['board', 'clock', 'weather'].forEach(function (k) {
+    if (cfg.show[k] === false) document.body.className += ' no-' + k;
+  });
+  if (cfg.show.weather !== false) MA.weather.start(cfg);   // METAR + runway in use, see js/weather.js
 
   /* ---------- data ---------- */
 
@@ -230,7 +235,13 @@
 
   function updateSummary(now) {
     var d = new Date(now);
-    document.getElementById('clock').textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    var local = pad(d.getHours()) + ':' + pad(d.getMinutes());
+    var utc = pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
+    var big = cfg.timeMode === 'utc' ? utc : local;
+    var clk = document.getElementById('clock'), tz = document.getElementById('clock-tz'), u = document.getElementById('utc');
+    if (clk.textContent !== big) clk.textContent = big;
+    tz.textContent = cfg.timeMode === 'utc' ? 'UTC' : 'LT';
+    u.textContent = cfg.timeMode === 'both' ? 'UTC ' + utc + 'Z' : '';
     var dot = document.getElementById('status-dot');
     var txt = document.getElementById('summary-text');
     var n = featured.inRange || 0;
@@ -241,7 +252,7 @@
     }
     var age = (now - status.lastOk) / 1000;
     dot.className = 'dot ' + (age < 30 ? 'ok' : (age < 120 ? 'warn' : 'err'));
-    var g = groundList().filter(function (a) {
+    var g = cfg.show.ground === false ? 0 : groundList().filter(function (a) {
       return MA.geo.distKm(cfg.lat, cfg.lon, a.lat, a.lon) <= cfg.radiusKm * 1.15;
     }).length;
     txt.textContent = (n === 1 ? '1 Flugzeug' : n + ' Flugzeuge') + ' · ' + cfg.radiusKm + ' km' +

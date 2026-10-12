@@ -1,6 +1,6 @@
 # MyAirspace
 
-Ein ruhiges, dunkles Live-Flugradar für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge mit ihren Spuren, die Pisten von Hamburg (HAM) und Finkenwerder (XFW) samt verlängerten Anfluglinien und unten eine LED-Tafel mit dem Flugzeug, das dir gerade am nächsten ist.
+Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als ATC-Symbole mit Verlaufspunkten und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (ATC, Terminal, Karte, Airbus, Boeing, Nacht, Militär) und viele Optionen machen die Anzeige persönlich.
 
 Die App ist nur zum Anschauen gedacht: URL öffnen, fertig. Es gibt keine Bedienung, keinen API-Key und keinen Build-Schritt.
 
@@ -27,13 +27,23 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `label`    | `Hamburg`       | Ortsname oben links |
 | `units`    | `ft`            | Höhenangaben in `ft` oder `m` |
 | `poll`     | `5`             | Abfrageintervall in Sekunden |
-| `rotate`   | `9`             | Sekunden pro Flugzeug auf der LED-Tafel (sie wechselt durch die vier nächsten) |
+| `rotate`   | `9`             | Sekunden pro Flugzeug auf der Tafel (sie wechselt durch die vier nächsten) |
 | `trail`    | `4`             | Länge der Flugspuren in Minuten |
 | `night`    | `23-6`          | Zeitraum, in dem gedimmt wird (`off` schaltet das Dimmen aus) |
 | `dim`      | `0.45`          | Helligkeit während der Nachtzeit |
-| `labels`   | `1`             | Beschriftungen an den Flugzeugen (`0` = aus) |
-| `places`   | `1`             | Ortsnamen auf der Karte (`0` = aus) |
-| `theme`    | `dark`          | Darstellung: `dark` (dunkel), `light` (hell, Papier-Optik) oder `auto` (hell von Sonnenauf- bis -untergang am Standort, sonst dunkel) |
+| `title`    | –               | Zweite Zeile unter dem Ortsnamen, z. B. `Zuhause` |
+| `style`    | `atc`           | Stil: `atc`, `terminal`, `chart`, `airbus`, `boeing`, `night`, `military` (ungültig = `atc`), siehe [Stile](#stile-und-optionen) |
+| `theme`    | je Stil         | `dark`, `light` oder `auto` (hell von Sonnenauf- bis -untergang am Standort, sonst dunkel). Standard ist der Stil-Standard: `dark`, bei `chart` `light` |
+| `accent`   | je Stil         | Akzentfarbe: `amber`, `green`, `cyan`, `white`, `red` oder Hex wie `ff8800` (wird bei Bedarf aufgehellt/abgedunkelt, damit es lesbar bleibt) |
+| `font`     | je Stil         | `mono` (IBM Plex Mono) oder `sans` (Helvetica/Arial), beide mit tabellarischen Ziffern |
+| `brightness` | `1`           | Helligkeit von Karte, Ringen und Wasser, 0,5 bis 1,2 |
+| `datablock` | `callsign,fl,gs,type` | Felder des Datenblocks in dieser Reihenfolge: `callsign`, `fl` (Höhe), `gs` (Speed), `type`, `route`, `reg`. `datablock=0` blendet ihn aus |
+| `show`, `hide` | alles an     | Elemente: `weather`, `labels` (auch `datablock`), `trails`, `rings`, `places`, `board`, `clock`, `ground`, `compass`. `show=rings,clock` zeigt nur diese, `hide=board,compass` blendet sie aus |
+| `labels`, `places`, `weather`, `rings`, `compass`, `ground`, `board`, `clock`, `trails` | `1` | Einzelschalter je Element (`0` = aus; `trails=0` entspricht `trail=0`) |
+| `speed`    | `kt`            | Geschwindigkeit in `kt` oder `kmh` |
+| `pressure` | `hpa`           | QNH in `hpa` oder `inhg` |
+| `time`     | `both`          | `local` (Lokalzeit), `utc` oder `both` (Lokalzeit groß, darunter UTC mit Z) |
+| `orient`   | `north`         | Nur `north` (Norden oben). Ein „Track up“-Modus ist nicht gebaut |
 | `proxy`    | –               | Eigener CORS-Proxy, siehe [Proxy](#proxy-cors) |
 | `provider` | `auto`          | Datenquelle festlegen: `adsblol`, `airplaneslive`, `opensky` |
 | `demo`     | `0`             | `1` zeigt simulierten Hamburger Verkehr (zum Ausprobieren ohne Netz) |
@@ -41,11 +51,29 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `radarsec` | `240`           | Sekunden Radar, bevor die Anzeigetafel kommt (bei `view=auto`) |
 | `boardsec` | `40`            | Sekunden Anzeigetafel, danach wieder Radar (bei `view=auto`) |
 
-## Darstellung und Lesbarkeit
+## Stile und Optionen
 
-Mit `theme=light` bekommt die App einen hellen Hintergrund (Off-White, fast schwarze Schrift, Wasser in Blaugrau, dunkle Flugzeuge mit tiefem Türkis für Sinkflug und Orange für Steigflug). `theme=auto` rechnet Sonnenaufgang und -untergang für `lat`/`lon` selbst aus (NOAA-Formel, keine Abfrage) und blendet alle paar Minuten sanft zwischen hell und dunkel um. Standard bleibt `dark`. Die Einrichtungsseite hat dafür die Auswahl „Darstellung“.
+Alle Looks sind Daten: die Tabelle `STYLES` in `js/styles.js` hält je Stil Rollenfarben für Dunkel und Hell, Symbolform, Spurart, Schrift und ein paar CSS-Variablen. `js/theme.js` setzt daraus die CSS-Variablen auf `<html>`, `js/radar.js` zeichnet mit denselben Rollen. Ein neuer Stil ist ein neuer Eintrag in der Tabelle (die Einrichtungsseite baut ihre Auswahl daraus). Farben folgen Cockpit-Regeln: **Weiß** normale Daten, **Grün** aktiv (Piste in Betrieb, Akzent), **Cyan** das gewählte Flugzeug (Ziel), **Bernstein** Vorsicht, **Rot** Warnung (Notfall-Squawk), **Magenta** besondere Flugzeuge. Dazu keine Dekorfarben.
 
-Für die Lesbarkeit aus drei Metern Abstand sind Schriften größer (nichts Wichtiges unter etwa 1,6 vh), der Buchstabenabstand ist kleiner und alle Texte haben mindestens 4,5:1 Kontrast (LED-Werte 3:1). Die Karte ist deutlicher: Flüsse, Küsten und Elbe in sichtbarem Blaugrau, helleres Land um den Standort, größere Ortsnamen mit Umrandung, kräftige Pisten und Ringe. `node tools/contrast.mjs` prüft die Kontraste beider Themes.
+| Stil | Look | Standard |
+|------|------|----------|
+| `atc` | Tower-Radarschirm: dunkles Phosphorgrün, Chevron-Symbole, Verlaufspunkte | dunkel |
+| `terminal` | Anzeigetafel (FIDS): Dunkelblau mit Gelb, Sans, eckige Tafel | dunkel |
+| `chart` | Luftfahrtkarte: Papier und Tinte, Dreiecke, Flughäfen in Magenta | hell |
+| `airbus` | ND + ECAM: Schwarz, Grün für Werte, Cyan für Einheiten, Rauten, dünne Linien | dunkel |
+| `boeing` | ND + EICAS: bläuliche Grautöne, kräftigere Schrift, Pfeilsymbole | dunkel |
+| `night` | Sehr dunkel, nur Rot und Dunkelgrün, blendfrei fürs abgedunkelte Wohnzimmer | nur dunkel |
+| `military` | Taktische Anzeige in gedämpftem Oliv | nur dunkel |
+
+**Radar:** Flugzeuge sind Positionssymbole mit Verlaufspunkten (alle 15 s; bei Airbus/Boeing/Terminal eine dünne Spur) und einem Datenblock an einer Hilfslinie: Rufzeichen, Höhe als Flugfläche (`FL120` ab 5000 ft) oder in Hundertfuß (`038`), Pfeil für Steigen/Sinken, Ground Speed in kt, Muster. Die Blöcke weichen einander aus. Besondere Flugzeuge (siehe unten) bekommen eine dezente Eckenklammer in Magenta (Notfall rot, blinkend), keinen Schein. Das gewählte Flugzeug ist cyan mit Rahmen, Peil- und Entfernungslinie und einer Marke auf der Kompassrose. Die Karte zeigt Pisten mit Bezeichnern (05/23), Schwellenstrichen und Anfluglinien (die Piste in Betrieb in Grün), den Flughafen als Kreis mit Pistenkreuz und ICAO-Code, Entfernungsringe und außen eine Kompassrose (Strich alle 5°, Beschriftung alle 30°, N/E/S/W, Nordpfeil).
+
+**Kopfzeile:** Ortsname (optional mit zweiter Zeile `title`), Lokalzeit (LT), UTC mit Z, Zahl der Flugzeuge, kompakter METAR (`EDDH 120820Z 23012G22KT 9999 … Q1013`), QNH und die Piste in Betrieb (`RWY 23`).
+
+**Tafel:** Die untere Tafel zeigt FLUG, ROUTE, TYP, ALT (ab 5000 ft als Flugfläche mit `STD`), GS, DIST. Die Anzeigetafel (Überflüge) nutzt Zebrazeilen, Kopfband und die Flip-Animation. `node tools/contrast.mjs` prüft alle Stile in Dunkel und Hell mit allen Akzentfarben (WCAG, Text mindestens 4,5:1), eigene Hex-Akzente werden automatisch bis dahin angepasst. `node tools/tests/options.cjs .` testet die URL-Optionen.
+
+Die Einrichtungsseite hat dafür die Abschnitte Theme, Anzeige, Einheiten und Elemente mit Live-Vorschau (`setup.html?demo=1` zeigt in der Vorschau den Demo-Verkehr). Die Einstellungen stehen in der Adresse und werden von `js/pwa.js` wie alle Parameter für die Home-Bildschirm-App gemerkt.
+
+Für die Lesbarkeit aus drei Metern Abstand sind Schriften größer (nichts Wichtiges unter etwa 1,6 vh) und alle Texte haben mindestens 4,5:1 Kontrast.
 
 ## Anzeigetafel
 
@@ -59,7 +87,7 @@ Alle paar Minuten blendet die App für eine Weile eine zweite Ansicht im Stil ei
 
 ## Flugzeuge am Boden
 
-Flugzeuge am Boden werden an den Flughäfen der Karte (bis 4 km um den Flughafen) als kleine gedimmte Quadrate mit Kursstrich angezeigt, die Kopfzeile nennt die Zahl („3 am Boden“). Sie erscheinen nie auf der LED-Tafel.
+Flugzeuge am Boden werden an den Flughäfen der Karte (bis 4 km um den Flughafen) als kleine Quadrate mit Kursstrich angezeigt (`ground=0` blendet sie aus), die Kopfzeile nennt die Zahl („3 am Boden“). Sie erscheinen nie auf der Tafel.
 
 ## Vollbild am Computer
 
@@ -85,7 +113,7 @@ Keine der drei Quellen erlaubt Abfragen direkt aus dem Browser (CORS). Die App l
 - **Routen** (`MUC → HAM`) kommen direkt von adsb.lol, dieser Endpunkt erlaubt Browser-Abfragen.
 - Ein Cloudflare Worker eignet sich **nicht** als Proxy: adsb.lol drosselt Anfragen aus Cloudflare Workers (429), airplanes.live verlangt eine Registrierung (403), OpenSky ist nicht erreichbar (522). Stand Oktober 2026.
 
-Farben: **Cyan** heißt sinkend (Anflug), **Bernstein** steigend (Abflug), **Weiß** Reiseflug. Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der LED-Tafel ein eigenes Abzeichen.
+Steigen und Sinken zeigt der Pfeil im Datenblock (↑ ↓). Überflüge oberhalb von FL200 sind abgedunkelt. Airbus-Sonderflüge (Beluga, Testflüge `AIB…`) bekommen auf der Tafel ein eigenes Abzeichen.
 
 ### Karten
 
@@ -116,23 +144,25 @@ python3 -m http.server 8000
 ## Aufbau
 
 ```
-index.html             Layout (Karte, Kopfzeile, LED-Tafel)
+index.html             Layout (Karte, Kopfzeile, Tafel)
 setup.html             Einrichtungsseite (css/setup.css, js/setup.js, js/qr.js)
 manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
-css/style.css          Farben als CSS-Variablen (dunkel und hell), Dot-Matrix-Optik, TV-Sicherheitsrand
-tools/contrast.mjs     Kontrastprüfung (WCAG) für beide Themes
+css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
+tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
+tools/tests/           options.cjs (URL-Optionen, ES2017-Prüfung), motion-sim.js
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 tools/build-geo.py     Generator für die Kartendaten
 api/proxy.js           CORS-Proxy als Vercel Function
 js/pwa.js              Home-Bildschirm-App: letzte Einstellungen wiederherstellen
+js/styles.js           STYLES-Tabelle: Rollenfarben je Stil und Theme, Symbole, Schrift (Daten, keine Logik pro Stil)
 js/config.js           URL-Parameter
-js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme vor dem ersten Bild
+js/theme.js            Dunkel/Hell/Automatisch (Sonnenstand), setzt data-theme und die Stil-Variablen vor dem ersten Bild
 js/hint.js             Hinweis auf setup.html, wenn kein Standort in der URL steht
 js/data.js             Datenquellen, Fallback, Routen-Cache
 js/demo.js             Simulierter Verkehr für ?demo=1
-js/radar.js            Canvas-Karte
-js/board.js            LED-Tafel mit Split-Flap-Effekt
+js/radar.js            Canvas-Karte: Kompassrose, Pisten, ATC-Symbole, Datenblöcke
+js/board.js            Tafel mit Split-Flap-Effekt
 js/main.js             Abfrage-Schleife, Glättung, Rotation, Dimmen, Wake Lock
 ```
 
