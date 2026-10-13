@@ -206,7 +206,7 @@ async function setupCase(browser, vp) {
     await page.waitForTimeout(500);
     await page.fill('#lat', '53.55');
     await page.fill('#lon', '9.99');
-    await page.check('input[name=style][value=boeing]', { force: true });
+    await page.check('input[name=style][value=eicam-boeing]', { force: true });
     await page.check('input[name=accent][value=amber]', { force: true });
     await page.waitForTimeout(3000);
     const info = await page.evaluate(() => {
@@ -218,7 +218,7 @@ async function setupCase(browser, vp) {
     if (info.sw > info.iw) problems.push('horizontal scroll: scrollWidth ' + info.sw + ' > ' + info.iw);
     if (!/index\.html\?/.test(info.src)) problems.push('preview iframe has no src: ' + info.src);
     else if (!info.loaded) problems.push('preview iframe did not load the radar');
-    if (!/style=boeing/.test(info.url)) problems.push('generated URL lacks style=boeing: ' + info.url);
+    if (!/style=eicam-boeing/.test(info.url)) problems.push('generated URL lacks style=eicam-boeing: ' + info.url);
     if (!/accent=amber/.test(info.url)) problems.push('generated URL lacks accent=amber: ' + info.url);
     // focus view choice: the address gets view=airport and the airport, the airport row shows up
     await page.selectOption('#view-sel', 'airport');
@@ -298,7 +298,7 @@ async function journeyCase(browser, vp) {
     await page.waitForTimeout(800);
     const minis = await page.evaluate(() => Array.from(document.querySelectorAll('.stylecard canvas')).map((c) => { const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data; const seen = {}; for (let i = 0; i < d.length; i += 400) seen[d[i] + ',' + d[i + 1]] = 1; return Object.keys(seen).length; }));
     if (minis.length !== STYLE_NAMES.length || minis.some((n) => n < 6)) problems.push('style mini previews missing or blank: ' + minis.join(','));
-    await page.click('.stylecard[data-style=boeing]');
+    await page.click('.stylecard[data-style=eicam-boeing]');
     await page.click('input[name=accent][value=cyan]', { force: true });
     await noHScroll('look'); await snap('2_look');
     await page.click('#wz-next');
@@ -310,7 +310,7 @@ async function journeyCase(browser, vp) {
     await page.click('#wz-back');
     await page.waitForFunction(() => document.body.dataset.step === 'look', null, { timeout: 3000 }).catch(() => {});
     await stepIs('look', 'back');
-    if (!(await page.isChecked('input[name=style][value=boeing]'))) problems.push('Back lost the style choice');
+    if (!(await page.isChecked('input[name=style][value=eicam-boeing]'))) problems.push('Back lost the style choice');
     await page.click('#wz-back');
     await page.waitForFunction(() => document.body.dataset.step === 'standort', null, { timeout: 3000 }).catch(() => {});
     await stepIs('standort', 'back 2');
@@ -327,7 +327,7 @@ async function journeyCase(browser, vp) {
     await stepIs('fernseher', 'to fernseher');
     const url = await page.textContent('#url');
     if (!/lat=53\.5/.test(url) || !/lon=9\.9/.test(url)) problems.push('URL lacks the location: ' + url);
-    if (!/style=boeing/.test(url)) problems.push('URL lacks the style: ' + url);
+    if (!/style=eicam-boeing/.test(url)) problems.push('URL lacks the style: ' + url);
     if (!/trails=0/.test(url)) problems.push('URL lacks trails=0: ' + url);
     if (!/r=30/.test(url)) problems.push('URL lacks r=30: ' + url);
     if (!(await page.locator('#qr svg').count())) problems.push('QR code missing');
@@ -347,7 +347,7 @@ async function journeyCase(browser, vp) {
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(500);
     await stepIs('fertig', 'resume');
-    if (!/style=boeing/.test(await page.getAttribute('#wz-test', 'href'))) problems.push('resume lost the choices');
+    if (!/style=eicam-boeing/.test(await page.getAttribute('#wz-test', 'href'))) problems.push('resume lost the choices');
     if (/lat=/.test(await page.evaluate(() => location.search))) problems.push('resumed session left lat/lon in the address bar');
     // all settings, hostile label
     await page.click('#wz-all');
@@ -379,7 +379,7 @@ async function airportCase(browser, code, vp) {
   const { ctx, page, st } = await newPage(browser, { width: vp.width, height: vp.height }, 'demo');
   const problems = [];
   try {
-    await page.goto(BASE + '/index.html?demo=1&view=airport&airport=' + code + '&style=atc', { waitUntil: 'load' });
+    await page.goto(BASE + '/index.html?demo=1&view=airport&airport=' + code + '&style=tower', { waitUntil: 'load' });
     await page.waitForTimeout(3500);
     const r = await page.evaluate(PROBE);
     collect(st, problems);
@@ -474,6 +474,32 @@ async function hintCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- canvas resolution: backing store vs CSS size (js/render-scale.js) ----------
+async function resCase(browser) {
+  const id = 'canvas_res';
+  const problems = [];
+  const measure = async (qs, dpr) => {
+    const { ctx, page, st } = await newPage(browser, { width: 1920, height: 1080 }, 'demo', false, { deviceScaleFactor: dpr });
+    try {
+      await page.goto(BASE + '/index.html?demo=1' + qs, { waitUntil: 'load' });
+      await page.waitForTimeout(600);
+      const r = await page.evaluate(() => { const c = document.getElementById('radar'); return { w: c.width, h: c.height, cw: c.clientWidth, ch: c.clientHeight }; });
+      collect(st, problems);
+      checked.pages++;
+      return r;
+    } finally { await ctx.close(); }
+  };
+  try {
+    const d2 = await measure('', 2);   // devicePixelRatio 2, auto
+    if (d2.w < 2 * d2.cw || d2.h < 2 * d2.ch) problems.push('devicePixelRatio 2: canvas ' + d2.w + 'x' + d2.h + ' for CSS ' + d2.cw + 'x' + d2.ch + ' (need at least 2x)');
+    const r1 = await measure('&res=1', 2);   // res=1 wins over the screen
+    if (r1.w !== r1.cw || r1.h !== r1.ch) problems.push('res=1 at devicePixelRatio 2: canvas ' + r1.w + 'x' + r1.h + ' for CSS ' + r1.cw + 'x' + r1.ch + ' (expected 1x)');
+    const d1 = await measure('', 1);   // auto on a 1x screen is 2x as well (AirPlay mirror)
+    if (d1.w < 2 * d1.cw) problems.push('auto at devicePixelRatio 1: canvas ' + d1.w + 'x' + d1.h + ' for CSS ' + d1.cw + 'x' + d1.ch + ' (expected 2x)');
+  } catch (e) { problems.push('test crashed: ' + e.message); }
+  problems.forEach((p) => record(id, p));
+}
+
 // ---------- hostile parameters ----------
 const HOSTILE = [
   'title=' + encodeURIComponent('<img src=x onerror="window.__pwn=1;alert(1)">'),
@@ -528,13 +554,36 @@ async function liveCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- motion option: off and full at 1280x720 (js/motion.js) ----------
+async function motionCase(browser, level) {
+  const id = 'motion_' + level + '_1280x720';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'demo');
+  const problems = [];
+  try {
+    await page.goto(BASE + '/index.html?demo=1&motion=' + level, { waitUntil: 'load' });
+    await page.waitForTimeout(3500);
+    const r = await page.evaluate(PROBE);
+    const lvl = await page.evaluate(() => [document.documentElement.getAttribute('data-motion'), MA.motion.level, MA.motion.enabled()]);
+    collect(st, problems);
+    if (lvl[0] !== level || lvl[1] !== level) problems.push('motion level is ' + lvl.join('/') + ', expected ' + level);
+    if ((lvl[2] === true) !== (level !== 'off')) problems.push('motion enabled flag wrong for ' + level);
+    if (!r.canvas) problems.push('canvas missing or hidden');
+    else if (r.canvas.std < 1.5 || r.canvas.colors < 6) problems.push('canvas looks blank (std ' + r.canvas.std + ', colors ' + r.canvas.colors + ')');
+    r.overlap.forEach((m) => problems.push('header overlap: ' + m));
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) {
+    record(id, 'test crashed: ' + e.message); await shot(page, id);
+  } finally { await ctx.close(); }
+}
+
 // ---------- chart background (chartbg=1, demo traffic, no third-party requests) ----------
 async function chartCase(browser, vp) {
   const id = 'chart_' + vp.w + 'x' + vp.h;
   const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
   const problems = [];
   try {
-    await page.goto(BASE + '/index.html?demo=1&chartbg=1&style=chart', { waitUntil: 'load' });
+    await page.goto(BASE + '/index.html?demo=1&chartbg=1&style=chart-paper', { waitUntil: 'load' });
     await page.waitForTimeout(3500);
     const r = await page.evaluate(PROBE);
     collect(st, problems);
@@ -656,11 +705,11 @@ async function settingsCase(browser) {
     const inside = await page.evaluate(() => document.getElementById('set-layer').contains(document.activeElement));
     if (!inside) problems.push('focus left the overlay while it was open (Tab)');
     // change Stil: applies live and is saved
-    await page.selectOption('#set-style', 'boeing');
+    await page.selectOption('#set-style', 'eicam-boeing');
     await page.waitForTimeout(300);
-    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'boeing') problems.push('Stil did not apply live');
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'eicam-boeing') problems.push('Stil did not apply live');
     const saved = await page.evaluate(() => { try { return JSON.parse(localStorage.getItem('ma.settings')); } catch (e) { return null; } });
-    if (!saved || saved.style !== 'boeing') problems.push('Stil was not saved in localStorage ma.settings');
+    if (!saved || saved.style !== 'eicam-boeing') problems.push('Stil was not saved in localStorage ma.settings');
     if (saved && ('lat' in saved || 'lon' in saved)) problems.push('localStorage ma.settings holds a location');
     // Ansicht = Flughafen waits for a reload and says so
     await page.selectOption('#set-view', 'airport');
@@ -686,10 +735,10 @@ async function settingsCase(browser) {
     // persistence: after reload the saved Stil applies, and an address parameter still wins
     await page.goto(BASE + '/index.html?demo=1', { waitUntil: 'load' });
     await page.waitForTimeout(800);
-    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'boeing') problems.push('saved Stil did not survive a reload');
-    await page.goto(BASE + '/index.html?demo=1&style=atc', { waitUntil: 'load' });
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'eicam-boeing') problems.push('saved Stil did not survive a reload');
+    await page.goto(BASE + '/index.html?demo=1&style=tower', { waitUntil: 'load' });
     await page.waitForTimeout(800);
-    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'atc') problems.push('address parameter style=atc did not win over the saved style');
+    if ((await page.evaluate(() => document.documentElement.getAttribute('data-style'))) !== 'tower') problems.push('address parameter style=tower did not win over the saved style');
     // show= hides the board: no gear
     await page.goto(BASE + '/index.html?demo=1&hide=board', { waitUntil: 'load' });
     await page.waitForTimeout(600);
@@ -741,6 +790,85 @@ async function settingsTouchCase(browser) {
   } finally { await ctx.close(); }
 }
 
+// ---------- Anzeigetafel: the stats line keeps clear of the title, the clock and the fullscreen button ----------
+// the log is seeded for today so that the stats show all five cells (an empty log shows one)
+const SEED_LOG = () => {
+  const d = new Date(), pad = (n) => String(n).padStart(2, '0');
+  const k = 'myairspace.log.' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const now = Date.now(), types = ['A320', 'B738', 'A359', 'E190', 'B789', 'A388', 'DH8D', 'A21N', 'B763', 'C172'];
+  const airlines = ['Lufthansa', 'Eurowings', 'KLM', 'Ryanair', 'British Airways', 'Emirates', 'SAS', 'Condor'];
+  const list = [];
+  for (let i = 0; i < 14; i++) list.push({ hex: 'abc' + i, cs: 'DLH' + (100 + i), al: airlines[i % airlines.length], t: types[i % types.length], reg: '', from: 'HAM', to: 'FRA',
+    first: now - (i + 1) * 900000, last: now - (i + 1) * 900000 + 60000, dmin: 3 + i * 1.7, tmin: now - (i + 1) * 900000, altC: 2000 + i * 900, amin: 2000, amax: 9000, ph: i % 2 ? 'up' : 'down' });
+  try { localStorage.setItem(k, JSON.stringify({ v: 1, entries: list })); } catch (e) { /* storage off */ }
+};
+const BOARD_GEO = () => {
+  const box = (e) => { if (!e) return null; const b = e.getBoundingClientRect(); return b.width > 0 && b.height > 0 ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null; };
+  const text = (e) => { if (!e || !(e.textContent || '').trim()) return null; const r = document.createRange(); r.selectNodeContents(e); const b = r.getBoundingClientRect(); return b.width > 0 && b.height > 0 ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null; };
+  const cells = Array.from(document.querySelectorAll('#lv-stats .st')).map((e) => ({ n: 'stat "' + e.textContent.trim().slice(0, 18) + '"', box: box(e), txt: Array.from(e.querySelectorAll('.st-l, .st-v, .st-x')).map(text).filter(Boolean) }));
+  return { cells, title: text(document.querySelector('.lv-heading')), date: text(document.querySelector('.lv-date')), clock: box(document.getElementById('clock')), fs: box(document.getElementById('fs-btn')), view: document.body.classList.contains('view-board') };
+};
+async function boardStatsCase(browser, vp) {
+  const id = 'board_stats_no_overlap';
+  const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
+  const problems = [];
+  const at = vp.w + 'x' + vp.h;
+  try {
+    await ctx.addInitScript(SEED_LOG);
+    await page.goto(BASE + '/index.html?demo=1&view=board', { waitUntil: 'load' });
+    await page.waitForTimeout(9000);   // the board refreshes every 5 s; the first refresh loads the seeded log
+    const g = await page.evaluate(BOARD_GEO);
+    if (!g.view) problems.push('view=board did not show the Anzeigetafel at ' + at);
+    if (!g.fs) problems.push('no fullscreen button to check against at ' + at);
+    if (g.cells.length < 5) problems.push('stats line has ' + g.cells.length + ' cells, expected 5 (seeded log not shown) at ' + at);
+    const hit = (a, b) => !!a && !!b && Math.min(a.r, b.r) - Math.max(a.l, b.l) > 1 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 1;
+    const fmt = (b) => b ? [b.l, b.t, b.r, b.b].map((v) => Math.round(v)).join(',') : 'none';
+    g.cells.forEach((c) => {
+      if (hit(c.box, g.fs)) problems.push(c.n + ' runs under the fullscreen button at ' + at + ' (cell ' + fmt(c.box) + '; button ' + fmt(g.fs) + ')');
+      if (hit(c.box, g.clock)) problems.push(c.n + ' overlaps the clock at ' + at);
+      c.txt.forEach((t) => {
+        if (hit(t, g.title)) problems.push(c.n + ' text overlaps the title ÜBERFLÜGE at ' + at + ' (text ' + fmt(t) + '; title ' + fmt(g.title) + ')');
+        if (hit(t, g.date)) problems.push(c.n + ' text overlaps the date at ' + at);
+      });
+    });
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id + '_' + vp.w); }
+  } catch (e) { record(id, 'test crashed at ' + at + ': ' + e.message); await shot(page, id + '_' + vp.w); } finally { await ctx.close(); }
+}
+
+// ---------- radar: the METAR and runway lines stay clear of the special-aircraft banner ----------
+const RADAR_GEO = () => {
+  const box = (e) => { const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
+  const text = (e) => { if (!e || !(e.textContent || '').trim()) return null; const r = document.createRange(); r.selectNodeContents(e); const b = r.getBoundingClientRect(); return b.width > 0 && b.height > 0 ? { l: b.left, t: b.top, r: b.right, b: b.bottom } : null; };
+  const toast = document.getElementById('toast');
+  return { toast: box(toast), on: toast.classList.contains('on'), vw: innerWidth, vh: innerHeight,
+    wx: ['wx-metar', 'wx-rwy'].map((id) => ({ n: id, box: text(document.getElementById(id)) })).filter((x) => x.box) };
+};
+async function radarMetarCase(browser, vp) {
+  const id = 'radar_metar_not_under_alert';
+  const { ctx, page, st } = await newPage(browser, { width: vp.w, height: vp.h }, 'demo');
+  const problems = [];
+  const at = vp.w + 'x' + vp.h;
+  try {
+    await page.goto(BASE + '/index.html?demo=1&style=tower', { waitUntil: 'load' });
+    // the demo has a squawk 7700 aircraft that comes into range: its banner is the one under test
+    const t0 = Date.now();
+    while (Date.now() - t0 < 60000 && !(await page.evaluate(() => document.getElementById('toast').classList.contains('on')))) await page.waitForTimeout(250);
+    await page.waitForTimeout(1500);   // the banner slides in over 1.2 s
+    const g = await page.evaluate(RADAR_GEO);
+    if (!g.on) problems.push('no special-aircraft banner in demo mode at ' + at);
+    if (!g.wx.length) problems.push('no METAR or runway line to check against at ' + at);
+    const hit = (a, b) => !!a && !!b && Math.min(a.r, b.r) - Math.max(a.l, b.l) > 1 && Math.min(a.b, b.b) - Math.max(a.t, b.t) > 1;
+    const fmt = (b) => b ? [b.l, b.t, b.r, b.b].map((v) => Math.round(v)).join(',') : 'none';
+    g.wx.forEach((w) => { if (hit(w.box, g.toast)) problems.push(w.n + ' runs under the special-aircraft banner at ' + at + ' (line ' + fmt(w.box) + '; banner ' + fmt(g.toast) + ')'); });
+    if (g.on && (g.toast.r > g.vw + 1 || g.toast.b > g.vh + 1 || g.toast.l < -1)) problems.push('special-aircraft banner leaves the screen at ' + at + ' (' + fmt(g.toast) + ')');
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id + '_' + vp.w); }
+  } catch (e) { record(id, 'test crashed at ' + at + ': ' + e.message); await shot(page, id + '_' + vp.w); } finally { await ctx.close(); }
+}
+
 // ---------- run ----------
 const t0 = Date.now();
 const browser = await chromium.launch({ args: ['--no-sandbox'] });
@@ -752,10 +880,14 @@ for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080
   jobs.push({ n: 'airport_' + code + '_' + vp.width, run: () => airportCase(browser, code, vp) });
 jobs.push({ n: 'rotation_airport_1280', run: () => rotationCase(browser) });
 jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
+jobs.push({ n: 'motion_off', run: () => motionCase(browser, 'off') }, { n: 'motion_full', run: () => motionCase(browser, 'full') });
+jobs.push({ n: 'canvas_res', run: () => resCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });
 jobs.push({ n: 'nodata_notice', run: () => nodataCase(browser) });
 jobs.push({ n: 'settings_1280', run: () => settingsCase(browser) }, { n: 'settings_touch_390', run: () => settingsTouchCase(browser) });
+jobs.push({ n: 'board_stats_no_overlap_1920', run: () => boardStatsCase(browser, { w: 1920, h: 1080 }) }, { n: 'board_stats_no_overlap_1280', run: () => boardStatsCase(browser, { w: 1280, h: 720 }) });
+jobs.push({ n: 'radar_metar_not_under_alert_1280', run: () => radarMetarCase(browser, { w: 1280, h: 720 }) }, { n: 'radar_metar_not_under_alert_390', run: () => radarMetarCase(browser, { w: 390, h: 844 }) });
 const filtered = ONLY ? jobs.filter((j) => j.n.indexOf(ONLY) >= 0) : jobs;
 let next = 0;
 await Promise.all(Array.from({ length: CONC }, async () => { while (next < filtered.length) await filtered[next++].run(); }));

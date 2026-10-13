@@ -291,7 +291,7 @@
       self.drawPlane(MA.glyphs.kind(g), p[0], p[1], typeof g.track === 'number' ? g.track : 0, gsz, Radar.rgba(C.level, 0.9), 1);
     });
 
-    var items = [], pts = [], badges = [], blink = 0.6 + 0.4 * Math.sin(now * PI / 500);
+    var items = [], pts = [], badges = [], blink = MA.motion.alertAlpha(now);   // emergency frame pulse (js/motion.js)
     var sorted = list.slice().sort(function (a, b) { return (b.alt || 0) - (a.alt || 0); });
     sorted.forEach(function (ac) {
       var phase = MA.fmt.phase(ac), high = (ac.alt || 0) > 20000, featured = ac.hex === featuredHex;
@@ -308,7 +308,8 @@
       var onScreen = p[0] > 0 && p[0] < self.w && p[1] > 0 && p[1] < self.areaBottom + self.h * 0.02;
       // data block: final and departure traffic, and the featured one
       if ((show.labels !== false || featured) && onScreen && (phase === 'up' || phase === 'down' || featured)) {
-        items.push({ ac: ac, p: p, size: reach, high: high, featured: featured, sp: sp, spCol: spCol, lines: self.blockLines(ac, phase) });
+        var bm = self.blockFor(ac, phase, featured);
+        items.push({ ac: ac, p: p, size: reach, high: high, featured: featured, sp: sp, spCol: spCol, lines: bm.lines, m: bm });
       }
       pts.push(p);
       var bi = self.badgeFor(ac);
@@ -320,7 +321,7 @@
       var p = self.project(g.lat, g.lon);
       if (p[0] < 0 || p[1] < 0 || p[0] > self.w || p[1] > self.h) return;
       var featured = g.hex === featuredHex;
-      if (featured) items.push({ ac: g, p: p, size: gsz * 2, high: false, featured: true, sp: null, spCol: null, lines: self.blockLines(g, '') });
+      if (featured) { var gm = self.blockFor(g, '', true); items.push({ ac: g, p: p, size: gsz * 2, high: false, featured: true, sp: null, spCol: null, lines: gm.lines, m: gm }); }
       pts.push(p);
       var bi = self.badgeFor(g);
       if (bi) badges.push({ ac: g, p: p, bi: bi, reach: gsz * 1.2, dim: false, fade: 1 });   // off-screen ones are skipped above
@@ -332,11 +333,9 @@
     });
     var placed = this.badgeRects(badges).slice(), drawn = [];
     order.forEach(function (it) {
-      var m = self.measureBlock(it.lines, it.featured);
-      var r = self.placeBlock(it, m, placed, pts);
+      var r = self.placeBlock(it, it.m, placed, pts);
       if (r.bad && !it.featured) return;
       placed.push(r.rect);
-      it.m = m;
       it.r = r;
       drawn.push(it);
     });

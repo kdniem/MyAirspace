@@ -1,6 +1,6 @@
 # MyAirspace
 
-Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als Flugzeug-Silhouetten mit auslaufender Flugspur und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (ATC, Terminal, Karte, Airbus, Boeing, Nacht, Militär) und viele Optionen machen die Anzeige persönlich.
+Ein ruhiges Live-Flugradar im Look echter Luftfahrt-Anzeigen für den Fernseher. Dein Standort ist in der Mitte, um dich herum siehst du die Flugzeuge als Flugzeug-Silhouetten mit auslaufender Flugspur und Datenblock, die Pisten von Hamburg (EDDH) und Finkenwerder (EDHI) mit Bezeichnern und Anfluglinien, außen eine Kompassrose, und unten eine Tafel mit dem Flugzeug, das dir gerade am nächsten ist. Sieben Stile (Tower, FIDS, Airbus, Boeing, Karte, Nacht, Taktik) und viele Optionen machen die Anzeige persönlich.
 
 Die App ist zum Anschauen gedacht: URL öffnen, fertig. Am Computer und Tablet gibt es unten links ein Zahnrad für die häufigsten Einstellungen (siehe „Einstellungen im Dashboard“). Kein API-Key, kein Build-Schritt.
 
@@ -37,8 +37,8 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `night`    | `23-6`          | Zeitraum, in dem gedimmt wird (`off` schaltet das Dimmen aus) |
 | `dim`      | `0.45`          | Helligkeit während der Nachtzeit |
 | `title`    | –               | Zweite Zeile unter dem Ortsnamen, z. B. `Zuhause` |
-| `style`    | `atc`           | Stil: `atc`, `terminal`, `chart`, `airbus`, `boeing`, `night`, `military` (ungültig = `atc`), siehe [Stile](#stile-und-optionen) |
-| `theme`    | je Stil         | `dark`, `light` oder `auto` (hell von Sonnenauf- bis -untergang am Standort, sonst dunkel). Standard ist der Stil-Standard: `dark`, bei `chart` `light` |
+| `style`    | `tower`         | Stil: `tower`, `fids`, `efis-airbus`, `eicam-boeing`, `chart-paper`, `nvg-night`, `tactical-olive` (ungültig = `tower`; die alten Namen `atc`, `terminal`, `airbus`, `boeing`, `chart`, `night`, `military` funktionieren weiter), siehe [Stile](#stile-und-optionen) |
+| `theme`    | je Stil         | `dark`, `light` oder `auto` (hell von Sonnenauf- bis -untergang am Standort, sonst dunkel). Standard ist der Stil-Standard: `dark`, bei `chart-paper` `light`. Stile ohne helle Palette bleiben dunkel |
 | `accent`   | je Stil         | Akzentfarbe: `amber`, `green`, `cyan`, `white`, `red` oder Hex wie `ff8800` (wird bei Bedarf aufgehellt/abgedunkelt, damit es lesbar bleibt) |
 | `font`     | je Stil         | `mono` (IBM Plex Mono) oder `sans` (Helvetica/Arial), beide mit tabellarischen Ziffern |
 | `brightness` | `1`           | Helligkeit von Karte, Ringen und Wasser, 0,5 bis 1,2 |
@@ -61,6 +61,7 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `radarsec` | `240`           | Sekunden pro Radar-Abschnitt im Wechsel (10 bis 3600) |
 | `boardsec` | `40`            | Sekunden pro Tafel-Abschnitt im Wechsel (5 bis 600); eine Tafel wird übersprungen, solange noch kein Überflug da war |
 | `airportsec` | `60`          | Sekunden pro Flughafen-Abschnitt im Wechsel (10 bis 3600) |
+| `res`      | `auto`          | Zeichenauflösung der Karte: `auto`, `1` (einfach) oder `2` (doppelt). Mehr dazu unter [Schärfe und Bildrate](#schärfe-und-bildrate) |
 
 ## Stile und Optionen
 
@@ -68,13 +69,13 @@ Alle Looks sind Daten: die Tabelle `STYLES` in `js/styles.js` hält je Stil Roll
 
 | Stil | Look | Standard |
 |------|------|----------|
-| `atc` | Tower-Radarschirm: dunkles Phosphorgrün, Flugzeug-Silhouetten, auslaufende Spur | dunkel |
-| `terminal` | Anzeigetafel (FIDS): Dunkelblau mit Gelb, Sans, eckige Tafel | dunkel |
-| `chart` | Luftfahrtkarte: Papier und Tinte, dunkle Tinte, Flughäfen in Magenta | hell |
-| `airbus` | ND + ECAM: Schwarz, Grün für Werte, Cyan für Einheiten, dünne Linien | dunkel |
-| `boeing` | ND + EICAS: bläuliche Grautöne, kräftigere Schrift, runde Kacheln | dunkel |
-| `night` | Sehr dunkel, nur Rot und Dunkelgrün, blendfrei fürs abgedunkelte Wohnzimmer | nur dunkel |
-| `military` | Taktische Anzeige in gedämpftem Oliv | nur dunkel |
+| `tower` | Tower-Radarschirm: Phosphorgrün auf Schwarz, runder Schwenk, Punktspur, feine Linien, Ringsymbol | dunkel |
+| `fids` | Flughafen-Anzeigetafel: Holzkohle und Warmweiß mit Bernstein, Versalien, Zeilenbänder, Datenblöcke als Kacheln | dunkel (hell möglich) |
+| `efis-airbus` | Airbus-Navigationsdisplay: Schwarz mit Weiß, Grün, Cyan und Magenta, dünne Linien, Kompass nur als Bogen oben | dunkel (hell möglich) |
+| `eicam-boeing` | Boeing-Anzeigen: Blaugrau, Weiß und Cyan, eckige Module, kräftige Schrift, gestrichelte Spur | dunkel (hell möglich) |
+| `chart-paper` | Luftfahrtkarte auf Papier: Tinte in Blau, Luftraum in Magenta, Kreuze als Punkte, Versalien | hell (dunkel möglich) |
+| `nvg-night` | Nachtsicht: nur Rot und Dunkelgrün, sehr dunkel, ohne dunklen Schein um Text und Symbole | nur dunkel |
+| `tactical-olive` | Taktische Anzeige in Oliv: Raster, Rauten als Symbole, gerahmte Datenblöcke, Schablonen-Versalien | nur dunkel |
 
 **Radar:** Flugzeuge sind Silhouetten von oben (Schmalrumpf, Großraum, Jumbo, Regionaljet, Business-Jet, Turboprop, Leichtflugzeug, Hubschrauber, Kampfflugzeug; gewählt nach dem ICAO-Typ, `js/glyphs.js`), in Rollenfarbe gefüllt und mit dünner Kontur in der Kartenfarbe, in Flugrichtung gedreht. Dahinter läuft die Flugspur als durchgehende, sich verjüngende Linie aus, die zum Ende hin vollständig ausblendet (Länge: `trail`), und davor steht ein Datenblock an einer Hilfslinie: Rufzeichen, Höhe als Flugfläche (`FL120` ab 5000 ft) oder in Hundertfuß (`038`), Pfeil für Steigen/Sinken, Ground Speed in kt, Muster. Die Blöcke weichen einander aus. Besondere Flugzeuge (siehe unten) bekommen eine dezente Eckenklammer in Magenta (Notfall rot, blinkend), keinen Schein. Flugzeuge am Boden bleiben kleine Quadrate. Das gewählte Flugzeug ist cyan mit Rahmen, Peil- und Entfernungslinie und einer Marke auf der Kompassrose. Die Karte zeigt Pisten mit Bezeichnern (05/23), Schwellenstrichen und Anfluglinien (die Piste in Betrieb in Grün), den Flughafen als Kreis mit Pistenkreuz und ICAO-Code, Entfernungsringe und außen eine Kompassrose (Strich alle 5°, Beschriftung alle 30°, N/E/S/W, Nordpfeil).
 
@@ -102,6 +103,22 @@ Mit `wx=radar` zeichnet die App den Niederschlag über die Karte, in den Farben 
 
 Im Wechsel (`view=auto`, Standard `views=radar,board`) blendet die App nach `radarsec` Sekunden eine zweite Ansicht im Stil einer Abflugtafel ein, nach `boardsec` Sekunden wieder den Radar. Mit `views=radar,board,airport` kommt dazwischen die Flughafen-Ansicht (`airportsec`); die Reihenfolge ist frei wählbar. Die Tafel zeigt: die zehn letzten Flugzeuge, die durch den Radius (`r`) geflogen sind, mit Uhrzeit der größten Annäherung, Route, Höhe, kleinster Entfernung und Landung/Start/Überflug, darunter die Tagesstatistik (Überflüge, häufigste Airline und häufigstes Muster, tiefster und nächster Überflug, größtes Flugzeug). Das Protokoll liegt nur im Browser (`localStorage`, je Kalendertag, die letzten zwei Tage) und verlässt das Gerät nicht.
 
+## Bewegung
+
+Die Animationen sind optional und sparsam, und jede Schleife ist auf der Showcase-Seite [`motion.html`](motion.html) mit Dauer und Kosten zu sehen (die Seite ist vom Fernseher aus nicht verlinkt). Die Stufe steuert der URL-Parameter `motion`:
+
+| Wert | Wirkung |
+|------|---------|
+| `motion=calm` | Standard. Radar-Sweep (eine Umdrehung je 6 s, sehr schwach), Ring bei Neuankunft im Radius (einmal, 1,6 s, das Symbol blendet ein), Piste in Betrieb atmet (4 s), neue Spuren wachsen in 1 s, Notfall-Rahmen pulsiert langsam (3 s), Split-Flap, neueste Zeile der Anzeigetafel wird einmal markiert. |
+| `motion=full` | Dasselbe, etwas deutlicher: Sweep mit kurzem Nachlauf, zweiter Ring, Notfall-Puls 2 s. |
+| `motion=off` | Nichts bewegt sich: Werte springen, Rahmen stehen, keine Markierung. |
+
+Ohne Parameter gilt `calm`, bei der Systemeinstellung „Bewegung reduzieren“ (`prefers-reduced-motion`) `off`. Ein ausdrücklicher Wert in der Adresse hat immer Vorrang. Ungültige Werte werden stillschweigend auf den Standard gesetzt. Die Stufe liegt in `js/config.js`, die Effekte in `js/motion.js` (reine Zeitkurven, getestet in `tools/tests/motion-test.cjs`), der Split-Flap in `js/board.js` und die Markierung der Anzeigetafel in `css/motion.css`.
+
+Die Kosten sind klein: alle Effekte zusammen sind einige Linien und Kreise je Bild, ohne Schatten, ohne Filter und ohne Speicher je Bild. Der Split-Flap läuft im Takt der Bildschleife (keine eigenen Intervalle), im verborgenen Tab läuft nichts. Gemessen mit `node tools/tests/motion-perf.cjs` (Demo, 1920×1080, Headless-Chromium): die Bildarbeit liegt mit `motion=off` bei rund 2,3 ms, mit `motion=full` ebenso (Unterschied im Mittel unter 0,1 ms; auf einem Fernseher mit schwacher Grafik ist das nicht gemessen).
+
+Einbrennschutz: Bewegte Teile sind auf OLED-Fernsehern ein Risiko. Deshalb gibt es keinen Blinker mehr, der dauerhaft läuft (der bisherige Ein-Sekunden-Blinker des Notfall-Rahmens ist ein langsamer Puls), und die Uhr blinkt nicht. Nicht umgesetzt: einfahrende Überflugzeilen und ein blinkender Doppelpunkt (auf OLED kritisch) sowie ein Steig- und Sinkpfeil, der flackert.
+
 ## Einrichtungs-Assistent
 
 `setup.html` ist ein geführter Ablauf mit fünf Schritten, gedacht für Menschen, die den Link nur bekommen haben:
@@ -119,6 +136,17 @@ Am Ende stehen drei Tipps (Nachtdimmen, `style=` ändern, später wieder hier ö
 - **Smart-TV (Samsung, LG, Android TV, Fire TV):** Die URL im eingebauten Browser öffnen und als Lesezeichen speichern. Mit Vollbild bzw. ausgeblendeter Adressleiste sieht es am besten aus.
 - **Apple TV:** tvOS hat keinen Webbrowser. Öffne die URL in Safari auf dem Mac, iPad oder iPhone, schalte Safari auf Vollbild und spiegle den Bildschirm per AirPlay auf den Apple TV. Auf dem iPhone/iPad kannst du die Seite auch über *Teilen → Zum Home-Bildschirm* als Vollbild-App speichern.
 - Wo der Browser es kann (Wake Lock API), verhindert die Seite, dass der Bildschirm ausgeht. Gegen Einbrennen auf OLED-Fernsehern verschiebt sich das ganze Bild alle zwei Minuten um ein paar Pixel.
+
+## Schärfe und Bildrate
+
+Die Karte wird in einer Auflösung gezeichnet, die sich nach dem Bildschirm richtet. Mit `res=auto` (Standard) hat sie mindestens die Pixeldichte des Geräts und bei Bildschirmen bis 1920 Pixel Breite das Doppelte, damit sie auch auf einem 1x-Bildschirm und im AirPlay-Spiegelbild scharf bleibt. Die Obergrenze liegt bei 3840 Pixeln Breite und 8,3 Millionen Pixeln insgesamt, damit ältere Fernseher und Tablets nicht überlastet werden. Schrift, Layout und Farben bleiben gleich, nur die Kanten werden glatter.
+
+- `res=1`: einfache Auflösung, weniger Rechenarbeit. `res=2`: immer doppelt. Andere Werte gelten wie `auto`.
+- **Schutz für schwache Geräte:** Liegt die Zeit zwischen zwei Bildern (p95) für 10 Sekunden über 40 ms, verringert die Seite die Auflösung um einen Schritt (25 % weniger, nie unter 1x) und meldet das einmal in der Browser-Konsole (`console.info`). Erholt sich das Bild (p95 unter 25 ms für 30 Sekunden), wird wieder schrittweise hochgeschaltet. Bei `res=1` gibt es nichts zu verringern.
+- Die Flugspuren werden nach ihrem Alter in Gruppen gezeichnet statt Segment für Segment. Das sieht gleich aus, kostet aber deutlich weniger Rechenzeit. Beschriftungen werden nur neu berechnet, wenn sich ein angezeigter Wert ändert.
+- Der Einbrennschutz verschiebt das Bild in ganzen Pixeln und springt dabei, statt sich langsam zu bewegen, damit die Schrift nicht für Sekunden unscharf wird.
+
+Ob AirPlay auf deinem Fernseher ruckelfrei und scharf ankommt, lässt sich nicht von hier aus prüfen. Ein kurzer Test: Die Seite per AirPlay öffnen, einmal mit `res=auto` und einmal mit `res=1` laufen lassen und vergleichen.
 
 ## Flugzeuge am Boden
 
@@ -273,7 +301,7 @@ manifest.webmanifest   Web-App-Manifest, Icons in icons/ (tools/build-icons.mjs)
 sw.js                  Service Worker: App-Dateien offline, network-first
 css/style.css          Textrollen (Label, Wert, Einheit), Layout, TV-Sicherheitsrand; Farben kommen als CSS-Variablen aus js/styles.js
 tools/contrast.mjs     Kontrastprüfung (WCAG) für alle Stile, Themes und Akzentfarben
-tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), diag-test.cjs (Diagnoseprotokoll), proxy-test.mjs, motion-sim.js
+tools/tests/           run-all.mjs (alles), browser.mjs, compat.mjs, options.cjs, poll-test.cjs (Abfragetakt), pick-test.cjs (Tafel-Auswahl), diag-test.cjs (Diagnoseprotokoll), proxy-test.mjs, motion-sim.js, motion-test.cjs (Bewegung), motion-perf.cjs (Bildkosten, nicht in run-all), render-scale-test.cjs (Auflösung und Frame-Schutz)
 data/geo-features.js   Pisten, Gewässer, Orte (erzeugt von tools/build-geo.py)
 data/airport-detail.js Vorfeld, Rollwege, Terminals, Gates der fünf Flughäfen (erzeugt von tools/build-airport-detail.py, OpenStreetMap)
 tools/build-geo.py     Generator für die Kartendaten
@@ -291,8 +319,11 @@ js/demo.js             Simulierter Verkehr für ?demo=1
 js/airlines.js         Tabelle MA.airlines und Abzeichen (Kacheln) für Tafel und Karte
 js/glyphs.js           Flugzeug-Silhouetten nach ICAO-Typ (Canvas-Pfade)
 js/pick.js             Auswahl des Flugzeugs auf der Tafel (reine Logik, getestet)
+js/render-scale.js     Zeichenauflösung der Karte (res=auto|1|2) und Frame-Zeit-Schutz, reine Funktionen
 js/radar.js            Canvas-Karte: Kompassrose, Pisten, Flugzeuge, Flugspuren, Datenblöcke
 js/airport.js          Flughafen-Ansicht (view=airport): Anpassung der Box, statische Vorfeldschicht, Korridore, Flugzeuge am Boden und in der Luft
+js/motion.js           Bewegung (motion=off|calm|full): Zeitkurven und Zeichenhilfen für Radar, Tafel und Showcase
+motion.html            Showcase der Bewegungen mit Dauer und Kosten (nicht vom Fernseher aus verlinkt)
 js/board.js            Tafel mit Split-Flap-Effekt
 js/main.js             Abfrage-Schleife, Glättung, Rotation, Dimmen, Wake Lock
 ```

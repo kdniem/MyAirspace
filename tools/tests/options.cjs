@@ -18,18 +18,25 @@ function cfg(qs) {
 }
 
 let c = cfg('').config;
-ok(c.style === 'atc' && c.theme === 'dark' && c.font === 'mono', 'defaults');
+ok(c.style === 'tower' && c.theme === 'dark' && c.font === 'mono', 'defaults');
 ok(c.show.rings && c.show.compass && c.show.board && c.show.clock && c.show.weather && c.show.ground && c.show.trails, 'all elements on');
 ok(c.fields.join() === 'callsign,fl,gs,type', 'default fields');
 ok(c.speedUnit === 'kt' && c.pressure === 'hpa' && c.timeMode === 'both' && c.brightness === 1 && c.orient === 'north', 'unit defaults');
 
 c = cfg('?style=chart').config;
-ok(c.style === 'chart' && c.theme === 'light', 'chart defaults to the light theme');
-ok(cfg('?style=chart&theme=dark').config.theme === 'dark', 'explicit theme wins');
-ok(cfg('?style=nonsense').config.style === 'atc', 'invalid style falls back to atc');
-ok(cfg('?style=constructor').config.style === 'atc', 'prototype names are not styles');
-ok(cfg('?style=terminal').config.font === 'sans', 'style default font');
-ok(cfg('?style=terminal&font=mono').config.font === 'mono', 'font override');
+ok(c.style === 'chart-paper' && c.theme === 'light', 'chart-paper defaults to the light theme');
+ok(cfg('?style=chart-paper&theme=dark').config.theme === 'dark', 'explicit theme wins');
+ok(cfg('?style=nonsense').config.style === 'tower', 'invalid style falls back to tower');
+ok(cfg('?style=constructor').config.style === 'tower', 'prototype names are not styles');
+ok(cfg('?style=fids').config.font === 'sans', 'style default font');
+ok(cfg('?style=fids&font=mono').config.font === 'mono', 'font override');
+// old ids keep working: each resolves to its new look (same font and theme defaults)
+const OLD = { atc: 'tower', terminal: 'fids', airbus: 'efis-airbus', boeing: 'eicam-boeing', chart: 'chart-paper', night: 'nvg-night', military: 'tactical-olive' };
+Object.keys(OLD).forEach((o) => {
+  const a = cfg('?style=' + o).config, b = cfg('?style=' + OLD[o]).config;
+  ok(a.style === OLD[o] && a.theme === b.theme && a.font === b.font, 'old style id ' + o + ' -> ' + OLD[o]);
+});
+ok(cfg('?style=CHART').config.style === 'chart-paper', 'old ids are case-insensitive');
 ok(cfg('?font=comic').config.font === 'mono', 'invalid font');
 ok(cfg('?accent=amber').config.accent === 'amber', 'accent name');
 ok(cfg('?accent=ff8800').config.accent === '#ff8800', 'accent hex');
@@ -56,6 +63,8 @@ ok(cfg('').config.airport === 'HAM' && cfg('?airport=fra').config.airport === 'F
 ok(cfg('?airport=XYZW').config.airport === 'HAM' && cfg('?airport=__proto__').config.airport === 'HAM', 'airport invalid falls back to HAM');
 ok(cfg('?view=airport').config.demo === false && cfg('?view=airport&demo=1').config.demo === true, 'focus view has no demo traffic by default');
 ok(cfg('?orient=track').config.orient === 'north', 'track-up is not built: north');
+ok(cfg('?motion=full').config.motion === 'full' && cfg('?motion=off').config.motion === 'off', 'motion levels');
+ok(cfg('').config.motion === 'calm' && cfg('?motion=loud').config.motion === 'calm', 'motion default calm, invalid falls back silently');
 
 // rotation (views=, the durations): order, duplicates, silent drops, fallbacks, fixed views and clamped seconds
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -82,17 +91,33 @@ ok(cfg('?radarsec=5').config.radarSec === 10 && cfg('?radarsec=-3').config.radar
 ok(cfg('?boardsec=2').config.boardSec === 5 && cfg('?boardsec=9999').config.boardSec === 600, 'boardsec clamped to 5..600');
 ok(cfg('?radarsec=x&boardsec=y').config.radarSec === 240 && cfg('?radarsec=x&boardsec=y').config.boardSec === 40, 'radarsec and boardsec junk are the defaults');
 
+// res= (drawing resolution of the radar canvas): auto | 1 | 2, any other value silently means auto
+ok(cfg('').config.res === 'auto', 'res defaults to auto');
+ok(cfg('?res=1').config.res === '1' && cfg('?res=2').config.res === '2' && cfg('?res=auto').config.res === 'auto', 'res=1, res=2, res=auto');
+ok(cfg('?res=RES').config.res === 'auto' && cfg('?res=2').config.res === '2', 'res is case-insensitive for the valid values');
+['3', '2x', '0', '1.5', '', 'high'].forEach((v) => ok(cfg('?res=' + v).config.res === 'auto', 'res=' + v + ' falls back to auto'));
+
 // style table: every style resolves for both themes with all tokens, and unknown names fall back
 const MA = cfg('');
 MA.style.names().forEach((n) => ['dark', 'light'].forEach((t) => {
   const r = MA.style.resolve(n, t, {});
   ['--bg', '--panel', '--ink', '--dim', '--accent', '--target', '--special', '--warning'].forEach((k) => ok(/^#[0-9a-f]{6}$/.test(r.css[k]), n + '/' + t + ' ' + k));
-  ok(r.c.plane > 0 && r.c.trail === 'line' && typeof r.c.badgeBg === 'string' && typeof r.c.ring === 'string', n + '/' + t + ' canvas palette');
+  ok(r.c.plane > 0 && ['taper', 'dots', 'dash', 'none'].indexOf(r.c.trail) >= 0 && typeof r.c.badgeBg === 'string' && typeof r.c.ring === 'string', n + '/' + t + ' canvas palette');
+  ok(['glyph', 'ring', 'dot', 'box', 'cross', 'diamond'].indexOf(r.c.symbol) >= 0 && ['plain', 'frame', 'tab'].indexOf(r.c.block) >= 0, n + '/' + t + ' symbol and block');
 }));
-ok(MA.style.resolve('zzz', 'dark').style === 'atc', 'resolve fallback');
+ok(MA.style.resolve('zzz', 'dark').style === 'tower', 'resolve fallback');
+ok(MA.style.canonical('atc') === 'tower' && MA.style.canonical('tower') === 'tower' && MA.style.canonical('nope') === null, 'canonical ids');
+ok(MA.style.names().length === 7, 'seven looks');
+// the style table has every field the renderer reads (a missing one would silently fall back)
+MA.style.names().forEach((n) => {
+  const st = MA.STYLES[n];
+  ok(st.name && st.info && st.font && st.theme && st.weight && typeof st.caps === 'boolean' && typeof st.track === 'number', n + ' typography and labels');
+  ok(st.plane && st.lw && st.trailW && st.trail && st.symbol && st.block && typeof st.br === 'number', n + ' look fields');
+  ok(st.dark || st.light, n + ' has a palette');
+});
 
 // ES2017 only on the TV page: no optional chaining, nullish coalescing, class fields, modules
-const TV = ['pwa', 'styles', 'prefs', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'chart', 'radar', 'airport', 'board', 'log', 'rotation', 'views', 'settings', 'main', 'fullscreen', 'qr'];
+const TV = ['pwa', 'styles', 'prefs', 'config', 'theme', 'hint', 'geo', 'format', 'airlines', 'special', 'pick', 'demo', 'data', 'weather', 'glyphs', 'render-scale', 'motion', 'chart', 'radar', 'airport', 'board', 'log', 'rotation', 'views', 'settings', 'main', 'fullscreen', 'qr'];
 TV.forEach((n) => {
   const src = fs.readFileSync(ROOT + '/js/' + n + '.js', 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/g, "''").replace(/\/\/.*$/gm, '');

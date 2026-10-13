@@ -60,13 +60,14 @@ window.MA = MA;
   }
 
   /* ---- looks and options (js/styles.js holds the style table) ---- */
-  var STY = MA.STYLES || { atc: {} };
+  var STY = MA.STYLES || { tower: {} };
   function pick(name, re, def) {
     var v = (q.get(name) || '').toLowerCase();
     return re.test(v) ? v : def;
   }
-  var style = (q.get('style') || S.style || '').toLowerCase();
-  if (!STY.hasOwnProperty(style)) style = 'atc';
+  // old ids (atc, terminal, …) resolve to the new looks (js/styles.js ALIAS); anything unknown falls back
+  // saved look (overlay, js/prefs.js) counts when the address does not name one
+  var style = MA.style ? (MA.style.canonical((q.get('style') || S.style || '').toLowerCase()) || MA.style.defaultStyle) : 'tower';
   var accent = (q.get('accent') || '').toLowerCase().replace('#', '');
   if (!(MA.ACCENTS && MA.ACCENTS.hasOwnProperty(accent)) && !/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(accent)) accent = '';
   else if (/^[0-9a-f]{3,6}$/.test(accent) && !(MA.ACCENTS && MA.ACCENTS.hasOwnProperty(accent))) accent = '#' + accent;
@@ -108,10 +109,18 @@ window.MA = MA;
     if (f.length) fields = f.slice(0, 5);
   }
 
+  // motion=off|calm|full (js/motion.js): calm by default, off when the system asks for reduced motion
+  var reducedMotion = false;
+  try { reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { reducedMotion = false; }
+  var motionArg = (q.get('motion') || '').toLowerCase();
+  var motion = /^(off|calm|full)$/.test(motionArg) ? motionArg : (reducedMotion ? 'off' : 'calm');
   var view = /^(radar|board|auto|airport)$/.test(str('view', '')) ? str('view', '') : (S.view || 'auto');
   var THEME = /^(dark|light|auto)$/.test(str('theme', '')) ? str('theme', '') : (S.theme || (STY[style].theme || 'dark'));
+  // res=auto|1|2: drawing resolution of the radar canvas (js/render-scale.js); any other value is auto
+  var res = (q.get('res') || '').toLowerCase();
 
   MA.config = {
+    res: res === '1' || res === '2' ? res : 'auto',
     lat: num('lat', 53.5511, -90, 90),          // default: Hamburg city centre
     lon: num('lon', 9.9937, -180, 180),
     radiusKm: num('r', 25, 3, 200),             // radius of the main ring
@@ -130,7 +139,7 @@ window.MA = MA;
     labels: show.labels,                        // aircraft data blocks on the map
     places: show.places,                        // town names on the map
     title: str('title', '').slice(0, 32),       // optional second line under the place name
-    style: style,                               // atc | terminal | chart | airbus | boeing | night | military
+    style: style,                               // tower | fids | efis-airbus | eicam-boeing | chart-paper | nvg-night | tactical-olive
     chartbg: bool('chartbg', S.chartbg === true),            // aeronautical-chart background: airspaces, navaids, grid (js/chart.js), off by default
     accent: accent,                             // '' (style default) | preset name | '#rrggbb'
     font: pick('font', /^(mono|sans)$/, STY[style].font || 'mono'),
@@ -140,6 +149,7 @@ window.MA = MA;
     pressure: pick('pressure', /^(hpa|inhg)$/, 'hpa'),
     timeMode: pick('time', /^(utc|local|both)$/, 'both'),
     brightness: num('brightness', typeof S.brightness === 'number' ? S.brightness : 1, 0.5, 1.2),
+    motion: motion,                             // off | calm | full (js/motion.js)
     orient: 'north',                            // track-up is not built: north-up only
     view: view,                                 // radar | board | airport: one fixed view; auto: the rotation below
     // the rotation, in order: views=radar,board,airport (view=auto). A fixed view is a one-entry list. An empty or

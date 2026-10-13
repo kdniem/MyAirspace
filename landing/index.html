@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyAirspace · Dein Himmel, ruhig auf jedem Bildschirm</title>
+<meta name="description" content="MyAirspace zeigt die Flugzeuge um deinen Standort als ruhige Anzeige im Stil von Cockpit-Instrumenten. Kostenlos, ohne Konto, ohne Installation.">
+<meta property="og:title" content="MyAirspace · Dein Himmel, ruhig auf jedem Bildschirm">
+<meta property="og:description" content="Ein kostenloses Flugradar als Wallpaper für Monitor, Tablet und Fernseher. Ohne Konto, ohne Installation.">
+<meta property="og:type" content="website">
+<meta name="robots" content="index, follow">
+<style>
+/* Colours follow the app's role tokens (css/style.css, default style atc, dark). */
+:root {
+  --bg: #040706;
+  --panel: #09110d;
+  --ink: #e6eee8;
+  --sub: #b8c9be;
+  --dim: #8fa597;
+  --line: #1c2a22;
+  --accent: #7fd99a;
+  --accent-ink: #040706;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.6 "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+a { color: var(--accent); }
+a:focus-visible, summary:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.skip { position: absolute; left: -9999px; }
+.skip:focus { left: 16px; top: 16px; background: var(--accent); color: var(--accent-ink); padding: 8px 12px; z-index: 10; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+header.top { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+.brand { color: var(--ink); font-weight: 600; letter-spacing: .08em; text-decoration: none; }
+nav a { color: var(--sub); text-decoration: none; margin-left: 18px; font-size: 14px; }
+nav a:hover { color: var(--accent); }
+.hero { padding: 56px 0 40px; }
+.hero h1 { font-size: clamp(28px, 5vw, 46px); line-height: 1.2; margin: 0 0 18px; font-weight: 600; }
+.hero p { color: var(--sub); font-size: clamp(16px, 2.2vw, 19px); max-width: 620px; margin: 0 0 28px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-block; padding: 12px 20px; border: 1px solid var(--accent); border-radius: 4px; text-decoration: none; font-size: 15px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { color: var(--accent); }
+.cards { display: grid; grid-template-columns: 1fr; gap: 14px; padding: 8px 0 40px; }
+@media (min-width: 720px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; }
+.card h3 { margin: 0 0 8px; font-size: 16px; color: var(--accent); }
+.card p { margin: 0; color: var(--sub); font-size: 15px; }
+section { padding: 16px 0 28px; border-top: 1px solid var(--line); }
+.shot { margin: 28px 0 0; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+.shot figcaption { color: var(--dim); font-size: 13px; margin-top: 8px; }
+@media (max-width: 600px) { nav .nav-extra { display: none; } }
+section h2 { font-size: 22px; margin: 0 0 16px; font-weight: 600; }
+ol.steps { padding-left: 20px; margin: 0; color: var(--sub); }
+ol.steps li { margin-bottom: 10px; }
+ul.plain { list-style: none; padding: 0; margin: 0; color: var(--sub); }
+ul.plain li { padding: 6px 0 6px 18px; position: relative; }
+ul.plain li::before { content: "–"; color: var(--accent); position: absolute; left: 0; }
+details { border-bottom: 1px solid var(--line); padding: 12px 0; }
+summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+details p { color: var(--sub); margin: 8px 0 0; font-size: 15px; }
+footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--dim); font-size: 14px; }
+footer p { margin: 0 0 10px; }
+.skip-link-hint { color: var(--dim); }
+</style>
+</head>
+<body>
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
+
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./">MyAirspace</a>
+    <nav aria-label="Hauptnavigation">
+      <a class="nav-extra" href="#funktionen">Funktionen</a>
+      <a class="nav-extra" href="#so-gehts">So geht’s</a>
+      <a href="#faq">Fragen</a>
+      <a href="../?demo=1">Ausprobieren</a>
+    </nav>
+  </header>
+
+  <main id="inhalt">
+    <div class="hero">
+      <h1>Dein Himmel, ruhig auf jedem Bildschirm.</h1>
+      <p>MyAirspace zeigt die Flugzeuge um deinen Standort als ruhige Anzeige im Stil von Cockpit-Instrumenten. Kostenlos, ohne Konto, ohne Installation.</p>
+      <div class="cta">
+        <a class="btn primary" href="../?demo=1">Jetzt ausprobieren</a>
+        <a class="btn ghost" href="../setup.html">Einrichtung starten</a>
+      </div>
+      <figure class="shot">
+        <img src="radar.jpg" width="1280" height="720" alt="Radaransicht der Demo: Flugzeuge als Silhouetten mit Flugspur und Datenblock um einen Standort in Hamburg">
+        <figcaption>Demo-Ansicht, Stil „Tower“. Simulierte Daten.</figcaption>
+      </figure>
+    </div>
+
+    <section id="funktionen" aria-labelledby="funktionen-h">
+      <h2 id="funktionen-h">Drei Funktionen</h2>
+      <div class="cards">
+        <article class="card">
+          <h3>Radar mit Silhouetten</h3>
+          <p>Flugzeuge von oben, nach Typ gezeichnet, mit Flugspur und Datenblock: Rufzeichen, Höhe, Geschwindigkeit.</p>
+        </article>
+        <article class="card">
+          <h3>Anzeigetafel</h3>
+          <p>Die Anzeige wechselt zwischen Radar und Tafel und zeigt das nächste Flugzeug und die Überflüge des Tages.</p>
+        </article>
+        <article class="card">
+          <h3>Sieben Stile</h3>
+          <p>Vom Tower-Radar bis zum Nachtmodus für den abgedunkelten Raum. Den Stil siehst du in der Einrichtung als Vorschau.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="so-gehts" aria-labelledby="so-gehts-h">
+      <h2 id="so-gehts-h">So geht’s</h2>
+      <ol class="steps">
+        <li><strong>Standort wählen.</strong> Ort suchen oder „Meinen Standort verwenden“. Die Position wird auf etwa 1 km gerundet.</li>
+        <li><strong>Look wählen.</strong> Stil, Hell oder Dunkel, Akzentfarbe.</li>
+        <li><strong>Auf den Bildschirm bringen.</strong> Adresse im Browser des Geräts öffnen, QR-Code scannen oder am Fernseher per AirPlay spiegeln.</li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="datenschutz-h">
+      <h2 id="datenschutz-h">Datenschutz in einfachen Worten</h2>
+      <ul class="plain">
+        <li>Keine Anmeldung. Keine Cookies, keine Analyse, keine Werbung.</li>
+        <li>Dein Standort steht nur in der Adresse, die du selbst öffnest. Abfragen werden auf etwa 1 km gerundet.</li>
+        <li>Einstellungen bleiben im Browser deines Geräts.</li>
+        <li>Wenn du den Link weitergibst, schick den neutralen Link (Hamburg-Zentrum), nicht deinen eigenen.</li>
+      </ul>
+      <p style="margin-top:14px;"><a href="../datenschutz.html">Ausführlich: Datenschutz</a></p>
+    </section>
+
+    <section id="faq" aria-labelledby="faq-h">
+      <h2 id="faq-h">Häufige Fragen</h2>
+      <details>
+        <summary>Sehe ich jedes Flugzeug?</summary>
+        <p>Nein. Es zeigt, was die öffentliche Datenquelle empfängt. Lücken sind normal.</p>
+      </details>
+      <details>
+        <summary>Kann ich damit navigieren?</summary>
+        <p>Nein. Die Anzeige ist kein Navigationsgerät und keine Flugplanungshilfe.</p>
+      </details>
+      <details>
+        <summary>Ist es kostenlos?</summary>
+        <p>Ja. Kostenlos und nicht kommerziell.</p>
+      </details>
+      <details>
+        <summary>Was ist optional?</summary>
+        <p>Luftfahrtkarte im Hintergrund und Wetterradar sind standardmäßig aus und lassen sich in den Einstellungen einschalten. Quellen und Lizenzen stehen in der App und in THIRD_PARTY.md.</p>
+      </details>
+      <details>
+        <summary>Funktioniert es auf Monitor, Tablet oder Smart-TV?</summary>
+        <p>Wenn der Browser des Geräts die Seite öffnen kann, läuft sie dort. Nicht auf allen Geräten getestet. Am Apple TV geht es per AirPlay von Mac, iPad oder iPhone, weil tvOS keinen eigenen Browser hat.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer>
+    <p>MyAirspace ist ein privates, nicht kommerzielles Hobbyprojekt. Es steht in keiner Verbindung zu Airbus, Boeing oder einer Fluggesellschaft; die Looks sind nur optische Anregung.</p>
+    <p>Daten: adsb.lol (ODbL). Luftraum: OpenAIP (CC BY-NC 4.0). Vollständige Liste: THIRD_PARTY.md.</p>
+    <p><a href="../datenschutz.html">Datenschutz</a> · <a href="https://github.com/kdniem/MyAirspace">Quellcode</a></p>
+  </footer>
+</div>
+</body>
+</html>

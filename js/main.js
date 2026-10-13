@@ -28,6 +28,7 @@
   var GROUND_STALE_MS = 90 * 1000;
   var featured = MA.pick.create();  // board selection state (js/pick.js); featured.jumped: special aircraft hex -> time of board jump
   var announced = {};              // special aircraft: hex -> time of toast
+  var baselined = false;           // the first answer is the starting picture: aircraft in range then do not ring (js/motion.js)
   // dataAt: time of the newest position in the last answer (a cached answer is old although it just arrived)
 var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAfterMs: 0, nextAt: 0 };
 
@@ -46,8 +47,9 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       delete ground[n.hex];
       var ac = aircraft[n.hex];
       if (!ac) {
-        ac = aircraft[n.hex] = { hex: n.hex, trail: [], dlat: n.lat, dlon: n.lon,
-          dist: MA.geo.distKm(cfg.lat, cfg.lon, n.lat, n.lon) };
+        var d0 = MA.geo.distKm(cfg.lat, cfg.lon, n.lat, n.lon);
+        ac = aircraft[n.hex] = { hex: n.hex, trail: [], dlat: n.lat, dlon: n.lon, dist: d0,
+          inside: !baselined && d0 <= cfg.radiusKm };   // inside: has been in range once (arrival ring, js/motion.js)
       }
       if (MA.geo.distKm(ac.dlat, ac.dlon, n.lat, n.lon) > TRAIL_JUMP_KM) {
         ac.trail = [];
@@ -66,6 +68,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       if (now - aircraft[hex].seen > STALE_MS) delete aircraft[hex];
     }
     forget(announced, now);
+    baselined = true;
     MA.data.lookupRoutes(nearest(), cfg.demo);
     var newest = 0;
     list.forEach(function (n) { if (typeof n.ts === 'number' && n.ts > newest) newest = n.ts; });
@@ -142,10 +145,14 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       if (!ac.fade) { delete aircraft[hex]; continue; }
       // the trail is drawn from the smoothed on-screen position, independent of poll timing
       var last = ac.trail[ac.trail.length - 1];
-      if (!last || now - last[2] >= TRAIL_STEP_MS) ac.trail.push([ac.dlat, ac.dlon, now]);
+      if (!last || now - last[2] >= TRAIL_STEP_MS) {
+        if (!last) ac.trailT0 = now;   // a new trail draws on from the aircraft (js/motion.js growTrail)
+        ac.trail.push([ac.dlat, ac.dlon, now]);
+      }
       while (ac.trail.length && ac.trail[0][2] < now - trailMs) ac.trail.shift();
       ac.dist =MA.geo.distKm(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
       ac.brg = MA.geo.bearing(cfg.lat, cfg.lon, ac.dlat, ac.dlon);
+      if (!ac.inside && ac.dist <= cfg.radiusKm) { ac.inside = true; ac.blipAt = now; }   // first time in range: ring and fade-in
       visible.push(ac);
     }
     visible.sort(function (a, b) { return a.dist - b.dist; });
@@ -192,6 +199,19 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     toast.el.className = 'toast' + (sp.alert ? ' alert' : '') + ' on';
     toast.on = true;
     toast.until = now + TOAST_MS;
+    clearHeader();
+  }
+
+  // The banner stays clear of the header block (clock, summary, METAR and runway lines). On phones the
+  // header lines wrap down the same column the banner runs through, so the banner then starts below the block.
+  function clearHeader() {
+    var el = toast.el, meta = document.querySelector('#top .meta');
+    el.style.top = '';
+    if (!meta) return;
+    var a = el.getBoundingClientRect(), m = meta.getBoundingClientRect();
+    if (a.right <= m.left || a.left >= m.right || a.bottom <= m.top || a.top >= m.bottom) return;
+    var host = el.offsetParent ? el.offsetParent.getBoundingClientRect() : { top: 0 };
+    el.style.top = Math.ceil(m.bottom - host.top + 6) + 'px';
   }
 
   /* ---------- canvas: radar or focus view ---------- */
@@ -225,25 +245,61 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     }, FADE_MS);
   }
 
-  var lastFrame = Date.now(), lastBoard = 0;
-  function frame() {
-    var now = Date.now();
+  /* Frame clock. The time of a frame is the vsync time the browser passes to requestAnimationFrame, on the
+     wall-clock scale; Date.now() taken inside the callback would jitter with the work of the frame before,
+     and that jitter shows as stutter in the dead-reckoned motion. */
+  var clockBase = (window.performance && typeof performance.timeOrigin === 'number') ? performance.timeOrigin : Date.now() - (window.performance ? performance.now() : 0);
+  var GLIDE_MAX_DT = 250;        // ms: a stalled frame (tab hidden, long task) corrects gently, it does not jump
+
+  // Frame-time guard (js/render-scale.js): frame intervals of the last ~10 s, evaluated twice a second.
+  var frameWin = MA.renderScale.window(600), guardState = null, lastTs = 0, lastGuard = 0;
+  function guardTick(now) {
+    if (now - lastGuard < 500) return;
+    var dt = now - lastGuard;
+    lastGuard = now;
+    if (!radar.target || radar.target <= 1) return;
+    // a new layout or a changed scale (resize, DPR, 1x fallback) starts the guard again
+    if (!guardState || guardState.target !== radar.target || radar.scale !== MA.renderScale.scaleAt(guardState.target, guardState.level)) {
+      guardState = MA.renderScale.guard(radar.target);
+    }
+    if (frameWin.n < 60) return;                 // about 1 s of frames after a change
+    var p95 = MA.renderScale.percentile(frameWin, 0.95);
+    var act = MA.renderScale.step(guardState, p95, dt);
+    if (!act) return;
+    var s = MA.renderScale.scaleAt(guardState.target, guardState.level);
+    radar.setBacking(s);
+    MA.renderScale.clear(frameWin);
+    if (window.console) console.info('[MyAirspace] Frame-Zeit p95 ' + Math.round(p95) + ' ms: Auflösung ' + (act === 'down' ? 'verringert' : 'wieder erhöht') + ' auf ' + s.toFixed(2) + 'x (res=' + cfg.res + ')');
+  }
+
+  var lastFrame = 0, lastBoard = 0;
+  function frame(ts) {
+    var now = typeof ts === 'number' ? clockBase + ts : Date.now();
     if (MA.diag) MA.diag.frame(now);
-    advance(now, now - lastFrame);
+    if (!lastFrame) lastFrame = now;
+    advance(now, Math.min(GLIDE_MAX_DT, Math.max(0, now - lastFrame)));
     lastFrame = now;
+    if (typeof ts === 'number') {
+      if (lastTs && ts - lastTs < 1000) MA.renderScale.push(frameWin, ts - lastTs);   // a pause (hidden tab) is no frame time
+      lastTs = ts;
+    }
     if (!canvas.timer && wantAir() !== canvas.air) switchCanvas();
-    var feat, air = null;
+    var feat, air = null, gl = groundList();
     if (canvas.air) {
-      air = MA.airport.frame(visible, groundList(), now, featured);
+      air = MA.airport.frame(visible, gl, now, featured);
       feat = air.feat;
       radar.render(air.air, feat && feat.hex, now, MA.weather.active(), air.ground);
     } else {
       feat = pickFeatured(now);
-      radar.render(visible, feat && feat.hex, now, MA.weather.active(), groundList());
+      radar.render(visible, feat && feat.hex, now, MA.weather.active(), gl);
     }
+    guardTick(now);
+    MA.flap.tick(now);   // split-flap of the board and the Anzeigetafel: one clock, see js/board.js
 
     if (now - lastBoard > 1000) {
       lastBoard = now;
+      // the device pixel ratio can change without a resize event (moving the window between screens)
+      if ((window.devicePixelRatio || 1) !== radar.dpr) radar.resize();
       if (canvas.air) { /* no Tafel in the focus view */ }
       else if (feat) board.show(feat, featured.idx, featured.count);
       else if (!status.lastOk && !status.failures) board.empty('------', 'Verbinde…');
