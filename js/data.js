@@ -55,8 +55,8 @@
   }
 
   /* Most flight APIs send no CORS headers, so browsers block direct calls.
-     Each request goes through the own proxy (api/proxy.js on Vercel), then direct. Public
-     CORS proxies (third parties see the request) are used only with ?public=1. The first
+     Each request goes through the own proxy (api/proxy.js on Vercel), then public CORS proxies
+     (third parties see the request) unless public=0. The first
      route that works is remembered per endpoint, in memory only (never in localStorage). */
   var PUBLIC_PROXIES = [
     function (u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
@@ -246,7 +246,7 @@
      retries the preferred one. */
   function Feed(cfg) {
     this.cfg = cfg;
-    // airplanes.live and OpenSky cannot be reached through the own proxy: opt-in only (?public=1)
+    // airplanes.live and OpenSky cannot be reached through the own proxy: they need public (default on; public=0 turns them off)
     var usable = function (k) { return !!PROVIDERS[k] && (k === 'adsblol' || cfg.public); };
     if (cfg.demo) this.order = ['demo'];
     else if (usable(cfg.provider)) this.order = [cfg.provider];

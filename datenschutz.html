@@ -30,8 +30,7 @@
 
   <section>
     <h2>Verantwortlich</h2>
-    <!-- TODO owner: add contact -->
-    <p>Verantwortlich: siehe GitHub-Profil des Repository-Inhabers (<a href="https://github.com/kdniem" rel="noopener noreferrer">github.com/kdniem</a>)</p>
+    <p>Anfragen zum Datenschutz richtest du als Issue an das GitHub-Repository unter <a href="https://github.com/kdniem/MyAirspace/issues" rel="noopener noreferrer">github.com/kdniem/MyAirspace/issues</a>.</p>
   </section>
 
   <section>
@@ -41,6 +40,7 @@
       <li>Keine Konten und keine Anmeldung.</li>
       <li>Einstellungen und das Überflug-Protokoll bleiben im Browser auf deinem Gerät.</li>
       <li>Dein Standort steht nur in der Adresse (URL), die du selbst aufrufst, und wird für Abfragen auf etwa 1 km gerundet.</li>
+      <li>Standardmäßig nutzt die App auch öffentliche CORS-Proxys und weitere Datenquellen (siehe Datenquellen). Mit <code>public=0</code> in der Adresse schaltest du das ab.</li>
     </ul>
   </section>
 
@@ -60,7 +60,7 @@
     <ul>
       <li><strong>adsb.lol</strong> (Flugzeugpositionen und Routen). Routen-Abfragen schickt dein Browser direkt an adsb.lol, dabei sieht adsb.lol deine IP-Adresse sowie Rufzeichen und Position des Flugzeugs.</li>
       <li><strong>aviationweather.gov</strong> (NOAA, METAR-Wetterberichte), über den Proxy.</li>
-      <li>Nur wenn du ausdrücklich <code>?public=1</code> in der Adresse verwendest: <strong>airplanes.live</strong>, <strong>OpenSky Network</strong> sowie die öffentlichen Proxy-Dienste <strong>allorigins.win</strong> und <strong>codetabs.com</strong>. Diese Dritten sehen dann deine Abfragen und IP-Adresse. Ohne <code>public=1</code> werden sie nicht kontaktiert.</li>
+      <li>Standardmäßig (ohne <code>public=0</code> in der Adresse): <strong>airplanes.live</strong>, <strong>OpenSky Network</strong> sowie die öffentlichen Proxy-Dienste <strong>allorigins.win</strong> und <strong>codetabs.com</strong>. Diese Dritten sehen dann deine Abfragen und IP-Adresse. Die App nutzt sie, wenn der eigene Proxy keine Antwort liefert bzw. für diese Quellen. Mit <code>public=0</code> werden sie nicht kontaktiert.</li>
       <li>Nur wenn du <code>wx=radar</code> verwendest: <strong>Deutscher Wetterdienst (DWD)</strong>, Radarkomposit. Den Abruf macht der Server des Projekts (Vercel), nicht dein Browser, und er enthält keine Standortdaten. Der DWD sieht also nur die Server-Adresse von Vercel, nicht deine IP-Adresse und nicht deine Position.</li>
     </ul>
     <h2>Wetterradar (nur mit wx=radar)</h2>

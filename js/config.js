@@ -129,7 +129,7 @@ window.MA = MA;
     units: str('units', 'ft') === 'm' ? 'm' : 'ft',
     provider: str('provider', 'auto'),          // auto | adsblol | airplaneslive | opensky
     proxy: proxy(),                             // own CORS proxy, see api/proxy.js
-    public: q.get('public') === '1',            // opt-in: public CORS proxies and the other providers
+    public: bool('public', true),               // default on: public CORS proxies and the other providers; public=0 turns them off
     // no location in the address = the empty state: simulated traffic behind the welcome overlay (js/hint.js)
     demo: bool('demo', !(q.has('lat') && q.has('lon')) && view !== 'airport'),   // the focus view needs no home location
     rotateSec: num('rotate', 20, 3, 120),       // seconds per aircraft on the board
