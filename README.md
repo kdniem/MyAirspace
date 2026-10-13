@@ -264,9 +264,19 @@ Welches Flugzeug unten auf der Tafel steht, entscheidet `js/pick.js` ruhig und n
 
 Für Verbindungsabbrüche gibt es ein Protokoll, das nur im Browser des Geräts liegt (`js/diag.js`, Schlüssel `ma.diag` im `localStorage`):
 
-- **Was drinsteht:** fehlgeschlagene Abfragen je Quelle mit HTTP-Code und Dauer (`data`), Wechsel zwischen frisch, veraltet und offline mit dem Alter der Daten (`status`), Netz- und Tab-Wechsel (`net`), Bildhänger über 2 s (`stall`), Skriptfehler mit Datei und Zeile, ohne Stack (`error`), Service-Worker-Registrierung (`sw`), Start mit Version und Stil (`boot`) und Wake Lock (`wake`). Erfolgreiche Abfragen stehen nur am Ende einer Störung (mit der Lücke) und beim ersten Start, sonst wären die 500 Einträge nach gut einer halben Stunde voll.
+- **Was drinsteht** (genau diese Angaben, Zeitstempel in UTC jeweils dabei):
+  - Abfragen (`data`): Name der Datenquelle, HTTP-Code, Dauer in ms, Fehlerart, Retry-After in s; Dauer von Datenlücken in ms (bei der ersten Antwort nach einer Störung und beim ersten Start).
+  - Verbindungsstatus (`status`): frisch, veraltet, offline, mit dem Alter der Daten in ms.
+  - Netz und Tab (`net`): online/offline, sichtbar/verborgen.
+  - Bildhänger (`stall`): Dauer in ms, ab 2 s, höchstens ein Eintrag je 10 s.
+  - Skriptfehler (`error`): Dateiname, Zeile und Fehlername (`TypeError` usw.), nie der Meldungstext und kein Stack; gleiche Fehler in Folge zählen in `d`.
+  - Service Worker (`sw`): registriert oder fehlgeschlagen.
+  - Start (`boot`): Version, Stil, Farbschema, Fenstergröße, Seitenart (Radar, Demo, Einrichtung).
+  - Bildschirm-Wachhalt (`wake`): an, aus, abgelehnt.
+
+  Erfolgreiche Abfragen stehen nur am Ende einer Störung (mit der Lücke) und beim ersten Start, sonst wären die 500 Einträge nach gut einer halben Stunde voll.
 - **Begrenzt:** höchstens 500 Einträge, Einträge älter als 72 Stunden werden entfernt, Schreibzugriffe höchstens einmal pro Sekunde.
-- **Ausgeschlossen:** Standort, Koordinaten, Rufzeichen, IP-Adresse und Flugdaten. Texte werden vor dem Speichern bereinigt (URLs, Koordinaten, Rufzeichen-ähnliche Codes und Werte wie `lat=`, `lon=`, `label=`, `title=` entfallen). `tools/tests/diag-test.cjs` prüft das.
+- **Ausgeschlossen:** Position, Rufzeichen und Adresse (weder Standort-Adresse noch IP-Adresse). Texte werden vor dem Speichern bereinigt (URLs, Koordinaten, Rufzeichen-ähnliche Codes und Werte wie `lat=`, `lon=`, `label=`, `title=` entfallen). `tools/tests/diag-test.cjs` prüft das.
 - **Ansehen:** `?diag=1` an die Radar-Adresse hängen zeigt ein kleines Feld mit der Zusammenfassung der letzten 24 Stunden und den letzten 30 Einträgen (nur auf dem Bildschirm, nichts wird geschickt).
 - **Herunterladen oder leeren:** auf der Einrichtungsseite unter „Erweitert: Diagnoseprotokoll“ (`setup.html?diag=export` öffnet den Abschnitt). Der Download ist eine Textdatei, die der Browser nur auf Klick erzeugt; „Protokoll leeren“ löscht den Inhalt.
 - **Nichts wird übertragen:** das Protokoll verlässt das Gerät nicht, es gibt keinen Server dafür und keine zusätzlichen Drittanbieter-Anfragen.
