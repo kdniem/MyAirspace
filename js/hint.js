@@ -28,6 +28,11 @@
   try { calm = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) { calm = false; }
   var fade = calm ? '0s' : '2.5s';
 
+  // a desktop browser (wide, with a mouse or trackpad) gets a compact card in px; a TV keeps the sizes in vh
+  var desk = false;
+  try { desk = !!(window.matchMedia && window.matchMedia('(min-width: 1280px) and (pointer: fine)').matches); } catch (e) { desk = false; }
+  function S(vh, px) { return desk ? px + 'px' : vh + 'vh'; }
+
   function box(id, css) {
     var el = document.createElement('div');
     el.id = id;
@@ -51,28 +56,29 @@
     veil.style.cssText = 'position:absolute;left:0;top:0;right:0;bottom:0;background:var(--bg);opacity:0.72';
     el.appendChild(veil);
     var card = document.createElement('div');
-    card.style.cssText = 'position:relative;display:flex;align-items:center;gap:6vh;padding:5vh 6vh;' +
-      'background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);color:var(--ink);max-width:100%';
+    card.style.cssText = 'position:relative;display:flex;align-items:center;gap:' + S(6, 56) + ';padding:' + S(5, 48) + ' ' + S(6, 64) + ';' +
+      'background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);color:var(--ink);max-width:100%' +
+      (desk ? ';box-sizing:border-box;width:min(980px,100%);border-radius:14px' : '');
 
     var text = document.createElement('div');
-    text.style.cssText = 'max-width:56vh';
-    text.appendChild(line(COPY.brand, 'font-size:1.8vh;letter-spacing:0.4em;color:var(--sub);margin-bottom:2.4vh'));
-    text.appendChild(line(COPY.title, 'font-size:5vh;line-height:1.15;letter-spacing:0.02em;color:var(--ink)'));
-    text.appendChild(line(COPY.lead, 'font-size:2.8vh;line-height:1.35;margin-top:2.4vh;color:var(--ink)'));
-    text.appendChild(line(shortUrl, 'font-size:3vh;margin-top:3vh;color:var(--accent);word-break:break-all'));
-    text.appendChild(line(COPY.or, 'font-size:1.8vh;margin-top:1vh;color:var(--sub)'));
+    text.style.cssText = 'max-width:' + S(56, 520);
+    text.appendChild(line(COPY.brand, 'font-size:' + S(1.8, 13) + ';letter-spacing:0.4em;color:var(--sub);margin-bottom:' + S(2.4, 22)));
+    text.appendChild(line(COPY.title, 'font-size:' + S(5, 38) + ';line-height:1.15;letter-spacing:0.02em;color:var(--ink)'));
+    text.appendChild(line(COPY.lead, 'font-size:' + S(2.8, 20) + ';line-height:1.35;margin-top:' + S(2.4, 22) + ';color:var(--ink)'));
+    text.appendChild(line(shortUrl, 'font-size:' + S(3, 22) + ';margin-top:' + S(3, 26) + ';color:var(--accent);word-break:break-all'));
+    text.appendChild(line(COPY.or, 'font-size:' + S(1.8, 14) + ';margin-top:' + S(1, 8) + ';color:var(--sub)'));
 
     var qrBox = document.createElement('div');
     qrBox.style.cssText = 'flex:none;text-align:center';
     if (window.MA && MA.qr) {
       try {
         var qr = document.createElement('div');
-        qr.style.cssText = 'width:30vh;height:30vh';
+        qr.style.cssText = 'width:' + S(30, 250) + ';height:' + S(30, 250);
         qr.innerHTML = MA.qr.svg(setupUrl, { dark: '#050607', light: '#f4efe3', border: 2 });
         var svg = qr.firstChild;
-        if (svg && svg.style) svg.style.cssText = 'width:100%;height:100%;display:block;border-radius:0.6vh';
+        if (svg && svg.style) svg.style.cssText = 'width:100%;height:100%;display:block;border-radius:' + S(0.6, 8);
         qrBox.appendChild(qr);
-        qrBox.appendChild(line(COPY.scan, 'font-size:1.8vh;margin-top:1.6vh;color:var(--sub)'));
+        qrBox.appendChild(line(COPY.scan, 'font-size:' + S(1.8, 14) + ';margin-top:' + S(1.6, 14) + ';color:var(--sub)'));
         card.appendChild(qrBox);
       } catch (e) { /* text only */ }
     }

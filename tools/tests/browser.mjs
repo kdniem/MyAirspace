@@ -247,6 +247,68 @@ async function setupCase(browser, vp) {
   } finally { await ctx.close(); }
 }
 
+// ---------- setup: the address is a link, the copy button copies it (clipboard API, then the textarea fallback) ----------
+async function linkCopyCase(browser) {
+  const id = 'setup_link_copy';
+  const problems = [];
+  const vp = { width: 1280, height: 800 };
+  const readAddr = (page) => page.evaluate(() => {
+    const u = document.getElementById('url');
+    return { tag: u.tagName, href: u.getAttribute('href') || '', text: u.textContent, target: u.getAttribute('target') || '', rel: u.getAttribute('rel') || '' };
+  });
+  // 1) the clipboard API works: read the clipboard back
+  {
+    const { ctx, page, st } = await newPage(browser, vp, 'setup', false, { permissions: ['clipboard-read', 'clipboard-write'] });
+    try {
+      await page.goto(BASE + '/setup.html?demo=1&wizard=0&lat=53.55&lon=9.99', { waitUntil: 'load' });
+      await page.waitForTimeout(500);
+      const a = await readAddr(page);
+      if (a.tag !== 'A') problems.push('address is not a link: ' + a.tag);
+      if (!/^http:\/\/127\.0\.0\.1:\d+\/\?lat=53\.55&lon=9\.99$/.test(a.href)) problems.push('link href is not the address: ' + a.href);
+      if (a.text !== a.href) problems.push('link text differs from its href: ' + a.text);
+      if (a.target !== '_blank' || !/noopener/.test(a.rel)) problems.push('link does not open in a new tab: target=' + a.target + ' rel=' + a.rel);
+      await page.click('#copy');
+      await page.waitForTimeout(300);
+      const label = await page.textContent('#copy');
+      if (!/Kopiert/.test(label)) problems.push('copy button shows no confirmation: ' + label);
+      const clip = await page.evaluate(async () => { try { return await navigator.clipboard.readText(); } catch (e) { return 'ERR ' + e.message; } });
+      if (/^ERR /.test(clip)) problems.push('clipboard read-back not allowed here (' + clip + ')');
+      else if (clip !== a.href) problems.push('clipboard holds "' + clip + '", not the address');
+      await page.waitForTimeout(2600);
+      const after = await page.textContent('#copy');
+      if (/Kopiert/.test(after)) problems.push('copy button keeps the confirmation: ' + after);
+      collect(st, problems);
+      checked.pages++;
+    } catch (e) { problems.push('test crashed: ' + e.message); } finally { await ctx.close(); }
+  }
+  // 2) no clipboard API: the hidden textarea + execCommand fallback copies the address
+  {
+    const { ctx, page, st } = await newPage(browser, vp, 'setup');
+    try {
+      await ctx.addInitScript(() => {
+        try { Object.defineProperty(navigator, 'clipboard', { value: undefined, configurable: true }); } catch (e) { /* keep default */ }
+        const orig = document.execCommand.bind(document);
+        document.execCommand = (cmd, ...rest) => {
+          if (cmd === 'copy') window.__copied = (document.activeElement && document.activeElement.value) || String(window.getSelection());
+          return orig(cmd, ...rest);
+        };
+      });
+      await page.goto(BASE + '/setup.html?demo=1&wizard=0&lat=53.55&lon=9.99', { waitUntil: 'load' });
+      await page.waitForTimeout(500);
+      const a = await readAddr(page);
+      await page.click('#copy');
+      await page.waitForTimeout(300);
+      const label = await page.textContent('#copy');
+      if (!/Kopiert/.test(label)) problems.push('fallback copy shows no confirmation: ' + label);
+      const copied = await page.evaluate(() => window.__copied || '');
+      if (copied !== a.href) problems.push('fallback copied "' + copied + '", not the address');
+      collect(st, problems);
+      checked.pages++;
+    } catch (e) { problems.push('test crashed: ' + e.message); } finally { await ctx.close(); }
+  }
+  if (problems.length) problems.forEach((p) => record(id, p));
+}
+
 // ---------- guided setup: the whole journey ----------
 const SHOTS = process.env.JOURNEY_SHOTS || '';
 async function journeyCase(browser, vp) {
@@ -882,7 +944,7 @@ for (const style of STYLE_NAMES) for (const theme of hasLight(style) ? ['dark', 
 for (const code of ['HAM', 'FRA']) for (const vp of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }])
   jobs.push({ n: 'airport_' + code + '_' + vp.width, run: () => airportCase(browser, code, vp) });
 jobs.push({ n: 'rotation_airport_1280', run: () => rotationCase(browser) });
-jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'live', run: () => liveCase(browser) });
+jobs.push({ n: 'journey_390', run: () => journeyCase(browser, { width: 390, height: 844 }) }, { n: 'journey_1280', run: () => journeyCase(browser, { width: 1280, height: 800 }) }, { n: 'tv_welcome', run: () => hintCase(browser) }, { n: 'setup_390', run: () => setupCase(browser, { width: 390, height: 844 }) }, { n: 'setup_1280', run: () => setupCase(browser, { width: 1280, height: 800 }) }, { n: 'setup_link_copy', run: () => linkCopyCase(browser) }, { n: 'live', run: () => liveCase(browser) });
 jobs.push({ n: 'motion_off', run: () => motionCase(browser, 'off') }, { n: 'motion_full', run: () => motionCase(browser, 'full') });
 jobs.push({ n: 'canvas_res', run: () => resCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
