@@ -325,7 +325,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
     document.getElementById('attrib').textContent = feed.provider().attrib + ' · Karte: Natural Earth, OurAirports' +
       (canvas.air ? ' · © OpenStreetMap-Mitwirkende (ODbL)' : '') +
       (cfg.chartbg ? ' · Lufträume und Hindernisse: OpenAIP (CC BY-NC 4.0)' : '') +
-      (cfg.public ? ' · öffentliche Proxys (public=1)' : '');
+      (cfg.public ? ' · öffentliche Proxys' : '');
   }
 
   function updateSummary(now) {

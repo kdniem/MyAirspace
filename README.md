@@ -51,8 +51,8 @@ Deine Koordinaten stehen nur in der URL, nicht im Code. Setz sie einmal als Lese
 | `time`     | `both`          | `local` (Lokalzeit), `utc` oder `both` (Lokalzeit groß, darunter UTC mit Z) |
 | `orient`   | `north`         | Nur `north` (Norden oben). Ein „Track up“-Modus ist nicht gebaut |
 | `proxy`    | –               | Nur `off` oder der eigene Proxy erlaubt, siehe [Proxy](#proxy-cors) |
-| `public`   | `0`             | `1` erlaubt die öffentlichen CORS-Proxys `allorigins.win` und `codetabs.com` als Ausweichweg sowie die Quellen airplanes.live/OpenSky. Dritte sehen dann Anfragen, Details im Abschnitt Proxy (Datenschutz beachten) |
-| `provider` | `auto`          | Datenquelle festlegen: `adsblol`; `airplaneslive`, `opensky` nur mit `public=1` |
+| `public`   | `1`             | Standard an: die App nutzt die öffentlichen CORS-Proxys `allorigins.win` und `codetabs.com` als Ausweichweg sowie die Quellen airplanes.live/OpenSky. Dritte sehen dann Anfragen. `public=0` schaltet das aus (nur eigener Proxy und adsb.lol). Details im Abschnitt Proxy (Datenschutz beachten) |
+| `provider` | `auto`          | Datenquelle festlegen: `adsblol`; `airplaneslive`, `opensky` nur mit `public` (Standard an; mit `public=0` nicht erreichbar) |
 | `view`     | `auto`          | `auto` wechselt nach `views` (Standard Radar und Tafel). `radar`, `board` oder `airport` zeigt nur diese eine Ansicht (`airport`: die Flughafen-Ansicht, ohne Standort nutzbar) |
 | `views`    | `radar,board`   | Reihenfolge der Wechsel-Ansichten bei `view=auto`, z. B. `radar,board,airport`. Eine Ansicht darf doppelt stehen, um sie zu gewichten (`radar,radar,board,airport`). Unbekannte Namen fallen weg; eine leere oder einelementige Liste ergibt die Voreinstellung `radar,board` |
 | `airport` | `HAM`         | Flughafen der Flughafen-Ansicht (`airport` in `views` oder `view=airport`): `HAM`, `XFW`, `FRA`, `FMO` oder `CPH`; alles andere ergibt `HAM`, siehe [Flughafen-Ansicht](#flughafen-ansicht) |
@@ -166,10 +166,10 @@ Wenn du das Dashboard am Computer im Browser offen hast, sitzt der Knopf „Voll
 
 ## Daten
 
-- **adsb.lol** (Standard, einzige Quelle ohne `public=1`): offene ADS-B-Daten unter ODbL, ohne Key. Von hier kommen auch die Routen (z. B. `MUC → HAM`).
-- **airplanes.live** und **OpenSky Network**: nur mit `?public=1` (Ersatz, wenn adsb.lol nicht antwortet; OpenSky anonym höchstens alle 30 s). Über den eigenen Proxy funktionieren sie nicht.
+- **adsb.lol** (Standard, einzige Quelle mit `public=0`): offene ADS-B-Daten unter ODbL, ohne Key. Von hier kommen auch die Routen (z. B. `MUC → HAM`).
+- **airplanes.live** und **OpenSky Network**: standardmäßig aktiv, mit `?public=0` aus (Ersatz, wenn adsb.lol nicht antwortet; OpenSky anonym höchstens alle 30 s). Über den eigenen Proxy funktionieren sie nicht.
 
-Mit `public=1` nimmt die App bei einem Ausfall automatisch die nächste Quelle und versucht es nach fünf Minuten wieder mit der ersten. Zwischen zwei Abfragen werden die Positionen anhand von Kurs und Geschwindigkeit weitergerechnet, deshalb bewegen sich die Flugzeuge flüssig. Bei kurzen Ausfällen bleiben die zuletzt bekannten Flugzeuge sichtbar (bis zu 20 s weitergerechnet, nach 60 s ausgeblendet).
+Mit aktivem `public` (Standard) nimmt die App bei einem Ausfall automatisch die nächste Quelle und versucht es nach fünf Minuten wieder mit der ersten. Zwischen zwei Abfragen werden die Positionen anhand von Kurs und Geschwindigkeit weitergerechnet, deshalb bewegen sich die Flugzeuge flüssig. Bei kurzen Ausfällen bleiben die zuletzt bekannten Flugzeuge sichtbar (bis zu 20 s weitergerechnet, nach 60 s ausgeblendet).
 
 ### Proxy (CORS)
 
@@ -181,15 +181,15 @@ adsb.lol und die METAR-Quelle erlauben keine Abfragen direkt aus dem Browser (CO
   3. Die Adresse `https://<projekt>.vercel.app/api/proxy` in `js/pwa.js` als `DEFAULT_PROXY` eintragen.
 - `?proxy=` wird nur akzeptiert, wenn der Wert `DEFAULT_PROXY` ist, `off` (kein Proxy: die App fragt dann keine Flugdaten ab, sondern zeigt den Status) oder eine `https://…vercel.app/api/proxy`-Adresse auf dem Host des eigenen Projekts. Alles andere wird ignoriert.
 - **Routen** (`MUC → HAM`) fragt die App direkt bei adsb.lol ab, dieser Endpunkt erlaubt Browser-Abfragen. Flugdaten und Wetter gehen nur über den eigenen Proxy, ohne direkten Rückfall an Dritte.
-- **Opt-in `?public=1`:** Die App nutzt dann zusätzlich die öffentlichen CORS-Proxys `allorigins.win` und `codetabs.com`. Die Reihenfolge ist: eigener Proxy, dann diese beiden. Ein öffentlicher Proxy wird benutzt, wenn der Weg davor keine Antwort liefert; danach bleibt die zuletzt funktionierende Route bis zum nächsten Fehler, im Speicher der Seite. Was dabei an Dritte geht:
+- **Standard an, abschaltbar mit `?public=0`:** Die App nutzt zusätzlich die öffentlichen CORS-Proxys `allorigins.win` und `codetabs.com`. Die Reihenfolge ist: eigener Proxy, dann diese beiden. Ein öffentlicher Proxy wird benutzt, wenn der Weg davor keine Antwort liefert; danach bleibt die zuletzt funktionierende Route bis zum nächsten Fehler, im Speicher der Seite. Was dabei an Dritte geht:
   - **Flugdaten** (adsb.lol, airplanes.live, OpenSky): die Abfrage mit dem Standort, auf zwei Nachkommastellen gerundet (etwa 1 km), und dem Radius, dazu die IP-Adresse deines Geräts.
-  - **Routen** (`MUC → HAM`): zuerst direkt von deinem Gerät an adsb.lol (wie ohne `public=1`). Erst wenn das scheitert, über die öffentlichen Proxys. Dann sehen die Dritten das Rufzeichen, die Position des **Flugzeugs** auf drei Nachkommastellen (etwa 100 m, nicht deinen Standort) und deine IP-Adresse.
+  - **Routen** (`MUC → HAM`): zuerst direkt von deinem Gerät an adsb.lol (wie mit `public=0`). Erst wenn das scheitert, über die öffentlichen Proxys. Dann sehen die Dritten das Rufzeichen, die Position des **Flugzeugs** auf drei Nachkommastellen (etwa 100 m, nicht deinen Standort) und deine IP-Adresse.
   - **Wetter** (METAR): die ICAO-Codes der konfigurierten Flughäfen und deine IP-Adresse, nicht deinen Standort.
   - **airplanes.live und OpenSky**: die Anfragen gehen zuerst über den eigenen Proxy. Nur bei dessen Ausfall über die öffentlichen Proxys, mit denselben Angaben wie bei den Flugdaten.
   - Die öffentlichen Proxys sehen die Abfragen (über https) im Klartext. Was sie damit tun, legt der jeweilige Betreiber fest, die App hat darauf keinen Einfluss.
-  - Ohne `public=1` gehen Flugdaten und Wetter nur über den eigenen Proxy; die Routen gehen direkt an adsb.lol. Ein Dritter außer dem Proxy-Hoster und adsb.lol erhält dann nichts.
+  - Mit `public=0` gehen Flugdaten und Wetter nur über den eigenen Proxy; die Routen gehen direkt an adsb.lol. Ein Dritter außer dem Proxy-Hoster und adsb.lol erhält dann nichts.
 
-  Die App zeigt den Zustand in der Fußzeile an („öffentliche Proxys“) und merkt sich die gewählte Route nicht dauerhaft. Der Standard bleibt `public=0`.
+  Die App zeigt den Zustand in der Fußzeile an („öffentliche Proxys“) und merkt sich die gewählte Route nicht dauerhaft. Der Standard ist `public=1`. Mit `public=0` nutzt die App nur den eigenen Proxy und adsb.lol.
 - Ein Cloudflare Worker eignet sich **nicht** als Proxy: adsb.lol drosselt Anfragen aus Cloudflare Workers (429), airplanes.live verlangt eine Registrierung (403), OpenSky ist nicht erreichbar (522). Stand Oktober 2026.
 
 **Sicherheit des Proxys:** Er erlaubt nur `https` ohne Port und ohne Zugangsdaten in der Adresse, nur diese Host-/Pfad-Paare, alles andere ergibt 403:

@@ -655,7 +655,10 @@ async function nodataCase(browser) {
   const text = 'Keine Flugdaten – Quelle nicht erreichbar, neuer Versuch läuft';
   const shown = () => page.evaluate(() => { const e = document.getElementById('nodata'); return !!e && !e.hidden; });
   try {
-    await page.goto(BASE + '/index.html?lat=53.5511&lon=9.9937&r=25', { waitUntil: 'load' });
+    // public=0: with the default (public on) a failing feed moves to the other providers through the public proxies,
+    // and stays there up to PRIMARY_RETRY_MS (5 min) after the own proxy is back. This case checks the notice itself
+    // (appears, renders, disappears when the source returns), so it runs on the own-proxy path only, as before the default changed.
+    await page.goto(BASE + '/index.html?lat=53.5511&lon=9.9937&r=25&public=0', { waitUntil: 'load' });
     try {
       await page.waitForFunction(() => { const e = document.getElementById('nodata'); return !!e && !e.hidden; }, null, { timeout: 20000 });
     } catch (e) { problems.push('notice does not appear while every source fails'); }

@@ -9,8 +9,8 @@ MyAirspace selbst steht unter der MIT-Lizenz (siehe [LICENSE](LICENSE)). Die fol
 | Quelle | Verwendung | Lizenz / Bedingungen |
 |--------|------------|----------------------|
 | [adsb.lol](https://adsb.lol) | Flugzeugpositionen und Routen (Standardquelle) | Open Database License (ODbL) 1.0. Namensnennung: „Daten: adsb.lol“ (wird in der App angezeigt). |
-| [airplanes.live](https://airplanes.live) | Flugzeugpositionen, nur mit `?public=1` | Nutzungsbedingungen von airplanes.live (nicht kommerzielle Nutzung, Namensnennung). |
-| [The OpenSky Network](https://opensky-network.org) | Flugzeugpositionen, nur mit `?public=1` | Nutzungsbedingungen des OpenSky Network (Forschung und nicht kommerzielle Nutzung, Namensnennung). |
+| [airplanes.live](https://airplanes.live) | Flugzeugpositionen, Standard an (aus mit `?public=0`) | Nutzungsbedingungen von airplanes.live (nicht kommerzielle Nutzung, Namensnennung). |
+| [The OpenSky Network](https://opensky-network.org) | Flugzeugpositionen, Standard an (aus mit `?public=0`) | Nutzungsbedingungen des OpenSky Network (Forschung und nicht kommerzielle Nutzung, Namensnennung). |
 | [aviationweather.gov](https://aviationweather.gov) (NOAA / National Weather Service) | METAR-Wetterberichte | Daten der US-Behörde, frei nutzbar. |
 | [Deutscher Wetterdienst (DWD)](https://opendata.dwd.de), Radarkomposit WN | Wetterradar (`wx=radar`): beobachteter Niederschlag, vom Server des Projekts abgerufen (`api/radar.js`), nie vom Browser. Der Abruf enthält keine Standortdaten. | Datenlizenz Deutschland – Namensnennung – Version 2.0 (dl-de/by-2-0), Quellenangabe „Deutscher Wetterdienst“ (in der App: „Daten: DWD“). Bitte die aktuellen Nutzungsbedingungen des DWD prüfen; die Lizenzangabe ist vom Betreiber zu bestätigen. |
 | [OpenStreetMap / Nominatim](https://nominatim.openstreetmap.org) | Ortssuche und Ortsname auf der Einrichtungsseite (`setup.html`) | Daten © OpenStreetMap-Mitwirkende, ODbL 1.0; es gilt die [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/). |

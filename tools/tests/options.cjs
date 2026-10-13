@@ -57,6 +57,10 @@ ok(cfg('?datablock=callsign,type,reg').config.fields.join() === 'callsign,type,r
 ok(cfg('?datablock=reg,reg,foo,speed').config.fields.join() === 'reg,gs', 'datablock validation and aliases');
 ok(cfg('?datablock=foo').config.fields.join() === 'callsign,fl,gs,type', 'datablock all invalid');
 ok(cfg('?title=Zuhause').config.title === 'Zuhause', 'title');
+// public: on by default (public CORS proxies and the other providers); public=0 (and the other off-words of bool()) turns it off
+ok(cfg('').config.public === true && cfg('?public=1').config.public === true, 'public defaults to on');
+ok(cfg('?public=0').config.public === false && cfg('?public=off').config.public === false, 'public=0 turns it off');
+ok(cfg('?public=banana').config.public === true && cfg('?public=').config.public === true, 'invalid public falls back to on');
 // focus view: view=airport and airport= (checked, silent fallback to HAM; no demo traffic unless asked)
 ok(cfg('?view=airport').config.view === 'airport' && cfg('?view=nonsense').config.view === 'auto', 'view=airport and invalid view');
 ok(cfg('').config.airport === 'HAM' && cfg('?airport=fra').config.airport === 'FRA', 'airport default and case');
