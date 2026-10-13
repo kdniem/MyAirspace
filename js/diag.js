@@ -5,7 +5,7 @@
    Kinds: data (failed poll, or the success that ends an outage), status (online/stale/offline),
    net (browser online/offline, tab visible/hidden), stall (frame gap > 2 s), error (script/promise
    error: file, line and error NAME only, never the message), sw (service worker registration),
-   boot (version, style, theme, window size, page kind), wake (wake lock on/off/refused).
+   boot (version, style, theme, window size, page kind), wake (wake lock an/aus/abgelehnt).
    d is in milliseconds where it means a time (request duration, data gap, data age, frame gap); for
    error it counts identical errors in a row; otherwise null.
    Privacy: only the four fields above are ever stored. Text is scrubbed (URLs, coordinates, callsign-like

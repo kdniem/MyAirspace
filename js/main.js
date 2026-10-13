@@ -391,7 +391,7 @@ var status = { ok: false, lastOk: 0, dataAt: 0, failures: 0, recover: 0, retryAf
       lock = l;
       if (MA.diag) MA.diag.log('wake', 'an', 'Wake Lock aktiv');
       l.addEventListener('release', function () { lock = null; if (MA.diag) MA.diag.log('wake', 'aus', 'Wake Lock freigegeben'); });
-    }, function () { if (MA.diag) MA.diag.log('wake', 'fehler', 'Wake Lock abgelehnt'); });
+    }, function () { if (MA.diag) MA.diag.log('wake', 'abgelehnt', 'Wake Lock abgelehnt'); });
   }
   document.addEventListener('visibilitychange', wake);
 
