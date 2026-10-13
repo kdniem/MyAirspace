@@ -2,7 +2,8 @@
    A ring buffer of at most 500 events in localStorage 'ma.diag' (in memory only when storage is blocked).
    Entries older than 72 h are dropped; writes are batched to at most one per second.
    Event: { t: ISO time UTC, k: kind, c: code, m: text (<= 120 chars), d: number or null }
-   Kinds: data (failed poll, or the success that ends an outage), status (online/stale/offline),
+   Kinds: data (failed poll, the success that ends an outage, fb = answer from a fallback source starts,
+   pri = answer from the first source again), status (online/stale/offline),
    net (browser online/offline, tab visible/hidden), stall (frame gap > 2 s), error (script/promise
    error: file, line, message), sw (service worker registration), boot (version, style, theme, size),
    wake (wake lock on/off).
@@ -14,7 +15,7 @@
    (section Erweitert) the log can be downloaded as .txt (user click only) or cleared; ?diag=export opens that section. */
 (function () {
   var MA = window.MA = window.MA || {};
-  var VERSION = 'v18';        // must match VERSION in sw.js (tools/tests/diag-test.cjs checks it)
+  var VERSION = 'v19';        // must match VERSION in sw.js (tools/tests/diag-test.cjs checks it)
   var KEY = 'ma.diag';
   var MAX_EVENTS = 500;
   var KEEP_MS = 72 * 3600 * 1000;
@@ -40,6 +41,7 @@
   var lastState = null;           // last status reported (online / stale / offline)
   var prevData = null;            // 'ok' | 'fail' | null, this page load only
   var lastOkAt = 0;
+  var onFallback = false;         // the last answer came from a fallback source (this page load only)
   var lastFrameAt = 0, lastStallAt = 0;
   var boxCount = null, boxMsg = null, panelSum = null, panelList = null;
 
@@ -136,6 +138,12 @@
         record(t, 'data', 'ok', name + (prevData === 'fail' ? ' · wieder da' : ' · erste Antwort') +
           (gap ? ' · Lücke ' + Math.round(gap / 1000) + ' s' : ''), gap);
       }
+      // which source answered: a change between the first source and a fallback is logged once
+      var fb = !!info.fallback;
+      if (fb !== onFallback) {
+        onFallback = fb;
+        record(t, 'data', fb ? 'fb' : 'pri', name + (fb ? ' · Ausweichquelle' : ' · Hauptquelle'), null);
+      }
       prevData = 'ok';
       lastOkAt = t;
       return;
@@ -198,13 +206,15 @@
   function summarize(evs, now) {
     var from = now - WINDOW_MS;
     var s = { fails: 0, failsByStatus: {}, recoveries: 0, longestGapS: 0, toOffline: 0, toStale: 0, toOnline: 0,
-      errors: 0, stalls: 0, longestStallS: 0, netOffline: 0, netOnline: 0 };
-    var longest = 0, prev = null;
+      errors: 0, stalls: 0, longestStallS: 0, netOffline: 0, netOnline: 0, fallbacks: 0, fallbackS: 0 };
+    var longest = 0, prev = null, fbStart = null;
     for (var i = 0; i < evs.length; i++) {
       var e = evs[i], t = Date.parse(e.t);
       if (!(t >= from && t <= now)) continue;
       if (e.k === 'data') {
         if (e.c === 'ok') { s.recoveries++; if (e.d) longest = Math.max(longest, e.d); }
+        else if (e.c === 'fb') { s.fallbacks++; if (fbStart === null) fbStart = t; }
+        else if (e.c === 'pri') { if (fbStart !== null) { s.fallbackS += (t - fbStart) / 1000; fbStart = null; } }
         else {
           s.fails++;
           var key = String(e.c);
@@ -228,6 +238,9 @@
         else if (e.c === 'online') s.netOnline++;
       }
     }
+    // still on a fallback at the end of the window: counted up to now
+    if (fbStart !== null) s.fallbackS += (now - Math.max(fbStart, from)) / 1000;
+    s.fallbackS = Math.round(s.fallbackS);
     s.longestGapS = Math.round(longest / 1000);
     return s;
   }
@@ -243,6 +256,7 @@
       'Letzte 24 h · Abfragen fehlgeschlagen: ' + s.fails + (parts.length ? ' (' + parts.join(', ') + ')' : ''),
       'längste Lücke ohne Daten: ' + durText(s.longestGapS) + ' · offline ' + s.toOffline + '× · veraltet ' +
         s.toStale + '× · wieder online ' + s.toOnline + '×',
+      'Ausweichquelle: ' + s.fallbacks + '× · davon ' + durText(s.fallbackS),
       'Netz getrennt ' + s.netOffline + '× · Fehler ' + s.errors + ' · Bildhänger ' + s.stalls +
         (s.stalls ? ' (längster ' + durText(s.longestStallS) + ')' : '')
     ];

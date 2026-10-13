@@ -644,6 +644,39 @@ async function diagSetupCase(browser) {
   } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
 }
 
+// ---------- degraded data (js/nodata.js): every source blocked -> notice; source back -> notice removed ----------
+async function nodataCase(browser) {
+  const id = 'nodata_notice';
+  const { ctx, page, st } = await newPage(browser, { width: 1280, height: 720 }, 'live');
+  const problems = [];
+  let blockFeed = true;
+  // registered after newPage's policy route, so it runs first: abort the own proxy while blockFeed is set
+  await ctx.route(/\/api\/proxy\?/, (route) => (blockFeed ? route.abort('failed') : route.fallback()));
+  const text = 'Keine Flugdaten – Quelle nicht erreichbar, neuer Versuch läuft';
+  const shown = () => page.evaluate(() => { const e = document.getElementById('nodata'); return !!e && !e.hidden; });
+  try {
+    await page.goto(BASE + '/index.html?lat=53.5511&lon=9.9937&r=25', { waitUntil: 'load' });
+    try {
+      await page.waitForFunction(() => { const e = document.getElementById('nodata'); return !!e && !e.hidden; }, null, { timeout: 20000 });
+    } catch (e) { problems.push('notice does not appear while every source fails'); }
+    if (await shown()) {
+      const info = await page.evaluate(() => {
+        const e = document.getElementById('nodata'), b = e.getBoundingClientRect();
+        return { text: e.textContent, display: getComputedStyle(e).display, w: b.width, h: b.height };
+      });
+      if (info.text !== text) problems.push('notice text is "' + info.text + '"');
+      if (info.display === 'none' || info.w < 1 || info.h < 1) problems.push('notice is not rendered (display ' + info.display + ')');
+    }
+    blockFeed = false;
+    try {
+      await page.waitForFunction(() => { const e = document.getElementById('nodata'); return !!e && e.hidden; }, null, { timeout: 30000 });
+    } catch (e) { problems.push('notice does not disappear after the source is back'); }
+    collect(st, problems);
+    checked.pages++;
+    if (problems.length) { problems.forEach((p) => record(id, p)); await shot(page, id); }
+  } catch (e) { record(id, 'test crashed: ' + e.message); } finally { await ctx.close(); }
+}
+
 // ---------- settings overlay (js/settings.js): gear, keyboard, focus, persistence, reload note ----------
 const SETTINGS_RECT = () => {
   const r = (s) => { const e = document.querySelector(s); if (!e) return null; const b = e.getBoundingClientRect(); return { l: b.left, t: b.top, r: b.right, b: b.bottom }; };
@@ -851,6 +884,7 @@ jobs.push({ n: 'motion_off', run: () => motionCase(browser, 'off') }, { n: 'moti
 jobs.push({ n: 'canvas_res', run: () => resCase(browser) });
 for (const h of HOSTILE) { jobs.push({ n: 'hostile_index_' + h, run: () => hostileCase(browser, 'index', h) }); jobs.push({ n: 'hostile_setup_' + h, run: () => hostileCase(browser, 'setup', h) }); }
 jobs.push({ n: 'diag_panel', run: () => diagPanelCase(browser) }, { n: 'diag_setup', run: () => diagSetupCase(browser) });
+jobs.push({ n: 'nodata_notice', run: () => nodataCase(browser) });
 jobs.push({ n: 'settings_1280', run: () => settingsCase(browser) }, { n: 'settings_touch_390', run: () => settingsTouchCase(browser) });
 jobs.push({ n: 'board_stats_no_overlap_1920', run: () => boardStatsCase(browser, { w: 1920, h: 1080 }) }, { n: 'board_stats_no_overlap_1280', run: () => boardStatsCase(browser, { w: 1280, h: 720 }) });
 jobs.push({ n: 'radar_metar_not_under_alert_1280', run: () => radarMetarCase(browser, { w: 1280, h: 720 }) }, { n: 'radar_metar_not_under_alert_390', run: () => radarMetarCase(browser, { w: 390, h: 844 }) });

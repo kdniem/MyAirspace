@@ -41,6 +41,8 @@ cmd('motion: option, timing curves, cheapness (motion-test.cjs)', ['tools/tests/
 cmd('view rotation (rotation-test.cjs)', ['tools/tests/rotation-test.cjs', '.']);
 cmd('diagnostics log (diag-test.cjs)', ['tools/tests/diag-test.cjs', '.']);
 cmd('saved settings (prefs-test.cjs)', ['tools/tests/prefs-test.cjs', '.']);
+cmd('glyph kinds (glyph-test.cjs)', ['tools/tests/glyph-test.cjs', '.']);
+cmd('degraded-data notice (nodata-test.cjs)', ['tools/tests/nodata-test.cjs', '.']);
 cmd('render scale and frame-time guard (render-scale-test.cjs)', ['tools/tests/render-scale-test.cjs', '.']);
 cmd('old-browser guard (compat.mjs)', ['tools/tests/compat.mjs']);
 cmd('contrast', ['tools/contrast.mjs']);

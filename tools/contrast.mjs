@@ -62,6 +62,7 @@ const ROWS = [
   ['Board tag warning', '--warning', '--panel', 4.5],
   ['Board tag caution', '--caution', '--panel', 4.5],
   ['Attribution', '--attrib', '--bg', 4.5],
+  ['Degraded-data notice', '--dim', '--bg', 4.5],
   ['Toast text', '--ink', '--toast-bg', 4.5],
   ['Toast label special', '--special', '--toast-bg', 4.5],
   ['Tafel column heads', '--dim', '--head', 4.5],
