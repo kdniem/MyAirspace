@@ -112,6 +112,15 @@ body.pv:not([data-step="welcome"]) .card-prev .note { display: none; }
   body:not(.pv) .step-body { max-width: none; }
 }
 
+/* desktop browsers (1280 px and wider): a wider frame, form left and the live preview right on every step */
+@media (min-width: 1280px) {
+  .top, .layout, .foot, body[data-mode="all"] .layout { max-width: 1240px; }
+  body.pv .layout { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 80px; }
+  body.pv:not([data-step="welcome"]) .col-side { top: 32px; }
+  body.pv:not([data-step="welcome"]) .preview { border-radius: 14px; }
+  body.pv .step-body { max-width: 560px; }
+}
+
 /* ---------- a step ---------- */
 
 .step-head { margin: 4px 0 24px; }
@@ -367,7 +376,10 @@ small.opt { margin-left: 0.6em; font-size: 13px; font-weight: 400; color: var(--
 .url {
   display: block; padding: 14px 16px; background: var(--field); border: 1px solid var(--edge); border-radius: 10px;
   font: 15px/1.5 var(--mono); color: var(--amber); word-break: break-all; -webkit-user-select: all; user-select: all;
+  text-decoration: underline; text-decoration-color: var(--edge); text-underline-offset: 3px;
 }
+a.url:hover, a.url:focus-visible { text-decoration-color: currentColor; background: var(--raised); }
+a.url:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
 .url:empty { display: none; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
 .actions .btn { flex: 1 1 140px; }

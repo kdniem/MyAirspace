@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MyAirspace · Dein Himmel, ruhig auf jedem Bildschirm</title>
-<meta name="description" content="MyAirspace zeigt die Flugzeuge um deinen Standort als ruhige Anzeige im Stil von Cockpit-Instrumenten. Kostenlos, ohne Konto, ohne Installation.">
-<meta property="og:title" content="MyAirspace · Dein Himmel, ruhig auf jedem Bildschirm">
-<meta property="og:description" content="Ein kostenloses Flugradar als Wallpaper für Monitor, Tablet und Fernseher. Ohne Konto, ohne Installation.">
+<title>MyAirspace · Dein Himmel, ruhig im Desktop-Browser</title>
+<meta name="description" content="MyAirspace ist für den Desktop-Browser gebaut: ein ruhiges Flugradar um deinen Standort im Stil von Cockpit-Instrumenten. Läuft auch auf Tablet und Fernseher. Kostenlos, ohne Konto, ohne Installation.">
+<meta property="og:title" content="MyAirspace · Dein Himmel, ruhig im Desktop-Browser">
+<meta property="og:description" content="Ein kostenloses Flugradar für den Desktop-Browser, auch für Tablet und Fernseher. Ohne Konto, ohne Installation.">
 <meta property="og:type" content="website">
 <meta name="robots" content="index, follow">
 <style>
@@ -28,34 +28,44 @@ body {
   background: var(--bg);
   color: var(--ink);
   font: 16px/1.6 "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  overflow-wrap: anywhere;
 }
 a { color: var(--accent); }
 a:focus-visible, summary:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 16px; top: 16px; background: var(--accent); color: var(--accent-ink); padding: 8px 12px; z-index: 10; }
-.wrap { max-width: 960px; margin: 0 auto; padding: 0 16px; }
-header.top { display: flex; justify-content: space-between; align-items: center; padding: 20px 0; }
+
+/* desktop first: a wide reading column; phones get the same page stacked (see the max-width rules below) */
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+header.top { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 0; }
 .brand { color: var(--ink); font-weight: 600; letter-spacing: .08em; text-decoration: none; }
 nav a { color: var(--sub); text-decoration: none; margin-left: 18px; font-size: 14px; }
 nav a:hover { color: var(--accent); }
+
 .hero { padding: 56px 0 40px; }
-.hero h1 { font-size: clamp(28px, 5vw, 46px); line-height: 1.2; margin: 0 0 18px; font-weight: 600; }
-.hero p { color: var(--sub); font-size: clamp(16px, 2.2vw, 19px); max-width: 620px; margin: 0 0 28px; }
+.hero h1 { font-size: clamp(30px, 3.4vw, 48px); line-height: 1.2; margin: 0 0 18px; font-weight: 600; max-width: 900px; }
+.hero p { color: var(--sub); font-size: clamp(16px, 1.6vw, 19px); max-width: 720px; margin: 0 0 16px; }
+.hero p.also { color: var(--dim); font-size: 15px; margin: 0 0 28px; }
 .cta { display: flex; flex-wrap: wrap; gap: 12px; }
 .btn { display: inline-block; padding: 12px 20px; border: 1px solid var(--accent); border-radius: 4px; text-decoration: none; font-size: 15px; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); }
 .btn.ghost { color: var(--accent); }
-.cards { display: grid; grid-template-columns: 1fr; gap: 14px; padding: 8px 0 40px; }
-@media (min-width: 720px) { .cards { grid-template-columns: repeat(3, 1fr); } }
+
+.shot { margin: 40px 0 0; }
+.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
+.shot figcaption { color: var(--dim); font-size: 13px; margin-top: 8px; }
+
+.cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 8px 0 40px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 18px; }
 .card h3 { margin: 0 0 8px; font-size: 16px; color: var(--accent); }
 .card p { margin: 0; color: var(--sub); font-size: 15px; }
+
 section { padding: 16px 0 28px; border-top: 1px solid var(--line); }
-.shot { margin: 28px 0 0; }
-.shot img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; }
-.shot figcaption { color: var(--dim); font-size: 13px; margin-top: 8px; }
-@media (max-width: 600px) { nav .nav-extra { display: none; } }
 section h2 { font-size: 22px; margin: 0 0 16px; font-weight: 600; }
+.split { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.split .aside { border-left: 1px solid var(--line); padding-left: 40px; }
+.split .aside h2 { font-size: 17px; color: var(--sub); }
+.split .aside p { color: var(--dim); font-size: 14px; margin: 0; }
 ol.steps { padding-left: 20px; margin: 0; color: var(--sub); }
 ol.steps li { margin-bottom: 10px; }
 ul.plain { list-style: none; padding: 0; margin: 0; color: var(--sub); }
@@ -66,7 +76,17 @@ summary { cursor: pointer; color: var(--ink); font-weight: 600; }
 details p { color: var(--sub); margin: 8px 0 0; font-size: 15px; }
 footer { border-top: 1px solid var(--line); padding: 24px 0 40px; color: var(--dim); font-size: 14px; }
 footer p { margin: 0 0 10px; }
-.skip-link-hint { color: var(--dim); }
+
+@media (max-width: 900px) {
+  .split { grid-template-columns: 1fr; gap: 28px; }
+  .split .aside { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 24px; }
+  .cards { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  nav .nav-extra { display: none; }
+  .hero { padding: 36px 0 28px; }
+  .shot { margin-top: 28px; }
+}
 </style>
 </head>
 <body>
@@ -77,7 +97,7 @@ footer p { margin: 0 0 10px; }
     <a class="brand" href="./">MyAirspace</a>
     <nav aria-label="Hauptnavigation">
       <a class="nav-extra" href="#funktionen">Funktionen</a>
-      <a class="nav-extra" href="#so-gehts">So geht’s</a>
+      <a class="nav-extra" href="#desktop">Desktop</a>
       <a href="#faq">Fragen</a>
       <a href="../?demo=1">Ausprobieren</a>
     </nav>
@@ -85,15 +105,16 @@ footer p { margin: 0 0 10px; }
 
   <main id="inhalt">
     <div class="hero">
-      <h1>Dein Himmel, ruhig auf jedem Bildschirm.</h1>
-      <p>MyAirspace zeigt die Flugzeuge um deinen Standort als ruhige Anzeige im Stil von Cockpit-Instrumenten. Kostenlos, ohne Konto, ohne Installation.</p>
+      <h1>Dein Himmel, ruhig im Desktop-Browser.</h1>
+      <p>MyAirspace ist zuerst für den Desktop-Browser gebaut: ein Flugradar um deinen Standort, im Stil von Cockpit-Instrumenten. Kostenlos, ohne Konto, ohne Installation.</p>
+      <p class="also">Läuft auch auf dem Tablet und als Bild auf dem Fernseher.</p>
       <div class="cta">
         <a class="btn primary" href="../?demo=1">Jetzt ausprobieren</a>
         <a class="btn ghost" href="../setup.html">Einrichtung starten</a>
       </div>
       <figure class="shot">
-        <img src="radar.jpg" width="1280" height="720" alt="Radaransicht der Demo: Flugzeuge als Silhouetten mit Flugspur und Datenblock um einen Standort in Hamburg">
-        <figcaption>Demo-Ansicht, Stil „Tower“. Simulierte Daten.</figcaption>
+        <img src="radar-desktop.jpg" width="1600" height="900" alt="Radaransicht der Demo im Browser: Flugzeuge als Silhouetten mit Flugspur und Datenblock um einen Standort in Hamburg, unten rechts die Vollbild-Schaltfläche">
+        <figcaption>Demo-Ansicht im Desktop-Browser, Stil „Tower“. Simulierte Daten.</figcaption>
       </figure>
     </div>
 
@@ -112,6 +133,23 @@ footer p { margin: 0 0 10px; }
           <h3>Sieben Stile</h3>
           <p>Vom Tower-Radar bis zum Nachtmodus für den abgedunkelten Raum. Den Stil siehst du in der Einrichtung als Vorschau.</p>
         </article>
+      </div>
+    </section>
+
+    <section id="desktop" aria-labelledby="desktop-h">
+      <div class="split">
+        <div>
+          <h2 id="desktop-h">Auf dem Desktop</h2>
+          <ol class="steps">
+            <li><strong>Im Browser öffnen.</strong> Die Demo unter „Ausprobieren“ oder deine eigene Adresse aus der Einrichtung in einem Browserfenster öffnen.</li>
+            <li><strong>Vollbild.</strong> Taste F oder die Vollbild-Schaltfläche unten rechts.</li>
+            <li><strong>Einstellungen.</strong> Das Zahnrad unten links oder die Taste S: Stil, Thema, Helligkeit, Ansicht und Karte.</li>
+          </ol>
+        </div>
+        <div class="aside" id="fernseher" aria-labelledby="fernseher-h">
+          <h2 id="fernseher-h">Auf dem Fernseher</h2>
+          <p>Die Adresse aus der Einrichtung im Browser des Fernsehers öffnen oder den QR-Code scannen. Am Apple TV per AirPlay von Mac, iPad oder iPhone, weil tvOS keinen eigenen Browser hat.</p>
+        </div>
       </div>
     </section>
 
@@ -154,8 +192,8 @@ footer p { margin: 0 0 10px; }
         <p>Luftfahrtkarte im Hintergrund und Wetterradar sind standardmäßig aus und lassen sich in den Einstellungen einschalten. Quellen und Lizenzen stehen in der App und in THIRD_PARTY.md.</p>
       </details>
       <details>
-        <summary>Funktioniert es auf Monitor, Tablet oder Smart-TV?</summary>
-        <p>Wenn der Browser des Geräts die Seite öffnen kann, läuft sie dort. Nicht auf allen Geräten getestet. Am Apple TV geht es per AirPlay von Mac, iPad oder iPhone, weil tvOS keinen eigenen Browser hat.</p>
+        <summary>Funktioniert es auf dem Desktop, Tablet oder Fernseher?</summary>
+        <p>Gebaut ist es zuerst für den Desktop-Browser. Tablet und Fernseher gehen auch, wenn deren Browser die Seite öffnen kann. Nicht auf allen Geräten getestet. Am Apple TV geht es per AirPlay von Mac, iPad oder iPhone, weil tvOS keinen eigenen Browser hat.</p>
       </details>
     </section>
   </main>

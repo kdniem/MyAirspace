@@ -494,6 +494,7 @@
     if (loc) {
       currentUrl = tvUrl(params);
       el.url.textContent = currentUrl;
+      el.url.href = currentUrl;
       el.open.href = currentUrl;
       el.urlEmpty.hidden = true;
       el.copy.disabled = false;
@@ -502,6 +503,7 @@
     } else {
       currentUrl = '';
       el.url.textContent = '';
+      el.url.removeAttribute('href');
       el.urlEmpty.hidden = false;
       el.copy.disabled = true;
       el.open.classList.add('disabled');
@@ -567,7 +569,11 @@
     el.copyStatus.textContent = ok ? COPY.result.copiedSay : COPY.result.copyFailSay;
     el.copyStatus.className = 'status' + (ok ? '' : ' warn');
     if (!ok) window.getSelection().selectAllChildren(el.url);
+    // the confirmation shows briefly, then the button label comes back
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(() => { el.copy.textContent = COPY.result.copy; }, 2200);
   });
+  let copyTimer = 0;
 
   /* ---------- live preview (throttled: one reload per 1.5 s at most) ---------- */
 

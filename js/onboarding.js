@@ -209,6 +209,10 @@
   const HASH_OF = { welcome: 'willkommen', standort: 'standort', look: 'look', inhalt: 'inhalt', fernseher: 'fernseher', fertig: 'fertig', all: 'alle' };
   const NEEDS_LOC = { fernseher: true, fertig: true };
   const WITH_PREVIEW = { welcome: true, look: true, inhalt: true, all: true };
+  // wide screens (desktop browsers): the preview stays beside the form on every step, phones keep the lighter list above
+  const WIDE = window.matchMedia ? window.matchMedia('(min-width: 1280px)') : null;
+  const WIDE_PREVIEW = { standort: true };   // the TV step keeps its address-only layout (tools/tests/browser.mjs)
+  if (WIDE && WIDE.addEventListener) WIDE.addEventListener('change', () => render());
 
   function readSaved() { try { const v = JSON.parse(sessionStorage.getItem(SKEY) || 'null'); return v && typeof v === 'object' ? v : null; } catch (e) { return null; } }
   function writeSaved(v) { try { sessionStorage.setItem(SKEY, JSON.stringify(v)); } catch (e) { /* storage blocked: no resume, nothing else changes */ } }
@@ -378,7 +382,7 @@
     }
 
     // show the preview column first: a frame loaded while hidden would size its canvas to 0 px
-    const wantPv = !!WITH_PREVIEW[cur];
+    const wantPv = !!WITH_PREVIEW[cur] || !!(WIDE && WIDE.matches && WIDE_PREVIEW[cur]);
     $('side').hidden = !wantPv;
     body.classList.toggle('pv', wantPv);
     setup().preview({ on: wantPv, demo: cur === 'welcome' });
